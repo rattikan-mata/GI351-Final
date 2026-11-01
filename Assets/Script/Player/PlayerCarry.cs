@@ -167,6 +167,52 @@ namespace GI351.KitchenGame
         }
 
         /// <summary>
+        /// ตรวจสอบว่าไอเทมนี้เป็นอาหารปรุงสุกหรือไม่ (ไม่ใช่เนื้อดิบ)
+        /// </summary>
+        public static bool IsCookedFood(Item item)
+        {
+            if (item == null) return false;
+            if (item is CookedDish) return true;
+            if (item.Type == ItemType.CookedChicken || item.Type == ItemType.CookedPig) return true;
+            if (item.Type != ItemType.ChickenMeat && item.Type != ItemType.PigMeat) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// ตรวจสอบว่าในหลังมีอาหารปรุงสุกหรือไม่
+        /// </summary>
+        public bool HasAnyCookedFood()
+        {
+            foreach (var item in carriedItems)
+            {
+                if (IsCookedFood(item)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// ดึงอาหารปรุงสุกชิ้นใดก็ได้ออกจากหลังผู้เล่น (สำหรับส่งให้จุดขาย)
+        /// </summary>
+        public Item PopAnyCookedFood()
+        {
+            for (int i = carriedItems.Count - 1; i >= 0; i--)
+            {
+                Item item = carriedItems[i];
+                if (IsCookedFood(item))
+                {
+                    carriedItems.RemoveAt(i);
+                    item.transform.SetParent(null);
+                    item.SetCarriedState(false);
+
+                    UpdateStackPositions();
+                    onCarryCountChanged?.Invoke(carriedItems.Count, maxCarryCapacity);
+                    return item;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
         /// ดูข้อมูลไอเทมชิ้นบนสุดโดยไม่ต้องหยิบออก
         /// </summary>
         public Item PeekTopItem()

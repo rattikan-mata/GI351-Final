@@ -188,7 +188,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.EnemyHealth
   maxHealth: 30
-  meatDropPrefab: {fileID: 0}
+  meatDropPrefab: {fileID: 2869220307959938083, guid: 846ce6b3559f66541a3fa89c83ce55e1, type: 3}
   dropCount: 1
   hurtColor: {r: 1, g: 0, b: 0, a: 1}
   onHealthChanged:
@@ -215,11 +215,11 @@ MonoBehaviour:
   moveSpeed: 2
   minIdleDuration: 1.5
   maxIdleDuration: 3.5
-  zoneShape: 0
+  zoneShape: 1
   useSpawnPositionAsCenter: 1
   customCenter: {x: 0, y: 0}
   circleRadius: 4
-  rectangleSize: {x: 6, y: 4}
+  rectangleSize: {x: 10, y: 10}
   gizmoColor: {r: 0.2, g: 0.9, b: 0.4, a: 0.25}
 --- !u!114 &566831982555815265
 MonoBehaviour:

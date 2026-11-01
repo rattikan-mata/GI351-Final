@@ -188,7 +188,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.EnemyHealth
   maxHealth: 30
-  meatDropPrefab: {fileID: 0}
+  meatDropPrefab: {fileID: 3754125921781682485, guid: f6bb761db65b57b4d92cbac9b0d38945, type: 3}
   dropCount: 1
   hurtColor: {r: 1, g: 0, b: 0, a: 1}
   onHealthChanged:

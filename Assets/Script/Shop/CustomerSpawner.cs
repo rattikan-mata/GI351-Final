@@ -32,6 +32,15 @@ namespace GI351.KitchenGame
         {
             if (spawnPoint == null) spawnPoint = transform;
             if (exitPoint == null) exitPoint = transform;
+
+            if (targetCounter == null)
+            {
+#if UNITY_2023_1_OR_NEWER
+                targetCounter = Object.FindAnyObjectByType<FoodSellCounter>();
+#else
+                targetCounter = FindObjectOfType<FoodSellCounter>();
+#endif
+            }
         }
 
         private void Update()
@@ -50,7 +59,21 @@ namespace GI351.KitchenGame
             activeCustomers.RemoveAll(c => c == null);
 
             if (activeCustomers.Count >= maxConcurrentCustomers) return;
-            if (customerPrefab == null || targetCounter == null) return;
+            if (customerPrefab == null) return;
+
+            if (targetCounter == null)
+            {
+#if UNITY_2023_1_OR_NEWER
+                targetCounter = Object.FindAnyObjectByType<FoodSellCounter>();
+#else
+                targetCounter = FindObjectOfType<FoodSellCounter>();
+#endif
+            }
+
+            if (targetCounter == null) return;
+
+            // ถ้าแถวต่อคิวที่โต๊ะขายอาหารเต็มแล้ว ไม่ต้องเสกลูกค้าเพิ่ม
+            if (targetCounter.IsQueueFull) return;
 
             Vector3 pos = spawnPoint != null ? spawnPoint.position : transform.position;
             GameObject customerObj = Instantiate(customerPrefab, pos, Quaternion.identity);

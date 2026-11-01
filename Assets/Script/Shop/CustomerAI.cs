@@ -42,6 +42,7 @@ namespace GI351.KitchenGame
         private CustomerState currentState = CustomerState.WalkingToCounter;
         private float currentPatienceTimer;
         private CustomerSpawner spawnerReference;
+        private int lastQueueIndex = -1;
 
         public CustomerState State => currentState;
         public ItemType PreferredDish => preferredDish;
@@ -60,6 +61,15 @@ namespace GI351.KitchenGame
 
             if (happyIcon != null) happyIcon.SetActive(false);
             if (angryIcon != null) angryIcon.SetActive(false);
+
+            if (targetCounter == null)
+            {
+#if UNITY_2023_1_OR_NEWER
+                targetCounter = Object.FindAnyObjectByType<FoodSellCounter>();
+#else
+                targetCounter = FindObjectOfType<FoodSellCounter>();
+#endif
+            }
         }
 
         private void Start()
@@ -71,6 +81,19 @@ namespace GI351.KitchenGame
             }
 
             currentPatienceTimer = patienceDuration;
+
+            if (targetCounter != null && currentState == CustomerState.WalkingToCounter)
+            {
+                bool joined = targetCounter.TryJoinQueue(this);
+                if (!joined && targetCounter.IsQueueFull)
+                {
+                    LeaveCounterAndExit();
+                }
+                else
+                {
+                    lastQueueIndex = targetCounter.GetQueueIndex(this);
+                }
+            }
         }
 
         public void Init(FoodSellCounter counter, Transform exit, CustomerSpawner spawner)
@@ -78,6 +101,19 @@ namespace GI351.KitchenGame
             targetCounter = counter;
             exitPoint = exit;
             spawnerReference = spawner;
+
+            if (targetCounter != null)
+            {
+                bool joined = targetCounter.TryJoinQueue(this);
+                if (!joined && targetCounter.IsQueueFull)
+                {
+                    LeaveCounterAndExit();
+                }
+                else
+                {
+                    lastQueueIndex = targetCounter.GetQueueIndex(this);
+                }
+            }
         }
 
         private void Update()
@@ -95,7 +131,9 @@ namespace GI351.KitchenGame
                 case CustomerState.WalkingToCounter:
                     if (targetCounter != null)
                     {
-                        MoveTowards(targetCounter.CustomerWaitPoint.position, OnReachedCounter);
+                        // เดินไปยังตำแหน่งในแถวของตนเอง
+                        Vector3 targetSlotPos = targetCounter.GetQueuePosition(this);
+                        MoveTowards(targetSlotPos, OnReachedCounter);
                     }
                     break;
 
@@ -105,7 +143,37 @@ namespace GI351.KitchenGame
                     break;
 
                 case CustomerState.WaitingAtCounter:
-                    rb.linearVelocity = Vector2.zero;
+                    if (targetCounter != null)
+                    {
+                        Vector3 targetSlotPos = targetCounter.GetQueuePosition(this);
+                        float distToSlot = Vector2.Distance(rb.position, targetSlotPos);
+
+                        // ถ้าตำแหน่งในแถวขยับไปข้างหน้า ให้เดินตามไปที่ช่องใหม่
+                        if (distToSlot > 0.12f)
+                        {
+                            MoveTowards(targetSlotPos, () =>
+                            {
+                                if (targetCounter != null) FaceTowards(targetCounter.CustomerWaitPoint.position);
+                            });
+                        }
+                        else
+                        {
+                            rb.linearVelocity = Vector2.zero;
+                            FaceTowards(targetCounter.CustomerWaitPoint.position);
+                        }
+
+                        // ตรวจสอบว่าแถวขยับเลื่อนขึ้นหรือไม่ (ถ้าขยับเลื่อนขึ้น รีเซ็ตความอดทนให้ใหม่)
+                        int currentQueueIndex = targetCounter.GetQueueIndex(this);
+                        if (currentQueueIndex != -1 && currentQueueIndex < lastQueueIndex)
+                        {
+                            currentPatienceTimer = patienceDuration;
+                            lastQueueIndex = currentQueueIndex;
+                        }
+                    }
+                    else
+                    {
+                        rb.linearVelocity = Vector2.zero;
+                    }
                     break;
             }
         }
@@ -116,7 +184,7 @@ namespace GI351.KitchenGame
             Vector2 dir = (Vector2)destination - currentPos;
             float dist = dir.magnitude;
 
-            if (dist <= 0.15f)
+            if (dist <= 0.12f)
             {
                 rb.linearVelocity = Vector2.zero;
                 onArrived?.Invoke();
@@ -133,32 +201,45 @@ namespace GI351.KitchenGame
             }
         }
 
+        private void FaceTowards(Vector3 targetPos)
+        {
+            if (spriteRenderer != null)
+            {
+                float diffX = targetPos.x - transform.position.x;
+                if (diffX > 0.08f) spriteRenderer.flipX = false;
+                else if (diffX < -0.08f) spriteRenderer.flipX = true;
+            }
+        }
+
         private void OnReachedCounter()
         {
             currentState = CustomerState.WaitingAtCounter;
-            currentPatienceTimer = patienceDuration;
+            if (targetCounter != null)
+            {
+                FaceTowards(targetCounter.CustomerWaitPoint.position);
+            }
         }
 
         private void HandleWaiting()
         {
-            // ตรวจสอบว่าที่โต๊ะมีอาหารที่ต้องการหรือไม่
-            if (targetCounter != null && targetCounter.HasFoodAvailable(wantSpecificFood ? preferredDish : (ItemType?)null))
+            if (targetCounter == null) return;
+
+            // ลูกค้าจะซื้ออาหารได้เฉพาะเมื่อ:
+            // 1. เป็นหัวแถว (ลำดับที่ 0 ของคิว)
+            // 2. เดินมาใกล้จุดรอหน้าโต๊ะแล้ว (ระยะห่าง <= 0.35m)
+            if (targetCounter.IsHeadOfQueue(this))
             {
-                // ซื้ออาหาร
-                Item dish = targetCounter.CustomerBuyDish(wantSpecificFood ? preferredDish : (ItemType?)null);
-                if (dish != null)
+                float distToWaitPoint = Vector2.Distance(rb.position, targetCounter.CustomerWaitPoint.position);
+                if (distToWaitPoint <= 0.35f && targetCounter.HasFoodAvailable(wantSpecificFood ? preferredDish : (ItemType?)null))
                 {
-                    // จ่ายเงินให้ผู้เล่นตามราคาขายของอาหารชิ้นนั้น
-                    if (MoneyManager.Instance != null)
+                    // ซื้ออาหาร (จุดขายจะจัดการหักอาหารและดีดเงินออกมาที่วงเงินออกให้อัตโนมัติ)
+                    Item dish = targetCounter.CustomerBuyDish(wantSpecificFood ? preferredDish : (ItemType?)null);
+                    if (dish != null)
                     {
-                        MoneyManager.Instance.AddMoney(dish.SellPrice);
+                        ShowHappy();
+                        LeaveCounterAndExit();
+                        return;
                     }
-
-                    Destroy(dish.gameObject); // กินอาหาร
-
-                    ShowHappy();
-                    currentState = CustomerState.WalkingToExit;
-                    return;
                 }
             }
 
@@ -168,8 +249,17 @@ namespace GI351.KitchenGame
             {
                 // หมดความอดทน เดินกลับแบบโมโห
                 ShowAngry();
-                currentState = CustomerState.WalkingToExit;
+                LeaveCounterAndExit();
             }
+        }
+
+        public void LeaveCounterAndExit()
+        {
+            if (targetCounter != null)
+            {
+                targetCounter.LeaveQueue(this);
+            }
+            currentState = CustomerState.WalkingToExit;
         }
 
         private void ShowHappy()
@@ -184,11 +274,31 @@ namespace GI351.KitchenGame
 
         private void OnReachedExit()
         {
+            if (targetCounter != null)
+            {
+                targetCounter.LeaveQueue(this);
+            }
             if (spawnerReference != null)
             {
                 spawnerReference.OnCustomerDespawned(this);
             }
             Destroy(gameObject);
+        }
+
+        private void OnDisable()
+        {
+            if (targetCounter != null)
+            {
+                targetCounter.LeaveQueue(this);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (targetCounter != null)
+            {
+                targetCounter.LeaveQueue(this);
+            }
         }
     }
 }
