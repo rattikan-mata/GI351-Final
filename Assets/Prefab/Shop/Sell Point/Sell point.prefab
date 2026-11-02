@@ -173,7 +173,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 1
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 12dc0ec2e793ffc48b40e02d50874817, type: 3}
+  m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 0.85, b: 0.2, a: 0.9}
   m_FlipX: 0
   m_FlipY: 0
@@ -181,7 +181,7 @@ SpriteRenderer:
   m_Size: {x: 1, y: 1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
 --- !u!1 &7299290924300912056
@@ -286,7 +286,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2909954868857014147}
   - component: {fileID: 8506494372296751721}
-  - component: {fileID: 5270502974647568447}
   - component: {fileID: 7533497551005104977}
   m_Layer: 0
   m_Name: FoodDepositZone
@@ -346,19 +345,6 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 0.5
---- !u!114 &5270502974647568447
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7525539436573706080}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.SellCounterZoneProxy
-  counter: {fileID: 8507393914842812104}
 --- !u!212 &7533497551005104977
 SpriteRenderer:
   serializedVersion: 3
@@ -408,7 +394,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 1
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 12dc0ec2e793ffc48b40e02d50874817, type: 3}
+  m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 0.9}
   m_FlipX: 0
   m_FlipY: 0
@@ -416,7 +402,7 @@ SpriteRenderer:
   m_Size: {x: 1, y: 1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
 --- !u!1 &8848967647223620812
@@ -607,10 +593,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6d539034e9d1584ca28e92513ae4c05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.FoodSellCounter
-  maxFoodOnCounter: 6
+  plateSlots: []
   foodDisplayPoint: {fileID: 0}
   foodDisplayOffset: {x: 0, y: 0.2}
   foodDisplaySpacing: 0.45
+  maxPlates: 6
   foodDisplaySortingOrder: 4
   foodDepositPoint: {fileID: 1697021705898018168}
   depositZoneOffset: {x: -1.2, y: 0}
@@ -620,6 +607,7 @@ MonoBehaviour:
   showDepositRing: 1
   depositRingColor: {r: 1, g: 1, b: 1, a: 0.9}
   depositRingActiveColor: {r: 0.3, g: 1, b: 0.6, a: 0.95}
+  ringSortingOrder: 1
   moneyOutputPoint: {fileID: 0}
   moneyOutputOffset: {x: 0, y: -0.9}
   moneyZoneRadius: 0.5
@@ -630,6 +618,10 @@ MonoBehaviour:
   sellSound: {fileID: 0}
   depositSound: {fileID: 0}
   customerWaitPoint: {fileID: 7355949789579986085}
+  queueDirection: {x: 0, y: -1}
+  queueSpacing: 0.9
+  maxQueueCapacity: 5
+  customQueuePoints: []
   onDishesCountChanged:
     m_PersistentCalls:
       m_Calls: []

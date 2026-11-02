@@ -242,8 +242,11 @@ namespace GI351.KitchenGame
         {
             if (depositZoneRadius < 0.1f) depositZoneRadius = 0.1f;
             if (moneyZoneRadius < 0.1f) moneyZoneRadius = 0.1f;
-            SetupDepositZoneAndRing();
-            SetupMoneyOutputRing();
+            if (Application.isPlaying)
+            {
+                SetupDepositZoneAndRing();
+                SetupMoneyOutputRing();
+            }
             TryAutoAssignCoinPrefab();
         }
 
@@ -320,13 +323,16 @@ namespace GI351.KitchenGame
             circleCol.radius = 0.5f;
             circleCol.offset = Vector2.zero;
 
-            // 2. Proxy รับ Trigger Event
-            SellCounterZoneProxy proxy = depositRingObject.GetComponent<SellCounterZoneProxy>();
-            if (proxy == null)
+            // 2. Proxy รับ Trigger Event (เฉพาะขณะเล่นเกม เพื่อไม่ให้ AddComponent ลง Prefab ในโหมด Editor)
+            if (Application.isPlaying)
             {
-                proxy = depositRingObject.AddComponent<SellCounterZoneProxy>();
+                SellCounterZoneProxy proxy = depositRingObject.GetComponent<SellCounterZoneProxy>();
+                if (proxy == null)
+                {
+                    proxy = depositRingObject.AddComponent<SellCounterZoneProxy>();
+                }
+                proxy.counter = this;
             }
-            proxy.counter = this;
 
             // 3. Sprite Renderer แสดงวงแหวนสีขาว
             depositRingRenderer = depositRingObject.GetComponent<SpriteRenderer>();
@@ -1110,29 +1116,6 @@ namespace GI351.KitchenGame
                     Gizmos.DrawLine(prevPos, qPos);
                 }
             }
-        }
-    }
-
-    /// <summary>
-    /// พร็อกซีส่งต่อ Event การเหยียบจาก FoodDepositZone ไปให้ FoodSellCounter
-    /// </summary>
-    public class SellCounterZoneProxy : MonoBehaviour
-    {
-        public FoodSellCounter counter;
-
-        private void OnTriggerEnter2D(Collider2D other)
-        {
-            if (counter != null) counter.OnZoneTriggerEnter(other);
-        }
-
-        private void OnTriggerStay2D(Collider2D other)
-        {
-            if (counter != null) counter.OnZoneTriggerStay(other);
-        }
-
-        private void OnTriggerExit2D(Collider2D other)
-        {
-            if (counter != null) counter.OnZoneTriggerExit(other);
         }
     }
 }

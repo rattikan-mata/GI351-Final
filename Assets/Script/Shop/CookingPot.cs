@@ -142,8 +142,11 @@ namespace GI351.KitchenGame
         {
             if (standZoneRadius < 0.1f) standZoneRadius = 0.1f;
             if (outputZoneRadius < 0.1f) outputZoneRadius = 0.1f;
-            SetupStandZoneAndRing();
-            SetupOutputRing();
+            if (Application.isPlaying)
+            {
+                SetupStandZoneAndRing();
+                SetupOutputRing();
+            }
         }
 
         /// <summary>
@@ -195,13 +198,16 @@ namespace GI351.KitchenGame
             circleCol.radius = 0.5f; // เมื่อ LocalScale = targetDiameter รัศมีจะเป็น standZoneRadius พอดี
             circleCol.offset = Vector2.zero;
 
-            // 2. ใส่ Proxy เชื่อมโยง Event กลับมาที่ CookingPot
-            PotTriggerZoneProxy proxy = standZoneObject.GetComponent<PotTriggerZoneProxy>();
-            if (proxy == null)
+            // 2. ใส่ Proxy เชื่อมโยง Event กลับมาที่ CookingPot (เฉพาะตอนเล่นเกม เพื่อไม่ให้แก้ Prefab ในโหมด Editor)
+            if (Application.isPlaying)
             {
-                proxy = standZoneObject.AddComponent<PotTriggerZoneProxy>();
+                PotTriggerZoneProxy proxy = standZoneObject.GetComponent<PotTriggerZoneProxy>();
+                if (proxy == null)
+                {
+                    proxy = standZoneObject.AddComponent<PotTriggerZoneProxy>();
+                }
+                proxy.pot = this;
             }
-            proxy.pot = this;
 
             // 3. แสดงวงแหวนสีขาวบนพื้นให้เห็นในหน้า Game
             floorRingRenderer = standZoneObject.GetComponent<SpriteRenderer>();
@@ -720,29 +726,6 @@ namespace GI351.KitchenGame
             Gizmos.color = outputRingColor;
             Gizmos.DrawWireSphere(outPos, outputZoneRadius);
             Gizmos.DrawLine(transform.position, outPos);
-        }
-    }
-
-    /// <summary>
-    /// พร็อกซีส่งต่อ Event จาก PlayerStandZone ไปให้ CookingPot
-    /// </summary>
-    public class PotTriggerZoneProxy : MonoBehaviour
-    {
-        public CookingPot pot;
-
-        private void OnTriggerEnter2D(Collider2D other)
-        {
-            if (pot != null) pot.OnZoneTriggerEnter(other);
-        }
-
-        private void OnTriggerStay2D(Collider2D other)
-        {
-            if (pot != null) pot.OnZoneTriggerStay(other);
-        }
-
-        private void OnTriggerExit2D(Collider2D other)
-        {
-            if (pot != null) pot.OnZoneTriggerExit(other);
         }
     }
 }
