@@ -19,6 +19,7 @@ namespace GI351.KitchenGame
         private Rigidbody2D rb;
         private Vector2 movementInput;
         private Vector2 lastFacingDirection = Vector2.down;
+        private PlayerHealth playerHealth;
 
         public Vector2 MovementInput => movementInput;
         public Vector2 LastFacingDirection => lastFacingDirection;
@@ -26,6 +27,8 @@ namespace GI351.KitchenGame
         private void Awake()
         {
             rb = GetComponent<Rigidbody2D>();
+            playerHealth = GetComponent<PlayerHealth>();
+
             if (spriteRenderer == null)
             {
                 spriteRenderer = GetComponentInChildren<SpriteRenderer>();
@@ -39,12 +42,24 @@ namespace GI351.KitchenGame
 
         private void Update()
         {
+            if (playerHealth != null && playerHealth.IsDead)
+            {
+                movementInput = Vector2.zero;
+                return;
+            }
+
             ReadInput();
             HandleFacingDirection();
         }
 
         private void FixedUpdate()
         {
+            if (playerHealth != null && playerHealth.IsDead)
+            {
+                rb.linearVelocity = Vector2.zero;
+                return;
+            }
+
             Move();
         }
 

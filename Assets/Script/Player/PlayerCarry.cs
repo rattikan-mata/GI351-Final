@@ -235,6 +235,23 @@ namespace GI351.KitchenGame
             }
         }
 
+        /// <summary>
+        /// ล้างและทำลายไอเทมทั้งหมดที่ผู้เล่นกำลังแบกอยู่ (เช่น ตอนผู้เล่นตาย)
+        /// ทำให้ของที่แบกอยู่หายไปทั้งหมด โดยไม่กระทบเงินหรือของอย่างอื่นในเกม
+        /// </summary>
+        public void ClearCarriedItems()
+        {
+            for (int i = 0; i < carriedItems.Count; i++)
+            {
+                if (carriedItems[i] != null)
+                {
+                    Destroy(carriedItems[i].gameObject);
+                }
+            }
+            carriedItems.Clear();
+            onCarryCountChanged?.Invoke(0, maxCarryCapacity);
+        }
+
         private Vector2 GetFacingDirection()
         {
             if (TryGetComponent<PlayerMovement>(out var movement))

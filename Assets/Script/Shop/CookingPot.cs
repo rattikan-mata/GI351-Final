@@ -11,6 +11,38 @@ namespace GI351.KitchenGame
     [ExecuteAlways]
     public class CookingPot : MonoBehaviour
     {
+        [Header("Unlock & Purchase Settings (การซื้อปลดล็อกหม้อ)")]
+        [Tooltip("ต้องซื้อหม้อนี้ก่อนใช้งานหรือไม่ (ถ้าติ๊กถูก จะต้องซื้อก่อนถึงจะทำงานได้)")]
+        [SerializeField] private bool requiresPurchase = false;
+
+        [Tooltip("เปิดระบบซื้อสำหรับหม้อหมู (Pork/Pig Pot) โดยอัตโนมัติ")]
+        [SerializeField] private bool autoRequirePurchaseForPork = true;
+
+        [Tooltip("ราคาที่ต้องจ่ายเพื่อซื้อหม้อ (เหรียญ)")]
+        [SerializeField] private int purchasePrice = 50;
+
+        [Tooltip("จุดที่ให้ผู้เล่นยืนเพื่อซื้อหม้อ (ลาก Transform มาใส่ หรือปล่อยว่างเพื่อใช้ระยะเยื้อง)")]
+        [SerializeField] private Transform purchaseZonePoint;
+
+        [Tooltip("ตำแหน่งเยื้องสำหรับจุดยืนซื้อหม้อ (เมตร) เช่น (0, -0.6) คืออยู่ด้านหน้าหม้อ หรือ (0, 0) คือตรงกลางหม้อ")]
+        [SerializeField] private Vector2 purchaseZoneOffset = new Vector2(0f, -0.6f);
+
+        [Tooltip("รัศมีของวงกลมจุดยืนซื้อหม้อ (เมตร)")]
+        [SerializeField] private float purchaseZoneRadius = 0.65f;
+
+        [Tooltip("สีของวงแหวนจุดซื้อหม้อ (สีทองอร่าม)")]
+        [SerializeField] private Color purchaseRingColor = new Color(1f, 0.85f, 0.2f, 0.95f);
+
+        [Tooltip("ความโปร่งใสของหม้อก่อนซื้อ (0 = ล่องหน, 1 = ทึบแสงปกติ, 0.35 = โปร่งแสง)")]
+        [Range(0.05f, 1f)]
+        [SerializeField] private float lockedAlpha = 0.35f;
+
+        [Tooltip("ถ้าติ๊กถูก ต้องกดปุ่ม E เพื่อซื้อ (ถ้าไม่ติ๊ก แค่เดินเข้ามาเหยียบวงจะซื้อให้อัตโนมัติถ้าเงินพอ)")]
+        [SerializeField] private bool requireKeyPressToBuy = false;
+
+        [Tooltip("เสียงตอนซื้อหม้อสำเร็จ (ถ้ามี)")]
+        [SerializeField] private AudioClip purchaseSuccessSound;
+
         [Header("Recipe Settings (ตั้งค่าสูตรอาหาร)")]
         [Tooltip("ชื่อของหม้อ (เช่น หม้อต้มไก่ หรือ หม้อต้มหมู)")]
         [SerializeField] private string potName = "Chicken Boiling Pot";
@@ -90,10 +122,22 @@ namespace GI351.KitchenGame
         [SerializeField] private Color zoneGizmoColor = new Color(0.2f, 0.8f, 1f, 0.25f);
 
         [Header("Events")]
+        public UnityEvent onPotPurchased;
         public UnityEvent onIngredientAdded;
         public UnityEvent onCookingStarted;
         public UnityEvent onCookingFinished;
         public UnityEvent onFoodOutputSpawned;
+
+        // สถานะการปลดล็อก
+        private bool isUnlocked = true;
+        private Color defaultPotColor = Color.white;
+        private SpriteRenderer potSpriteRenderer;
+        private Collider2D potSolidCollider;
+
+        // วัตถุโซนยืนซื้อหม้อ
+        private GameObject purchaseZoneObject;
+        private SpriteRenderer purchaseRingRenderer;
+        private TextMesh purchasePriceTextMesh;
 
         // ระบบคิวการทำอาหาร (ต้มทีละ 1 ชิ้น 1 คิว เมื่อสุกแล้วคิวถัดไปจะเริ่มต้มต่อทันที)
         private int queuedIngredientCount = 0;
@@ -113,6 +157,9 @@ namespace GI351.KitchenGame
 
         private static Sprite generatedRingSprite;
 
+        public bool IsUnlocked => isUnlocked;
+        public bool RequiresPurchase => requiresPurchase;
+        public int PurchasePrice => purchasePrice;
         public string PotName => potName;
         public int QueuedCount => queuedIngredientCount;
         public int CookingItemsCount => (isCurrentlyCooking ? 1 : 0) + queuedIngredientCount;
@@ -124,45 +171,232 @@ namespace GI351.KitchenGame
 
         private void Awake()
         {
-            SetupPotSolidCollider();
-            SetupStandZoneAndRing();
-            SetupOutputRing();
-            UpdateVisuals();
+            InitPotComponents();
+
+            // ตรวจสอบอัตโนมัติ: ถ้าเป็นหม้อหมู ให้เปิดระบบต้องซื้อก่อนใช้งาน
+            bool needPurchase = requiresPurchase || (autoRequirePurchaseForPork && IsPigPot());
+            if (needPurchase)
+            {
+                requiresPurchase = true;
+                isUnlocked = false;
+                ApplyLockedState();
+            }
+            else
+            {
+                isUnlocked = true;
+                ApplyUnlockedState();
+            }
         }
 
         private void OnEnable()
         {
-            SetupPotSolidCollider();
-            SetupStandZoneAndRing();
-            SetupOutputRing();
-            UpdateVisuals();
+            InitPotComponents();
+
+            bool needPurchase = requiresPurchase || (autoRequirePurchaseForPork && IsPigPot());
+            if (needPurchase && !isUnlocked)
+            {
+                ApplyLockedState();
+            }
+            else
+            {
+                ApplyUnlockedState();
+            }
         }
 
         private void OnValidate()
         {
             if (standZoneRadius < 0.1f) standZoneRadius = 0.1f;
             if (outputZoneRadius < 0.1f) outputZoneRadius = 0.1f;
+            if (purchaseZoneRadius < 0.1f) purchaseZoneRadius = 0.1f;
+
+            if (Application.isPlaying)
+            {
+                if (isUnlocked)
+                {
+                    SetupStandZoneAndRing();
+                    SetupOutputRing();
+                }
+                else
+                {
+                    SetupPurchaseZone();
+                }
+            }
+        }
+
+        private bool IsPigPot()
+        {
+            string pName = potName != null ? potName.ToLower() : "";
+            string gName = gameObject != null ? gameObject.name.ToLower() : "";
+            return requiredIngredient == ItemType.PigMeat || pName.Contains("pig") || pName.Contains("pork") || gName.Contains("pig") || gName.Contains("pork");
+        }
+
+        private void InitPotComponents()
+        {
+            if (potSpriteRenderer == null)
+            {
+                potSpriteRenderer = GetComponent<SpriteRenderer>();
+            }
+            if (potSpriteRenderer != null)
+            {
+                if (defaultPotColor == Color.white || defaultPotColor.a < 0.8f)
+                {
+                    defaultPotColor = potSpriteRenderer.color;
+                    if (defaultPotColor.a < 0.8f) defaultPotColor.a = 1f;
+                }
+            }
+
+            if (potSolidCollider == null)
+            {
+                potSolidCollider = GetComponent<Collider2D>();
+            }
+        }
+
+        /// <summary>
+        /// สถานะหม้อก่อนซื้อ: หม้อโปร่งแสง, เดินทะลุได้, ซ่อนจุดปรุงอาหาร และเปิดจุดยืนซื้อหม้อ
+        /// </summary>
+        private void ApplyLockedState()
+        {
+            InitPotComponents();
+
+            // 1. หม้อโปร่งใส (Transparent)
+            if (potSpriteRenderer != null)
+            {
+                Color c = defaultPotColor;
+                c.a = lockedAlpha;
+                potSpriteRenderer.color = c;
+            }
+
+            // 2. เดินทะลุได้ก่อนซื้อ (Trigger / ไม่บล็อกทางเดิน)
+            if (potSolidCollider != null)
+            {
+                potSolidCollider.isTrigger = true;
+            }
+
+            // 3. ปิดการใช้งานจุดยืนปรุงอาหารและจุดอาหารออก
+            if (standZoneObject != null) standZoneObject.SetActive(false);
+            if (outputRingObject != null) outputRingObject.SetActive(false);
+
+            // 4. เปิดจุดยืนซื้อหม้อ
+            if (Application.isPlaying)
+            {
+                SetupPurchaseZone();
+                if (purchaseZoneObject != null) purchaseZoneObject.SetActive(true);
+            }
+        }
+
+        /// <summary>
+        /// สถานะหม้อหลังซื้อ: หม้อทึบแสงปกติ, เดินชนไม่ทะลุ, ปิดจุดซื้อ และเปิดวงแหวนปรุงอาหารพร้อมใช้งาน
+        /// </summary>
+        private void ApplyUnlockedState()
+        {
+            InitPotComponents();
+
+            // 1. หม้อทึบแสงปกติ (Opaque)
+            if (potSpriteRenderer != null)
+            {
+                potSpriteRenderer.color = defaultPotColor;
+            }
+
+            // 2. เดินชนไม่ทะลุ (Solid)
+            if (potSolidCollider != null)
+            {
+                potSolidCollider.isTrigger = false;
+                potSolidCollider.enabled = true;
+            }
+
+            // 3. ปิดจุดยืนซื้อหม้อ
+            if (purchaseZoneObject != null)
+            {
+                purchaseZoneObject.SetActive(false);
+            }
+
+            // 4. เปิดใช้งานวงแหวนปรุงอาหารและจุดอาหารออก
             if (Application.isPlaying)
             {
                 SetupStandZoneAndRing();
                 SetupOutputRing();
             }
+
+            if (standZoneObject != null) standZoneObject.SetActive(true);
+            if (outputRingObject != null) outputRingObject.SetActive(true);
+
+            UpdateVisuals();
         }
 
         /// <summary>
-        /// ทำให้ตัวหม้อเป็นของแข็ง (Solid) เดินชนแล้วไม่ทะลุ
+        /// สร้างจุดยืนสำหรับซื้อหม้อ พร้อมวงแหวนสีทองและป้ายราคา ($XX)
         /// </summary>
-        private void SetupPotSolidCollider()
+        private void SetupPurchaseZone()
         {
-            Collider2D mainCol = GetComponent<Collider2D>();
-            if (mainCol != null)
+            Transform existingZone = transform.Find("PotPurchaseZone");
+            if (existingZone != null)
             {
-                mainCol.isTrigger = false;
+                purchaseZoneObject = existingZone.gameObject;
+            }
+            else
+            {
+                purchaseZoneObject = new GameObject("PotPurchaseZone");
+                purchaseZoneObject.transform.SetParent(transform);
+            }
+
+            purchaseZoneObject.transform.position = GetPurchaseZonePosition();
+            purchaseZoneObject.transform.localRotation = Quaternion.identity;
+
+            Vector3 lossy = transform.lossyScale;
+            float pX = Mathf.Abs(lossy.x) > 0.0001f ? Mathf.Abs(lossy.x) : 1f;
+            float pY = Mathf.Abs(lossy.y) > 0.0001f ? Mathf.Abs(lossy.y) : 1f;
+            float targetDiameter = purchaseZoneRadius * 2f;
+            purchaseZoneObject.transform.localScale = new Vector3(targetDiameter / pX, targetDiameter / pY, 1f);
+
+            // วงแหวนสีทองบนพื้น
+            purchaseRingRenderer = purchaseZoneObject.GetComponent<SpriteRenderer>();
+            if (purchaseRingRenderer == null)
+            {
+                purchaseRingRenderer = purchaseZoneObject.AddComponent<SpriteRenderer>();
+            }
+            purchaseRingRenderer.enabled = true;
+            purchaseRingRenderer.sprite = GetRingSprite();
+            purchaseRingRenderer.color = purchaseRingColor;
+            purchaseRingRenderer.sortingOrder = ringSortingOrder;
+
+            // ข้อความแสดงราคา ($50)
+            Transform existingText = purchaseZoneObject.transform.Find("PriceText");
+            GameObject textObj = existingText != null ? existingText.gameObject : new GameObject("PriceText");
+            textObj.transform.SetParent(purchaseZoneObject.transform);
+            textObj.transform.localPosition = Vector3.zero;
+            textObj.transform.localRotation = Quaternion.identity;
+            textObj.transform.localScale = new Vector3(1f / (targetDiameter / pX), 1f / (targetDiameter / pY), 1f);
+
+            purchasePriceTextMesh = textObj.GetComponent<TextMesh>();
+            if (purchasePriceTextMesh == null)
+            {
+                purchasePriceTextMesh = textObj.AddComponent<TextMesh>();
+            }
+            purchasePriceTextMesh.text = $"${purchasePrice}";
+            purchasePriceTextMesh.fontSize = 44;
+            purchasePriceTextMesh.characterSize = 0.06f;
+            purchasePriceTextMesh.alignment = TextAlignment.Center;
+            purchasePriceTextMesh.anchor = TextAnchor.MiddleCenter;
+            purchasePriceTextMesh.color = Color.yellow;
+
+            MeshRenderer mr = textObj.GetComponent<MeshRenderer>();
+            if (mr != null)
+            {
+                mr.sortingOrder = ringSortingOrder + 2;
             }
         }
 
+        public Vector3 GetPurchaseZonePosition()
+        {
+            if (purchaseZonePoint != null)
+            {
+                return purchaseZonePoint.position;
+            }
+            return transform.position + new Vector3(purchaseZoneOffset.x, purchaseZoneOffset.y, 0f);
+        }
+
         /// <summary>
-        /// สร้างโซนและวงแหวนสีขาวบนพื้นสำหรับให้ผู้เล่นยืน (มองเห็นได้ทั้งหน้า Game และ Scene)
+        /// สร้างโซนและวงแหวนสีขาวบนพื้นสำหรับให้ผู้เล่นยืนทำอาหาร
         /// </summary>
         public void SetupStandZoneAndRing()
         {
@@ -177,28 +411,24 @@ namespace GI351.KitchenGame
                 standZoneObject.transform.SetParent(transform);
             }
 
-            // จัดตำแหน่งให้อยู่ตรงจุดยืน GetStandZonePosition() ใน World Space
             standZoneObject.transform.position = GetStandZonePosition();
             standZoneObject.transform.localRotation = Quaternion.identity;
 
-            // ชดเชย Scale ของ Parent เพื่อให้ขนาดของวงกลมใน World Space เท่ากับ standZoneRadius * 2 เป๊ะๆ
             Vector3 lossy = transform.lossyScale;
             float pX = Mathf.Abs(lossy.x) > 0.0001f ? Mathf.Abs(lossy.x) : 1f;
             float pY = Mathf.Abs(lossy.y) > 0.0001f ? Mathf.Abs(lossy.y) : 1f;
             float targetDiameter = standZoneRadius * 2f;
             standZoneObject.transform.localScale = new Vector3(targetDiameter / pX, targetDiameter / pY, 1f);
 
-            // 1. เพิ่ม Trigger Collider สำหรับตรวจจับการเหยียบของผู้เล่น
             CircleCollider2D circleCol = standZoneObject.GetComponent<CircleCollider2D>();
             if (circleCol == null)
             {
                 circleCol = standZoneObject.AddComponent<CircleCollider2D>();
             }
             circleCol.isTrigger = true;
-            circleCol.radius = 0.5f; // เมื่อ LocalScale = targetDiameter รัศมีจะเป็น standZoneRadius พอดี
+            circleCol.radius = 0.5f;
             circleCol.offset = Vector2.zero;
 
-            // 2. ใส่ Proxy เชื่อมโยง Event กลับมาที่ CookingPot (เฉพาะตอนเล่นเกม เพื่อไม่ให้แก้ Prefab ในโหมด Editor)
             if (Application.isPlaying)
             {
                 PotTriggerZoneProxy proxy = standZoneObject.GetComponent<PotTriggerZoneProxy>();
@@ -209,7 +439,6 @@ namespace GI351.KitchenGame
                 proxy.pot = this;
             }
 
-            // 3. แสดงวงแหวนสีขาวบนพื้นให้เห็นในหน้า Game
             floorRingRenderer = standZoneObject.GetComponent<SpriteRenderer>();
             if (showFloorRing)
             {
@@ -218,12 +447,9 @@ namespace GI351.KitchenGame
                     floorRingRenderer = standZoneObject.AddComponent<SpriteRenderer>();
                 }
                 floorRingRenderer.enabled = true;
-
-                Sprite ringSpriteToUse = GetRingSprite();
-                floorRingRenderer.sprite = ringSpriteToUse;
+                floorRingRenderer.sprite = GetRingSprite();
                 floorRingRenderer.color = isPlayerInRange ? ringActiveColor : ringColor;
 
-                // สืบทอด Material และ Sorting Layer เดียวกับ Sprite ของหม้อ เพื่อให้รองรับ URP 2D Lighting สมบูรณ์
                 SpriteRenderer potRenderer = GetComponent<SpriteRenderer>();
                 if (potRenderer != null)
                 {
@@ -242,7 +468,7 @@ namespace GI351.KitchenGame
         }
 
         /// <summary>
-        /// สร้างวงแหวนสีเหลืองตรงจุดที่อาหารสุกจะหล่นออกมา (มองเห็นได้ทั้งหน้า Game และ Scene)
+        /// สร้างวงแหวนสีเหลืองตรงจุดที่อาหารสุกจะหล่นออกมา
         /// </summary>
         public void SetupOutputRing()
         {
@@ -296,10 +522,16 @@ namespace GI351.KitchenGame
 
         private void Update()
         {
-            // ในโหมดแก้ไข (Edit Mode) อัปเดตตำแหน่งและสเกลให้ตรงกับการขยับใน Scene เสมอ
             if (!Application.isPlaying)
             {
                 UpdateEditorVisuals();
+                return;
+            }
+
+            // ถ้ายังไม่ได้ซื้อหม้อ ให้ทำงานเฉพาะระบบจุดยืนซื้อหม้อเท่านั้น
+            if (!isUnlocked)
+            {
+                UpdatePurchaseZoneLogic();
                 return;
             }
 
@@ -325,8 +557,113 @@ namespace GI351.KitchenGame
             }
         }
 
+        private void UpdatePurchaseZoneLogic()
+        {
+            if (purchaseZoneObject == null)
+            {
+                SetupPurchaseZone();
+                if (purchaseZoneObject == null) return;
+            }
+
+            // แอนิเมชันวงแหวนสีทองเต้นเป็นจังหวะ Pulse
+            float pulse = 1f + Mathf.Sin(Time.time * 3f) * 0.05f;
+            Vector3 lossy = transform.lossyScale;
+            float pX = Mathf.Abs(lossy.x) > 0.0001f ? Mathf.Abs(lossy.x) : 1f;
+            float pY = Mathf.Abs(lossy.y) > 0.0001f ? Mathf.Abs(lossy.y) : 1f;
+            float targetDiameter = purchaseZoneRadius * 2f * pulse;
+            purchaseZoneObject.transform.position = GetPurchaseZonePosition();
+            purchaseZoneObject.transform.localScale = new Vector3(targetDiameter / pX, targetDiameter / pY, 1f);
+
+            // ตรวจจับผู้เล่น
+            if (cachedPlayerCarry == null)
+            {
+#if UNITY_2023_1_OR_NEWER
+                cachedPlayerCarry = Object.FindAnyObjectByType<PlayerCarry>();
+#else
+                cachedPlayerCarry = FindObjectOfType<PlayerCarry>();
+#endif
+            }
+
+            if (cachedPlayerCarry == null) return;
+
+            Vector3 playerPos = cachedPlayerCarry.transform.position;
+            float dist = Vector2.Distance(playerPos, GetPurchaseZonePosition());
+            bool isPlayerInBuyZone = dist <= purchaseZoneRadius;
+
+            int currentMoney = MoneyManager.Instance != null ? MoneyManager.Instance.CurrentMoney : 0;
+            bool canAfford = currentMoney >= purchasePrice;
+
+            // ปรับสีข้อความราคาตามเงินของผู้เล่น (ถ้าพอ = เหลือง/เขียว, ถ้าไม่พอ = แดง)
+            if (purchasePriceTextMesh != null)
+            {
+                purchasePriceTextMesh.color = canAfford ? (isPlayerInBuyZone ? Color.green : Color.yellow) : Color.red;
+            }
+
+            if (purchaseRingRenderer != null)
+            {
+                purchaseRingRenderer.color = isPlayerInBuyZone ? (canAfford ? Color.green : new Color(1f, 0.4f, 0.4f, 0.9f)) : purchaseRingColor;
+            }
+
+            // เมื่อผู้เล่นยืนในโซนซื้อ
+            if (isPlayerInBuyZone)
+            {
+                if (!requireKeyPressToBuy || WasInteractKeyPressed())
+                {
+                    TryBuyPot();
+                }
+            }
+        }
+
+        /// <summary>
+        /// ตรวจสอบเงินและซื้อหม้อ
+        /// </summary>
+        public bool TryBuyPot()
+        {
+            if (isUnlocked) return true;
+
+            if (MoneyManager.Instance != null)
+            {
+                if (MoneyManager.Instance.SpendMoney(purchasePrice))
+                {
+                    UnlockPot();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// ปลดล็อกหม้อสำเร็จ: เปลี่ยนหม้อเป็นทึบแสง, เดินชนไม่ทะลุ และเปิดใช้งานระบบทำอาหารทันที
+        /// </summary>
+        public void UnlockPot()
+        {
+            if (isUnlocked) return;
+            isUnlocked = true;
+
+            if (purchaseSuccessSound != null)
+            {
+                AudioSource.PlayClipAtPoint(purchaseSuccessSound, transform.position);
+            }
+
+            ApplyUnlockedState();
+            onPotPurchased?.Invoke();
+            Debug.Log($"[CookingPot] {potName} Unlocked & Purchased successfully for {purchasePrice} coins!");
+        }
+
         private void UpdateEditorVisuals()
         {
+            InitPotComponents();
+
+            bool needPurchase = requiresPurchase || (autoRequirePurchaseForPork && IsPigPot());
+
+            // แสดงตัวอย่างความโปร่งใสใน Scene View
+            if (potSpriteRenderer != null)
+            {
+                Color c = defaultPotColor;
+                c.a = needPurchase ? lockedAlpha : 1f;
+                potSpriteRenderer.color = c;
+            }
+
             Vector3 lossy = transform.lossyScale;
             float pX = Mathf.Abs(lossy.x) > 0.0001f ? Mathf.Abs(lossy.x) : 1f;
             float pY = Mathf.Abs(lossy.y) > 0.0001f ? Mathf.Abs(lossy.y) : 1f;
@@ -371,11 +708,9 @@ namespace GI351.KitchenGame
         {
             if (floorRingRenderer == null || !showFloorRing || standZoneObject == null) return;
 
-            // เปลี่ยนสีวงแหวนนุ่มนวลเมื่อผู้เล่นเข้ามายืน
             Color targetColor = isPlayerInRange ? ringActiveColor : ringColor;
             floorRingRenderer.color = Color.Lerp(floorRingRenderer.color, targetColor, Time.deltaTime * 10f);
 
-            // ขยาย-หดตัวเบาๆ ให้น่าดึงดูด
             float pulse = 1f + Mathf.Sin(Time.time * 2.5f) * 0.04f;
             Vector3 lossy = transform.lossyScale;
             float pX = Mathf.Abs(lossy.x) > 0.0001f ? Mathf.Abs(lossy.x) : 1f;
@@ -390,7 +725,6 @@ namespace GI351.KitchenGame
         {
             if (outputRingRenderer == null || !showOutputRing || outputRingObject == null) return;
 
-            // เอฟเฟกต์ดีดเด้งชั่วขณะตอนมีอาหารต้มเสร็จและเด้งออกมา
             float popBounce = 0f;
             if (outputRingSpawnPulseTimer > 0f)
             {
@@ -407,21 +741,16 @@ namespace GI351.KitchenGame
             outputRingObject.transform.position = GetOutputPosition();
             outputRingObject.transform.localScale = new Vector3(targetDiameter / pX, targetDiameter / pY, 1f);
 
-            // สีสว่างขึ้นเล็กน้อยตอนมีอาหารเด้งออกมา
             Color targetCol = popBounce > 0.01f ? Color.Lerp(outputRingColor, Color.white, 0.4f) : outputRingColor;
             outputRingRenderer.color = Color.Lerp(outputRingRenderer.color, targetCol, Time.deltaTime * 12f);
         }
 
-        /// <summary>
-        /// อัปเดตเวลาการต้มทีละ 1 ชิ้น (ระบบคิว 1 อัน 1 คิว เมื่อสุกแล้วคิวต่อไปจะเริ่มต้มต่อทันที)
-        /// </summary>
         private void UpdateCookingQueue()
         {
             if (!isCurrentlyCooking) return;
 
             currentCookTimer -= Time.deltaTime;
 
-            // เมื่ออาหารชิ้นปัจจุบันต้มเสร็จสมบูรณ์
             if (currentCookTimer <= 0f)
             {
                 SpawnCookedDishAtOutput();
@@ -432,11 +761,10 @@ namespace GI351.KitchenGame
                     AudioSource.PlayClipAtPoint(foodDoneSound, transform.position);
                 }
 
-                // ตรวจสอบว่ายังมีคิวอาหารรออยู่หรือไม่
                 if (queuedIngredientCount > 0)
                 {
                     queuedIngredientCount--;
-                    currentCookTimer = cookingDuration; // เริ่มต้มชิ้นถัดไปในคิวทันที
+                    currentCookTimer = cookingDuration;
                     isCurrentlyCooking = true;
                 }
                 else
@@ -449,16 +777,13 @@ namespace GI351.KitchenGame
             }
         }
 
-        /// <summary>
-        /// ตรวจสอบและหยิบวัตถุดิบทั้งหมดที่ผู้เล่นมีเข้าคิวในหม้อต้ม (ใส่ได้เรื่อยๆ ไม่ต้องรอทำเสร็จ)
-        /// </summary>
         public int TryFeedIngredients(PlayerCarry playerCarry)
         {
+            if (!isUnlocked) return 0;
             if (playerCarry == null) return 0;
 
             int fedCount = 0;
 
-            // โยนวัตถุดิบเข้าคิวในหม้อได้เรื่อยๆ จนกว่าคิวจะเต็ม หรือผู้เล่นไม่มีวัตถุดิบชนิดนั้นแล้ว
             while (CookingItemsCount < maxCookingCapacity && playerCarry.HasItemOfType(requiredIngredient))
             {
                 Item meat = playerCarry.PopItemOfType(requiredIngredient);
@@ -477,23 +802,20 @@ namespace GI351.KitchenGame
             return fedCount;
         }
 
-        /// <summary>
-        /// เพิ่มวัตถุดิบเข้าคิว ถ้าหม้อว่างจะเริ่มต้มทันที ถ้ากำลังต้มอยู่จะเพิ่มเข้าคิวถัดไป
-        /// </summary>
         private void AddIngredientToQueue()
         {
+            if (!isUnlocked) return;
+
             bool wasIdle = !isCurrentlyCooking;
 
             if (wasIdle)
             {
-                // ถ้าหม้อว่าง เริ่มต้มชิ้นนี้ทันที
                 isCurrentlyCooking = true;
                 currentCookTimer = cookingDuration;
                 onCookingStarted?.Invoke();
             }
             else
             {
-                // ถ้าหม้อกำลังต้มอยู่ เพิ่มเข้าคิวรอ
                 queuedIngredientCount++;
             }
 
@@ -511,17 +833,13 @@ namespace GI351.KitchenGame
             if (cookedDishPrefab == null) return;
 
             Vector3 spawnPos = GetOutputPosition();
-
-            // กระตุ้นแอนิเมชันขยายวงแหวนสีเหลืองเมื่ออาหารเสร็จ
             outputRingSpawnPulseTimer = 0.35f;
 
-            // มีการกระจายตำแหน่งเล็กน้อยเพื่อให้จานไม่ทับกันสนิทเมื่อออกมา
             Vector2 randomSpread = Random.insideUnitCircle * 0.15f;
             Vector3 finalSpawnPos = spawnPos + new Vector3(randomSpread.x, randomSpread.y, 0f);
 
             GameObject dishObj = Instantiate(cookedDishPrefab, finalSpawnPos, Quaternion.identity);
 
-            // แรงดีดจานอาหารให้พุ่งออกมาจากหม้อ
             if (foodPopForce > 0f && dishObj.TryGetComponent<Rigidbody2D>(out var dishRb))
             {
                 Vector2 popDir = ((Vector2)(finalSpawnPos - transform.position)).normalized;
@@ -561,15 +879,16 @@ namespace GI351.KitchenGame
 
         private void UpdateVisuals()
         {
-            // เปิดเอฟเฟกต์ควันต้มถ้ากำลังมีอาหารต้มอยู่ในหม้อ
             if (cookingEffect != null)
             {
-                cookingEffect.SetActive(isCurrentlyCooking);
+                cookingEffect.SetActive(isUnlocked && isCurrentlyCooking);
             }
         }
 
         private void CheckProximityPlayer()
         {
+            if (!isUnlocked) return;
+
             if (cachedPlayerCarry == null)
             {
 #if UNITY_2023_1_OR_NEWER
@@ -595,7 +914,7 @@ namespace GI351.KitchenGame
 
         public void OnZoneTriggerEnter(Collider2D other)
         {
-            if (other == null) return;
+            if (!isUnlocked || other == null) return;
             var playerCarry = other.GetComponentInParent<PlayerCarry>();
             if (playerCarry != null)
             {
@@ -611,7 +930,7 @@ namespace GI351.KitchenGame
 
         public void OnZoneTriggerStay(Collider2D other)
         {
-            if (other == null) return;
+            if (!isUnlocked || other == null) return;
             var playerCarry = other.GetComponentInParent<PlayerCarry>();
             if (playerCarry != null)
             {
@@ -627,7 +946,7 @@ namespace GI351.KitchenGame
 
         public void OnZoneTriggerExit(Collider2D other)
         {
-            if (other == null) return;
+            if (!isUnlocked || other == null) return;
             var playerCarry = other.GetComponentInParent<PlayerCarry>();
             if (playerCarry != null && cachedPlayerCarry == playerCarry)
             {
@@ -654,9 +973,6 @@ namespace GI351.KitchenGame
             return GetOrCreateRingSprite();
         }
 
-        /// <summary>
-        /// สร้าง Sprite วงแหวนสีขาวความละเอียดสูงแบบเนียนตา (Anti-aliased) อัตโนมัติในหน่วยความจำ
-        /// </summary>
         private static Sprite GetOrCreateRingSprite()
         {
             if (generatedRingSprite != null) return generatedRingSprite;
@@ -711,21 +1027,36 @@ namespace GI351.KitchenGame
 
         private void OnDrawGizmos()
         {
-            // วาดตำแหน่งโซนและวงแหวนที่ผู้เล่นต้องเข้ามายืน (สีฟ้าใส)
-            Vector3 zonePos = GetStandZonePosition();
-            Gizmos.color = zoneGizmoColor;
-            Gizmos.DrawSphere(zonePos, standZoneRadius);
-            Gizmos.color = new Color(zoneGizmoColor.r, zoneGizmoColor.g, zoneGizmoColor.b, 0.9f);
-            Gizmos.DrawWireSphere(zonePos, standZoneRadius);
-            Gizmos.DrawLine(transform.position, zonePos);
+            bool needPurchase = !isUnlocked || (!Application.isPlaying && (requiresPurchase || (autoRequirePurchaseForPork && IsPigPot())));
 
-            // วาดจุดที่อาหารจะหล่นออกมา (สีเหลืองทอง)
-            Vector3 outPos = GetOutputPosition();
-            Gizmos.color = new Color(outputRingColor.r, outputRingColor.g, outputRingColor.b, 0.35f);
-            Gizmos.DrawSphere(outPos, outputZoneRadius);
-            Gizmos.color = outputRingColor;
-            Gizmos.DrawWireSphere(outPos, outputZoneRadius);
-            Gizmos.DrawLine(transform.position, outPos);
+            if (needPurchase)
+            {
+                // วาดตำแหน่งจุดยืนซื้อหม้อ (สีเหลืองทอง / ส้ม)
+                Vector3 buyPos = GetPurchaseZonePosition();
+                Gizmos.color = new Color(purchaseRingColor.r, purchaseRingColor.g, purchaseRingColor.b, 0.3f);
+                Gizmos.DrawSphere(buyPos, purchaseZoneRadius);
+                Gizmos.color = purchaseRingColor;
+                Gizmos.DrawWireSphere(buyPos, purchaseZoneRadius);
+                Gizmos.DrawLine(transform.position, buyPos);
+            }
+            else
+            {
+                // วาดตำแหน่งโซนและวงแหวนที่ผู้เล่นต้องเข้ามายืน (สีฟ้าใส)
+                Vector3 zonePos = GetStandZonePosition();
+                Gizmos.color = zoneGizmoColor;
+                Gizmos.DrawSphere(zonePos, standZoneRadius);
+                Gizmos.color = new Color(zoneGizmoColor.r, zoneGizmoColor.g, zoneGizmoColor.b, 0.9f);
+                Gizmos.DrawWireSphere(zonePos, standZoneRadius);
+                Gizmos.DrawLine(transform.position, zonePos);
+
+                // วาดจุดที่อาหารจะหล่นออกมา (สีเหลืองทอง)
+                Vector3 outPos = GetOutputPosition();
+                Gizmos.color = new Color(outputRingColor.r, outputRingColor.g, outputRingColor.b, 0.35f);
+                Gizmos.DrawSphere(outPos, outputZoneRadius);
+                Gizmos.color = outputRingColor;
+                Gizmos.DrawWireSphere(outPos, outputZoneRadius);
+                Gizmos.DrawLine(transform.position, outPos);
+            }
         }
     }
 }

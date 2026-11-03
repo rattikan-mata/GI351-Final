@@ -88,6 +88,7 @@ namespace GI351.KitchenGame
         private SpriteRenderer weaponSpriteRenderer;
         private Coroutine activeSwingCoroutine;
         private bool isSwinging;
+        private PlayerHealth playerHealth;
 
         public int Damage => damage;
         public float AttackRange => attackRange;
@@ -104,6 +105,12 @@ namespace GI351.KitchenGame
             if (playerMovement == null)
             {
                 playerMovement = GetComponent<PlayerMovement>();
+            }
+
+            playerHealth = GetComponentInParent<PlayerHealth>();
+            if (playerHealth == null)
+            {
+                playerHealth = GetComponent<PlayerHealth>();
             }
 
             if (playerMovement != null)
@@ -246,6 +253,7 @@ namespace GI351.KitchenGame
 
         private void CheckAttackInput()
         {
+            if (playerHealth != null && playerHealth.IsDead) return;
             bool attackPressed = false;
 
 #if ENABLE_INPUT_SYSTEM
