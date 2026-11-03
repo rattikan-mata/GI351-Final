@@ -85,7 +85,8 @@ namespace GI351.KitchenGame
 
         private void FixedUpdate()
         {
-            if (isEnraged)
+            // ระหว่างกระเด็น ปล่อยให้ EnemyHealth ควบคุมความเร็ว
+            if (isEnraged && !health.IsKnockedBack)
             {
                 ChasePlayer();
             }

@@ -45,10 +45,19 @@ namespace GI351.KitchenGame
         private void Start()
         {
             // ค้นหา Player เพื่อให้ระบบดูดเหรียญทำงานได้
-            var player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null)
+            // Player prefab ไม่ได้ตั้ง Tag "Player" ไว้ จึงค้นหาจาก PlayerMovement เป็นหลัก
+            var playerMovement = FindFirstObjectByType<PlayerMovement>();
+            if (playerMovement != null)
             {
-                targetPlayer = player.transform;
+                targetPlayer = playerMovement.transform;
+            }
+            else
+            {
+                var player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null)
+                {
+                    targetPlayer = player.transform;
+                }
             }
 
             if (lifetime > 0f)
@@ -85,7 +94,7 @@ namespace GI351.KitchenGame
         {
             if (isCollected) return;
 
-            if (other.CompareTag("Player") || other.GetComponent<PlayerMovement>() != null || other.GetComponent<PlayerCarry>() != null)
+            if (other.CompareTag("Player") || other.GetComponentInParent<PlayerMovement>() != null || other.GetComponentInParent<PlayerCarry>() != null)
             {
                 Collect();
             }

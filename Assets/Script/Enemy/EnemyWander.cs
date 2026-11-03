@@ -39,6 +39,7 @@ namespace GI351.KitchenGame
 
         private Rigidbody2D rb;
         private SpriteRenderer spriteRenderer;
+        private EnemyHealth health;
         private Vector2 centerPoint;
         private Vector2 currentTargetPoint;
         private bool isIdle;
@@ -56,6 +57,7 @@ namespace GI351.KitchenGame
         {
             rb = GetComponent<Rigidbody2D>();
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            health = GetComponent<EnemyHealth>();
 
             rb.gravityScale = 0f;
             rb.freezeRotation = true;
@@ -83,6 +85,9 @@ namespace GI351.KitchenGame
 
         private void FixedUpdate()
         {
+            // ระหว่างกระเด็น ปล่อยให้ EnemyHealth ควบคุมความเร็ว
+            if (health != null && health.IsKnockedBack) return;
+
             if (!isIdle)
             {
                 MoveTowardsTarget();

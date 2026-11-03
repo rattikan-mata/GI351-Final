@@ -20,6 +20,10 @@ namespace GI351.KitchenGame
         [Tooltip("กระพริบสีแดงเมื่อโดนฟัน")]
         [SerializeField] private Color hurtColor = Color.red;
 
+        [Header("Knockback (แรงกระเด็นเมื่อโดนโจมตี)")]
+        [Tooltip("ระยะเวลาที่กระเด็น (วินาที) ระหว่างนี้ระบบเดิน/ไล่ล่าจะหยุดควบคุมความเร็ว")]
+        [SerializeField] private float knockbackDuration = 0.2f;
+
         [Header("Events")]
         public UnityEvent<int, int> onHealthChanged;
         public UnityEvent onDamaged;
@@ -29,18 +33,44 @@ namespace GI351.KitchenGame
         private bool isDead;
         private SpriteRenderer spriteRenderer;
         private Color defaultColor = Color.white;
+        private Rigidbody2D rb;
+        private float knockbackTimer;
 
         public int MaxHealth => maxHealth;
         public int CurrentHealth => currentHealth;
+        public bool IsKnockedBack => knockbackTimer > 0f;
 
         private void Awake()
         {
             currentHealth = maxHealth;
+            rb = GetComponent<Rigidbody2D>();
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
             if (spriteRenderer != null)
             {
                 defaultColor = spriteRenderer.color;
             }
+        }
+
+        private void FixedUpdate()
+        {
+            if (knockbackTimer <= 0f) return;
+
+            knockbackTimer -= Time.fixedDeltaTime;
+            if (rb != null)
+            {
+                // ชะลอความเร็วกระเด็นลงอย่างนุ่มนวล
+                rb.linearVelocity = Vector2.Lerp(rb.linearVelocity, Vector2.zero, Time.fixedDeltaTime * 12f);
+            }
+        }
+
+        /// <summary>
+        /// ผลักศัตรูให้กระเด็น (EnemyWander / PigEnemy จะไม่เขียนทับความเร็วระหว่างกระเด็น)
+        /// </summary>
+        public void ApplyKnockback(Vector2 velocity)
+        {
+            if (rb == null || isDead) return;
+            rb.linearVelocity = velocity;
+            knockbackTimer = knockbackDuration;
         }
 
         public void TakeDamage(int damage)

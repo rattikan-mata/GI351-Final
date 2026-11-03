@@ -412,13 +412,7 @@ namespace GI351.KitchenGame
                     if (hitTargets.Add(damageable))
                     {
                         damageable.TakeDamage(damage);
-
-                        // แรงผลัก (Knockback) พุ่งออกจากตัวผู้เล่น
-                        if (knockbackForce > 0f && col.TryGetComponent<Rigidbody2D>(out var targetRb))
-                        {
-                            Vector2 pushDir = (col.transform.position - transform.position).normalized;
-                            targetRb.AddForce(pushDir * knockbackForce, ForceMode2D.Impulse);
-                        }
+                        ApplyKnockbackTo(col);
                     }
                 }
             }
@@ -434,12 +428,7 @@ namespace GI351.KitchenGame
                 if (col.TryGetComponent<IDamageable>(out var damageable))
                 {
                     damageable.TakeDamage(damage);
-
-                    if (knockbackForce > 0f && col.TryGetComponent<Rigidbody2D>(out var targetRb))
-                    {
-                        Vector2 pushDir = (col.transform.position - transform.position).normalized;
-                        targetRb.AddForce(pushDir * knockbackForce, ForceMode2D.Impulse);
-                    }
+                    ApplyKnockbackTo(col);
                 }
             }
 
@@ -454,6 +443,26 @@ namespace GI351.KitchenGame
                 attackVisualEffect.SetActive(true);
                 CancelInvoke(nameof(HideVisualEffect));
                 Invoke(nameof(HideVisualEffect), 0.15f);
+            }
+        }
+
+        /// <summary>
+        /// แรงผลัก (Knockback) พุ่งออกจากตัวผู้เล่น
+        /// </summary>
+        private void ApplyKnockbackTo(Collider2D col)
+        {
+            if (knockbackForce <= 0f || col == null) return;
+
+            Vector2 pushDir = (col.transform.position - transform.position).normalized;
+
+            // ศัตรูตั้ง linearVelocity เองทุกเฟรม ต้องผ่าน EnemyHealth เพื่อพักระบบเดินระหว่างกระเด็น
+            if (col.TryGetComponent<EnemyHealth>(out var enemyHealth))
+            {
+                enemyHealth.ApplyKnockback(pushDir * knockbackForce);
+            }
+            else if (col.TryGetComponent<Rigidbody2D>(out var targetRb))
+            {
+                targetRb.AddForce(pushDir * knockbackForce, ForceMode2D.Impulse);
             }
         }
 

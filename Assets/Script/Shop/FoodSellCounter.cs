@@ -753,6 +753,8 @@ namespace GI351.KitchenGame
         /// </summary>
         public Item CustomerBuyDish(ItemType? preferredType = null)
         {
+            // กวาดอาหารที่ถูกทำลายไปแล้วออกก่อน กัน NullReference ตอนเช็ค Type
+            dishesOnCounter.RemoveAll(d => d == null);
             if (dishesOnCounter.Count == 0) return null;
 
             Item selectedDish = null;
@@ -859,6 +861,7 @@ namespace GI351.KitchenGame
         /// </summary>
         public Item TakeFoodFromCounter()
         {
+            dishesOnCounter.RemoveAll(d => d == null);
             if (dishesOnCounter.Count == 0) return null;
 
             int lastIdx = dishesOnCounter.Count - 1;

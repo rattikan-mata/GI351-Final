@@ -37,6 +37,10 @@ namespace GI351.KitchenGame
         private float currentDespawnTimer;
         private Color defaultColor = Color.white;
 
+        // ผู้เล่นที่เพิ่งทิ้งไอเทมนี้ จะเก็บคืนได้ก็ต่อเมื่อเดินออกจากไอเทมก่อน
+        private PlayerCarry pickupBlockedFor;
+        private const float PickupUnblockDistance = 1.5f;
+
         public ItemType Type => itemType;
         public string ItemName => itemName;
         public int SellPrice => sellPrice;
@@ -71,6 +75,13 @@ namespace GI351.KitchenGame
 
         private void Update()
         {
+            // กรณีตอนทิ้งไม่ได้ซ้อนทับผู้เล่น (ไม่มี TriggerExit) ให้ปลดล็อกเมื่อผู้เล่นเดินห่างออกไป
+            if (pickupBlockedFor != null &&
+                Vector2.Distance(transform.position, pickupBlockedFor.transform.position) > PickupUnblockDistance)
+            {
+                pickupBlockedFor = null;
+            }
+
             // ถ้ากำลังถูกแบกอยู่ หรือไม่ได้เปิดระบบ despawn ไม่ต้องนับเวลา
             if (isCarried || !canDespawn || despawnTime <= 0f) return;
 
@@ -171,13 +182,29 @@ namespace GI351.KitchenGame
             TryBePickedUpBy(other);
         }
 
+        private void OnTriggerExit2D(Collider2D other)
+        {
+            if (pickupBlockedFor != null && other != null && other.GetComponentInParent<PlayerCarry>() == pickupBlockedFor)
+            {
+                pickupBlockedFor = null;
+            }
+        }
+
+        /// <summary>
+        /// กันไม่ให้ผู้เล่นคนนี้เก็บไอเทมคืนทันทีหลังทิ้ง (ต้องเดินออกจากไอเทมก่อน)
+        /// </summary>
+        public void BlockPickupUntilExit(PlayerCarry playerCarry)
+        {
+            pickupBlockedFor = playerCarry;
+        }
+
         private void TryBePickedUpBy(Collider2D other)
         {
             if (isCarried || other == null) return;
 
             // ตรวจหา PlayerCarry จากทั้ง collider ตรงๆ หรือจาก Parent
             var playerCarry = other.GetComponentInParent<PlayerCarry>();
-            if (playerCarry != null && playerCarry.CanCarry())
+            if (playerCarry != null && playerCarry != pickupBlockedFor && playerCarry.CanCarry())
             {
                 playerCarry.PickUpItem(this);
             }

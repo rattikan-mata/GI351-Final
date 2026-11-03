@@ -231,6 +231,7 @@ namespace GI351.KitchenGame
             {
                 Vector3 dropPos = transform.position + (Vector3)GetFacingDirection() * 0.8f;
                 item.transform.position = dropPos;
+                item.BlockPickupUntilExit(this);
             }
         }
 
