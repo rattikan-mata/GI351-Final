@@ -24,6 +24,13 @@ namespace GI351.KitchenGame
 
         [SerializeField] private ItemType preferredDish = ItemType.CookedChicken;
 
+        [Header("Obstacle Avoidance (เดินอ้อมโต๊ะ/หม้อ ไม่เดินทะลุ)")]
+        [Tooltip("รัศมีตัวลูกค้าที่ใช้เช็คว่าทางเดินชนสิ่งกีดขวางหรือไม่")]
+        [SerializeField] private float avoidanceRadius = 0.4f;
+
+        [Tooltip("ระยะเผื่อจากมุมสิ่งกีดขวางตอนเดินอ้อม (เมตร)")]
+        [SerializeField] private float avoidanceMargin = 0.15f;
+
         [Header("Target & Path References")]
         [SerializeField] private FoodSellCounter targetCounter;
         [SerializeField] private Transform exitPoint;
@@ -44,6 +51,12 @@ namespace GI351.KitchenGame
         private CustomerSpawner spawnerReference;
         private int lastQueueIndex = -1;
 
+        // จุดอ้อมสิ่งกีดขวางที่กำลังเดินไป (มุมของโต๊ะ/หม้อ)
+        private bool hasDetour;
+        private Vector2 detourPoint;
+        private readonly RaycastHit2D[] castHits = new RaycastHit2D[8];
+        private ContactFilter2D obstacleFilter;
+
         public CustomerState State => currentState;
         public ItemType PreferredDish => preferredDish;
         public float RemainingPatience => currentPatienceTimer;
@@ -58,6 +71,10 @@ namespace GI351.KitchenGame
 
             rb.gravityScale = 0f;
             rb.freezeRotation = true;
+
+            // ตรวจเฉพาะ Collider ที่เป็นของแข็ง (ไม่นับวงแหวน/ไอเทมที่เป็น Trigger)
+            obstacleFilter = new ContactFilter2D();
+            obstacleFilter.useTriggers = false;
 
             if (happyIcon != null) happyIcon.SetActive(false);
             if (angryIcon != null) angryIcon.SetActive(false);
@@ -187,11 +204,14 @@ namespace GI351.KitchenGame
             if (dist <= 0.12f)
             {
                 rb.linearVelocity = Vector2.zero;
+                hasDetour = false;
                 onArrived?.Invoke();
                 return;
             }
 
-            Vector2 vel = dir.normalized * moveSpeed;
+            // ถ้าทางตรงชนโต๊ะ/หม้อ ให้เดินไปมุมของสิ่งกีดขวางก่อน
+            Vector2 steerTarget = GetSteerTarget(currentPos, destination);
+            Vector2 vel = (steerTarget - currentPos).normalized * moveSpeed;
             rb.linearVelocity = vel;
 
             if (spriteRenderer != null)
@@ -199,6 +219,85 @@ namespace GI351.KitchenGame
                 if (vel.x > 0.05f) spriteRenderer.flipX = false;
                 else if (vel.x < -0.05f) spriteRenderer.flipX = true;
             }
+        }
+
+        /// <summary>
+        /// หาจุดที่ควรเดินไปตอนนี้: ปลายทางเลยถ้าทางโล่ง หรือมุมของสิ่งกีดขวางที่ขวางทางอยู่
+        /// </summary>
+        private Vector2 GetSteerTarget(Vector2 from, Vector2 destination)
+        {
+            if (hasDetour)
+            {
+                if (Vector2.Distance(from, detourPoint) <= 0.12f || !IsPathBlocked(from, destination, out _))
+                {
+                    hasDetour = false;
+                }
+                else
+                {
+                    return detourPoint;
+                }
+            }
+
+            if (!IsPathBlocked(from, destination, out Collider2D obstacle)) return destination;
+
+            // เลือกมุม (ขยายเผื่อขนาดตัวลูกค้า) ที่เดินไปได้และทำให้ระยะรวมสั้นที่สุด
+            Bounds b = obstacle.bounds;
+            float pad = avoidanceRadius + avoidanceMargin;
+            Vector2 min = (Vector2)b.min - Vector2.one * pad;
+            Vector2 max = (Vector2)b.max + Vector2.one * pad;
+            Vector2[] corners =
+            {
+                new Vector2(min.x, min.y), new Vector2(min.x, max.y),
+                new Vector2(max.x, min.y), new Vector2(max.x, max.y)
+            };
+
+            float bestCost = float.MaxValue;
+            bool found = false;
+            foreach (var corner in corners)
+            {
+                if (Vector2.Distance(from, corner) <= 0.12f) continue;
+                if (IsPathBlocked(from, corner, out _)) continue;
+
+                float cost = Vector2.Distance(from, corner) + Vector2.Distance(corner, destination);
+                if (cost < bestCost)
+                {
+                    bestCost = cost;
+                    detourPoint = corner;
+                    found = true;
+                }
+            }
+
+            if (!found) return destination;
+
+            hasDetour = true;
+            return detourPoint;
+        }
+
+        /// <summary>
+        /// เช็คว่าเดินตรงจาก from ไป to แล้วจะชนของแข็งที่อยู่กับที่ (โต๊ะ/หม้อ) หรือไม่
+        /// </summary>
+        private bool IsPathBlocked(Vector2 from, Vector2 to, out Collider2D obstacle)
+        {
+            obstacle = null;
+            Vector2 dir = to - from;
+            float dist = dir.magnitude;
+            if (dist < 0.01f) return false;
+
+            int count = Physics2D.CircleCast(from, avoidanceRadius, dir / dist, obstacleFilter, castHits, dist);
+            float nearest = float.MaxValue;
+            for (int i = 0; i < count; i++)
+            {
+                var hit = castHits[i];
+                if (hit.collider == null) continue;
+                // ข้ามสิ่งที่เคลื่อนที่ได้ (ผู้เล่น สัตว์ ลูกค้าคนอื่น) อ้อมเฉพาะของที่ตั้งอยู่กับที่
+                if (hit.rigidbody != null && hit.rigidbody.bodyType == RigidbodyType2D.Dynamic) continue;
+                if (hit.distance < nearest)
+                {
+                    nearest = hit.distance;
+                    obstacle = hit.collider;
+                }
+            }
+            return obstacle != null;
         }
 
         private void FaceTowards(Vector3 targetPos)

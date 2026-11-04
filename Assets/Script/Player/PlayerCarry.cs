@@ -34,6 +34,11 @@ namespace GI351.KitchenGame
         public int CurrentCarriedCount => carriedItems.Count;
         public IReadOnlyList<Item> CarriedItems => carriedItems;
 
+        /// <summary>
+        /// ระยะซ้อนของกองในพิกัดโลก (ให้หม้อ/โต๊ะกองของด้วยระยะเดียวกับที่แบก)
+        /// </summary>
+        public Vector3 WorldStackOffset => carryPoint != null ? carryPoint.TransformVector(stackOffset) : stackOffset;
+
         private void Awake()
         {
             playerRenderer = GetComponentInChildren<SpriteRenderer>();

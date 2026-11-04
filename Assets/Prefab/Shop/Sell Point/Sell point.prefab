@@ -26,8 +26,8 @@ Transform:
   m_GameObject: {fileID: 2672358599807261142}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.8000001, y: 0, z: 0}
-  m_LocalScale: {x: 0.43010753, y: 1.2307692, z: 1}
+  m_LocalPosition: {x: -0.93000007, y: 0, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.49999997, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2928774436584098103}
@@ -118,8 +118,8 @@ Transform:
   m_GameObject: {fileID: 3355776583040641816}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -1.1076921, z: 0}
-  m_LocalScale: {x: 0.4301075, y: 1.2307693, z: 1}
+  m_LocalPosition: {x: 0, y: -0.44999993, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2928774436584098103}
@@ -210,8 +210,8 @@ Transform:
   m_GameObject: {fileID: 7299290924300912056}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.8, z: 0}
-  m_LocalScale: {x: 0.43010753, y: 1.2307692, z: 1}
+  m_LocalPosition: {x: 0, y: -0.32500005, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.49999997, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2928774436584098103}
@@ -303,8 +303,8 @@ Transform:
   m_GameObject: {fileID: 7525539436573706080}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.8000001, y: 0, z: 0}
-  m_LocalScale: {x: 0.4301075, y: 1.2307693, z: 1}
+  m_LocalPosition: {x: -0.93000007, y: 0, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2928774436584098103}
@@ -430,8 +430,8 @@ Transform:
   m_GameObject: {fileID: 8848967647223620812}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -1, z: 0}
-  m_LocalScale: {x: 0.43010753, y: 1.2307692, z: 1}
+  m_LocalPosition: {x: 0, y: -0.40625, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.49999997, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2928774436584098103}
@@ -465,7 +465,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 7.24, y: 3.18, z: 0}
-  m_LocalScale: {x: 2.325, y: 0.8125, z: 1}
+  m_LocalScale: {x: 2, y: 2, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2909954868857014147}
@@ -595,7 +595,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.FoodSellCounter
   plateSlots: []
   foodDisplayPoint: {fileID: 0}
-  foodDisplayOffset: {x: 0, y: 0.2}
+  foodDisplayOffset: {x: 0, y: 0}
   foodDisplaySpacing: 0.45
   maxPlates: 6
   foodDisplaySortingOrder: 4
@@ -615,6 +615,8 @@ MonoBehaviour:
   moneyRingColor: {r: 1, g: 0.85, b: 0.2, a: 0.9}
   coinPrefab: {fileID: 5018392184920194821, guid: e892c57f92014bbba819024f8d99c421, type: 3}
   moneyPopForce: 2
+  dropMoneyOnCounter: 1
+  counterMoneyInset: 0.3
   sellSound: {fileID: 0}
   depositSound: {fileID: 0}
   customerWaitPoint: {fileID: 7355949789579986085}

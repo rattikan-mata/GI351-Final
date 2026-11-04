@@ -192,10 +192,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.PlayerHealth
   maxHealth: 100
   invulnerabilityDuration: 0.5
+  spawnPoint: {fileID: 0}
+  spawnPosition: {x: 0, y: 0, z: 0}
+  respawnDelay: 0.8
+  respawnInvulnerabilityDuration: 1.5
+  enableBlinkEffect: 1
+  hurtFlashColor: {r: 1, g: 0.35, b: 0.35, a: 0.35}
+  blinkInterval: 0.08
+  enableKnockback: 1
+  defaultKnockbackForce: 5
+  knockbackDuration: 0.2
   onHealthChanged:
     m_PersistentCalls:
       m_Calls: []
+  onDamaged:
+    m_PersistentCalls:
+      m_Calls: []
   onDeath:
+    m_PersistentCalls:
+      m_Calls: []
+  onRespawn:
     m_PersistentCalls:
       m_Calls: []
 --- !u!114 &7425187763182798038
@@ -315,7 +331,7 @@ Transform:
   m_GameObject: {fileID: 7339128507457095734}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.5146681, y: 3.8648853, z: -14.296335}
+  m_LocalPosition: {x: 0, y: 0, z: -14.296335}
   m_LocalScale: {x: 1.4296335, y: 1.4296335, z: 1.4296335}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -449,7 +465,7 @@ Transform:
   m_GameObject: {fileID: 8748916574878411018}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.77, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

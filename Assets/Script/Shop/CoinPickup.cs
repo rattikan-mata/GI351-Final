@@ -46,7 +46,7 @@ namespace GI351.KitchenGame
         {
             // ค้นหา Player เพื่อให้ระบบดูดเหรียญทำงานได้
             // Player prefab ไม่ได้ตั้ง Tag "Player" ไว้ จึงค้นหาจาก PlayerMovement เป็นหลัก
-            var playerMovement = FindFirstObjectByType<PlayerMovement>();
+            var playerMovement = FindAnyObjectByType<PlayerMovement>();
             if (playerMovement != null)
             {
                 targetPlayer = playerMovement.transform;

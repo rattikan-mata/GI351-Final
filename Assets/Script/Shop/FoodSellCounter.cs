@@ -83,6 +83,12 @@ namespace GI351.KitchenGame
         [Tooltip("แรงดีดเหรียญเงินออกมาจากจุดขาย")]
         [SerializeField] private float moneyPopForce = 2f;
 
+        [Tooltip("ให้เหรียญหล่นวางบนโต๊ะ (สุ่มตำแหน่งบนโต๊ะ) แทนการเด้งออกที่วงเงินออก")]
+        [SerializeField] private bool dropMoneyOnCounter = true;
+
+        [Tooltip("ระยะเว้นจากขอบโต๊ะตอนสุ่มตำแหน่งเหรียญ (เมตร)")]
+        [SerializeField] private float counterMoneyInset = 0.3f;
+
         [Header("Audio & Effects")]
         [Tooltip("เสียงตอนลูกค้าซื้ออาหารสำเร็จและเงินเด้งออกมา")]
         [SerializeField] private AudioClip sellSound;
@@ -123,6 +129,7 @@ namespace GI351.KitchenGame
 
         // รายการอาหารที่วางรอบนโต๊ะ
         private readonly List<Item> dishesOnCounter = new List<Item>();
+        private readonly Dictionary<Item, Vector3> foodWorldScales = new Dictionary<Item, Vector3>();
         private bool isPlayerInRange = false;
         private PlayerCarry cachedPlayerCarry;
         private Transform playerTransform;
@@ -674,6 +681,9 @@ namespace GI351.KitchenGame
         {
             if (dish == null) return;
 
+            // จำขนาดในโลกตอนแบกไว้ เพื่อวางบนโต๊ะด้วยขนาดเท่าเดิม
+            foodWorldScales[dish] = dish.transform.lossyScale;
+
             dishesOnCounter.Add(dish);
             dish.gameObject.SetActive(true);
             dish.SetCarriedState(true);
@@ -711,15 +721,16 @@ namespace GI351.KitchenGame
                 }
                 else
                 {
-                    // 2. กรณีไม่มี plateSlots จัดวางเรียงแถวตามแนวนอนรอบจุดศูนย์กลาง
-                    Vector3 centerPos = GetFoodDisplayCenterPosition();
-                    float offsetX = (i - (count - 1) * 0.5f) * foodDisplaySpacing;
-                    Vector3 worldSlotPos = centerPos + new Vector3(offsetX, 0f, -0.05f);
+                    // 2. กรณีไม่มี plateSlots กองซ้อนขึ้นแนวตั้งจากกลางโต๊ะ ขนาดและระยะเท่ากองบนหลังผู้เล่น
+                    Vector3 step = cachedPlayerCarry != null ? cachedPlayerCarry.WorldStackOffset : new Vector3(0f, foodDisplaySpacing, -0.02f);
+                    Vector3 worldSlotPos = GetFoodDisplayCenterPosition() + new Vector3(0f, 0f, -0.05f) + step * i;
+
+                    Vector3 worldScale = foodWorldScales.TryGetValue(dish, out var s) ? s : Vector3.one * 0.85f;
 
                     dish.transform.SetParent(transform);
                     dish.transform.position = worldSlotPos;
                     dish.transform.localRotation = Quaternion.identity;
-                    dish.transform.localScale = new Vector3(0.85f / pX, 0.85f / pY, 1f);
+                    dish.transform.localScale = new Vector3(worldScale.x / pX, worldScale.y / pY, 1f);
                 }
 
                 // ปิด Collider และ Rigidbody ขณะวางรอบนโต๊ะเพื่อไม่ให้ชนตัวละคร
@@ -735,11 +746,12 @@ namespace GI351.KitchenGame
                     if (tableRenderer != null)
                     {
                         sr.sortingLayerID = tableRenderer.sortingLayerID;
-                        sr.sortingOrder = Mathf.Max(tableRenderer.sortingOrder + 2, foodDisplaySortingOrder);
+                        // ชิ้นที่อยู่สูงกว่าวาดทับชิ้นที่อยู่ต่ำกว่า
+                        sr.sortingOrder = Mathf.Max(tableRenderer.sortingOrder + 2, foodDisplaySortingOrder) + i;
                     }
                     else
                     {
-                        sr.sortingOrder = foodDisplaySortingOrder;
+                        sr.sortingOrder = foodDisplaySortingOrder + i;
                     }
                     sr.enabled = true;
                 }
@@ -796,6 +808,7 @@ namespace GI351.KitchenGame
                 onDishesCountChanged?.Invoke(dishesOnCounter.Count);
 
                 // ทำลายอาหาร (ลูกค้าทาน/รับไป)
+                foodWorldScales.Remove(selectedDish);
                 Destroy(selectedDish.gameObject);
             }
 
@@ -808,12 +821,17 @@ namespace GI351.KitchenGame
         private void SpawnMoneyFromSale(int earnedMoney)
         {
             if (earnedMoney <= 0) earnedMoney = 10;
-            Vector3 spawnPos = GetMoneyOutputPosition();
-
-            Vector2 randomSpread = Random.insideUnitCircle * 0.15f;
-            Vector3 finalSpawnPos = spawnPos + new Vector3(randomSpread.x, randomSpread.y, 0f);
-
-            moneyRingPulseTimer = 0.35f;
+            Vector3 finalSpawnPos;
+            if (dropMoneyOnCounter)
+            {
+                finalSpawnPos = GetRandomPointOnCounter();
+            }
+            else
+            {
+                Vector2 randomSpread = Random.insideUnitCircle * 0.15f;
+                finalSpawnPos = GetMoneyOutputPosition() + new Vector3(randomSpread.x, randomSpread.y, 0f);
+                moneyRingPulseTimer = 0.35f;
+            }
 
             if (coinPrefab != null)
             {
@@ -824,7 +842,7 @@ namespace GI351.KitchenGame
                     coinPickup.Value = earnedMoney;
                 }
 
-                if (coinObj.TryGetComponent<Rigidbody2D>(out var coinRb) && moneyPopForce > 0f)
+                if (!dropMoneyOnCounter && coinObj.TryGetComponent<Rigidbody2D>(out var coinRb) && moneyPopForce > 0f)
                 {
                     Vector2 popDir = ((Vector2)(finalSpawnPos - transform.position)).normalized;
                     if (popDir == Vector2.zero) popDir = Vector2.down;
@@ -842,6 +860,23 @@ namespace GI351.KitchenGame
             }
 
             onMoneyEarned?.Invoke(earnedMoney);
+        }
+
+        /// <summary>
+        /// สุ่มตำแหน่งบนพื้นผิวโต๊ะ (เว้นระยะจากขอบตาม counterMoneyInset)
+        /// </summary>
+        private Vector3 GetRandomPointOnCounter()
+        {
+            Collider2D mainCol = GetComponent<Collider2D>();
+            if (mainCol == null) return transform.position;
+
+            Bounds b = mainCol.bounds;
+            float halfW = Mathf.Max(0f, b.extents.x - counterMoneyInset);
+            float halfH = Mathf.Max(0f, b.extents.y - counterMoneyInset);
+            return new Vector3(
+                b.center.x + Random.Range(-halfW, halfW),
+                b.center.y + Random.Range(-halfH, halfH),
+                transform.position.z);
         }
 
         public bool HasFoodAvailable(ItemType? preferredType = null)
@@ -867,6 +902,7 @@ namespace GI351.KitchenGame
             int lastIdx = dishesOnCounter.Count - 1;
             Item dish = dishesOnCounter[lastIdx];
             dishesOnCounter.RemoveAt(lastIdx);
+            foodWorldScales.Remove(dish);
 
             dish.transform.SetParent(null);
             dish.SetCarriedState(false);
