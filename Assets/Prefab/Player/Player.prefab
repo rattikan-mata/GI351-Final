@@ -87,7 +87,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: -9095717837082945937, guid: 207ee8102dd4143d288186ef0be518ee, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -192,10 +192,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.PlayerHealth
   maxHealth: 100
   invulnerabilityDuration: 0.5
+  spawnPoint: {fileID: 0}
+  spawnPosition: {x: 0, y: 0, z: 0}
+  respawnDelay: 0.8
+  respawnInvulnerabilityDuration: 1.5
+  enableBlinkEffect: 1
+  hurtFlashColor: {r: 1, g: 0.35, b: 0.35, a: 0.35}
+  blinkInterval: 0.08
+  enableKnockback: 1
+  defaultKnockbackForce: 100
+  knockbackDuration: 0.2
   onHealthChanged:
     m_PersistentCalls:
       m_Calls: []
+  onDamaged:
+    m_PersistentCalls:
+      m_Calls: []
   onDeath:
+    m_PersistentCalls:
+      m_Calls: []
+  onRespawn:
     m_PersistentCalls:
       m_Calls: []
 --- !u!114 &7425187763182798038
@@ -275,7 +291,7 @@ MonoBehaviour:
   swordDistance: 1
   spriteRotationOffset: 0
   damage: 25
-  attackRange: 1.5
+  attackRange: 0.5
   attackOffsetDistance: 0.8
   attackCooldown: 0.35
   knockbackForce: 3
