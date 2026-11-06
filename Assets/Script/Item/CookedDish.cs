@@ -13,5 +13,15 @@ namespace GI351.KitchenGame
 
         public string DishName => dishName;
         public int DishQuality => dishQuality;
+
+        public void SetDishName(string name)
+        {
+            dishName = name;
+        }
+
+        public void SetDishQuality(int quality)
+        {
+            dishQuality = quality;
+        }
     }
 }

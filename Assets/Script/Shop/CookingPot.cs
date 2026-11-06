@@ -53,6 +53,9 @@ namespace GI351.KitchenGame
         [Tooltip("Prefab อาหารปรุงสุกที่จะได้รับเมื่อต้มเสร็จ")]
         [SerializeField] private GameObject cookedDishPrefab;
 
+        [Tooltip("Prefab อาหารพิเศษที่ได้จากการยัดโจรลงหม้อ (ถ้าว่างจะใช้ Cooked Dish Prefab แล้วย้อมสีทองแทน)")]
+        [SerializeField] private GameObject specialDishPrefab;
+
         [Tooltip("ระยะเวลาในการต้มอาหารแต่ละชิ้นในคิว (วินาที) - จะต้มทีละ 1 ชิ้นเรียงตามคิว")]
         [SerializeField] private float cookingDuration = 3f;
 
@@ -143,6 +146,8 @@ namespace GI351.KitchenGame
         private int queuedIngredientCount = 0;
         private float currentCookTimer = 0f;
         private bool isCurrentlyCooking = false;
+        private bool isCurrentlyCookingSpecial = false;
+        private int queuedSpecialDishCount = 0;
 
         private bool isPlayerInRange;
         private PlayerCarry cachedPlayerCarry;
@@ -161,13 +166,13 @@ namespace GI351.KitchenGame
         public bool RequiresPurchase => requiresPurchase;
         public int PurchasePrice => purchasePrice;
         public string PotName => potName;
-        public int QueuedCount => queuedIngredientCount;
-        public int CookingItemsCount => (isCurrentlyCooking ? 1 : 0) + queuedIngredientCount;
+        public int QueuedCount => queuedIngredientCount + queuedSpecialDishCount;
+        public int CookingItemsCount => (isCurrentlyCooking ? 1 : 0) + queuedIngredientCount + queuedSpecialDishCount;
         public int MaxCapacity => maxCookingCapacity;
         public bool IsCooking => isCurrentlyCooking;
         public float CurrentProgress => isCurrentlyCooking && cookingDuration > 0f ? Mathf.Clamp01(1f - (currentCookTimer / cookingDuration)) : 0f;
         public float CurrentRemainingTime => isCurrentlyCooking ? Mathf.Max(0f, currentCookTimer) : 0f;
-        public float TotalRemainingTime => (isCurrentlyCooking ? currentCookTimer : 0f) + (queuedIngredientCount * cookingDuration);
+        public float TotalRemainingTime => (isCurrentlyCooking ? currentCookTimer : 0f) + ((queuedIngredientCount + queuedSpecialDishCount) * cookingDuration);
 
         private void Awake()
         {
@@ -188,8 +193,15 @@ namespace GI351.KitchenGame
             }
         }
 
+        public static readonly List<CookingPot> AllPots = new List<CookingPot>();
+
+        /// <summary>วัตถุดิบที่หม้อนี้ใช้ (ใช้ดูว่าหม้อนี้ทำอาหารอะไร)</summary>
+        public ItemType RequiredIngredient => requiredIngredient;
+
         private void OnEnable()
         {
+            if (!AllPots.Contains(this)) AllPots.Add(this);
+
             InitPotComponents();
 
             bool needPurchase = requiresPurchase || (autoRequirePurchaseForPork && IsPigPot());
@@ -201,6 +213,11 @@ namespace GI351.KitchenGame
             {
                 ApplyUnlockedState();
             }
+        }
+
+        private void OnDisable()
+        {
+            AllPots.Remove(this);
         }
 
         private void OnValidate()
@@ -223,7 +240,7 @@ namespace GI351.KitchenGame
             }
         }
 
-        private bool IsPigPot()
+        public bool IsPigPot()
         {
             string pName = potName != null ? potName.ToLower() : "";
             string gName = gameObject != null ? gameObject.name.ToLower() : "";
@@ -753,7 +770,15 @@ namespace GI351.KitchenGame
 
             if (currentCookTimer <= 0f)
             {
-                SpawnCookedDishAtOutput();
+                if (isCurrentlyCookingSpecial)
+                {
+                    SpawnSpecialCookedDishAtOutput();
+                }
+                else
+                {
+                    SpawnCookedDishAtOutput();
+                }
+
                 onCookingFinished?.Invoke();
 
                 if (foodDoneSound != null)
@@ -761,15 +786,25 @@ namespace GI351.KitchenGame
                     AudioSource.PlayClipAtPoint(foodDoneSound, transform.position);
                 }
 
-                if (queuedIngredientCount > 0)
+                // ตรวจสอบคิวชิ้นถัดไป (จานพิเศษหรือจานธรรมดา)
+                if (queuedSpecialDishCount > 0)
+                {
+                    queuedSpecialDishCount--;
+                    isCurrentlyCookingSpecial = true;
+                    currentCookTimer = cookingDuration;
+                    isCurrentlyCooking = true;
+                }
+                else if (queuedIngredientCount > 0)
                 {
                     queuedIngredientCount--;
+                    isCurrentlyCookingSpecial = false;
                     currentCookTimer = cookingDuration;
                     isCurrentlyCooking = true;
                 }
                 else
                 {
                     isCurrentlyCooking = false;
+                    isCurrentlyCookingSpecial = false;
                     currentCookTimer = 0f;
                 }
 
@@ -784,6 +819,24 @@ namespace GI351.KitchenGame
 
             int fedCount = 0;
 
+            // 1. ตรวจสอบว่าผู้เล่นแบก "โจรที่สลบ" (UnconsciousThief) มาหรือไม่ (สามารถจับยัดเข้าหม้อไหนก็ได้!)
+            while (CookingItemsCount < maxCookingCapacity && playerCarry.HasItemOfType(ItemType.UnconsciousThief))
+            {
+                Item thief = playerCarry.PopItemOfType(ItemType.UnconsciousThief);
+                if (thief != null)
+                {
+                    Destroy(thief.gameObject);
+                    AddSpecialIngredientToQueue();
+                    fedCount++;
+                    Debug.Log($"[CookingPot] ยัดโจรเข้า {potName} สำเร็จ! กำลังปรุงอาหารพิเศษราคาแพง x10...");
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // 2. ป้อนวัตถุดิบเนื้อปกติประจำหม้อ (เนื้อไก่ หรือ เนื้อหมู)
             while (CookingItemsCount < maxCookingCapacity && playerCarry.HasItemOfType(requiredIngredient))
             {
                 Item meat = playerCarry.PopItemOfType(requiredIngredient);
@@ -811,12 +864,43 @@ namespace GI351.KitchenGame
             if (wasIdle)
             {
                 isCurrentlyCooking = true;
+                isCurrentlyCookingSpecial = false;
                 currentCookTimer = cookingDuration;
                 onCookingStarted?.Invoke();
             }
             else
             {
                 queuedIngredientCount++;
+            }
+
+            UpdateVisuals();
+            onIngredientAdded?.Invoke();
+
+            if (ingredientDropSound != null)
+            {
+                AudioSource.PlayClipAtPoint(ingredientDropSound, transform.position);
+            }
+        }
+
+        /// <summary>
+        /// เพิ่มวัตถุดิบพิเศษ (โจรที่สลบ) เข้าคิวทำอาหารพิเศษ
+        /// </summary>
+        private void AddSpecialIngredientToQueue()
+        {
+            if (!isUnlocked) return;
+
+            bool wasIdle = !isCurrentlyCooking;
+
+            if (wasIdle)
+            {
+                isCurrentlyCooking = true;
+                isCurrentlyCookingSpecial = true;
+                currentCookTimer = cookingDuration;
+                onCookingStarted?.Invoke();
+            }
+            else
+            {
+                queuedSpecialDishCount++;
             }
 
             UpdateVisuals();
@@ -848,6 +932,55 @@ namespace GI351.KitchenGame
             }
 
             onFoodOutputSpawned?.Invoke();
+        }
+
+        /// <summary>
+        /// ผลิตอาหารพิเศษจากโจร: ราคาแพง x10 จากไก่ (ไก่ 10 เหรียญ -> อาหารพิเศษ 100 เหรียญ)
+        /// เปล่งออร่าสีเหลืองทองอร่าม
+        /// </summary>
+        private void SpawnSpecialCookedDishAtOutput()
+        {
+            GameObject specialPrefab = specialDishPrefab != null ? specialDishPrefab : cookedDishPrefab;
+            if (specialPrefab == null) return;
+
+            Vector3 spawnPos = GetOutputPosition();
+            outputRingSpawnPulseTimer = 0.35f;
+
+            Vector2 randomSpread = Random.insideUnitCircle * 0.15f;
+            Vector3 finalSpawnPos = spawnPos + new Vector3(randomSpread.x, randomSpread.y, 0f);
+
+            GameObject dishObj = Instantiate(specialPrefab, finalSpawnPos, Quaternion.identity);
+
+            // ตั้งค่าไอเทมให้เป็นอาหารพิเศษราคาแพง x10
+            if (dishObj.TryGetComponent<Item>(out var item))
+            {
+                item.SetItemType(ItemType.SpecialDish);
+                item.SetItemName("Special Golden Dish");
+                item.SetSellPrice(100);
+                item.SetItemColor(new Color(1f, 0.85f, 0.12f, 1f));
+            }
+
+            if (dishObj.TryGetComponent<CookedDish>(out var cookedDish))
+            {
+                cookedDish.SetDishName("Special Dish (x10)");
+                cookedDish.SetDishQuality(5);
+            }
+
+            // ย้อมสีทองอร่ามให้เห็นเด่นชัดว่าเป็นอาหารชั้นยอด
+            if (dishObj.TryGetComponent<SpriteRenderer>(out var sr))
+            {
+                sr.color = new Color(1f, 0.85f, 0.12f, 1f);
+            }
+
+            if (foodPopForce > 0f && dishObj.TryGetComponent<Rigidbody2D>(out var dishRb))
+            {
+                Vector2 popDir = ((Vector2)(finalSpawnPos - transform.position)).normalized;
+                if (popDir == Vector2.zero) popDir = Vector2.down;
+                dishRb.AddForce(popDir * foodPopForce, ForceMode2D.Impulse);
+            }
+
+            onFoodOutputSpawned?.Invoke();
+            Debug.Log("[CookingPot] ปรุงเสร็จแล้ว! อาหารพิเศษ Special Golden Dish (100 coins) กระเด็นออกมาจากหม้อ!");
         }
 
         public Vector3 GetStandZonePosition()
@@ -969,6 +1102,18 @@ namespace GI351.KitchenGame
                 customRingSprite = loaded;
                 return loaded;
             }
+#endif
+            return GetOrCreateRingSprite();
+        }
+
+        /// <summary>
+        /// Sprite วงแหวนที่ใช้ร่วมกับเครื่องอื่น (เช่น เครื่องผสมเนื้อ) ให้หน้าตาเหมือนวงของหม้อ
+        /// </summary>
+        public static Sprite GetSharedRingSprite()
+        {
+#if UNITY_EDITOR
+            Sprite loaded = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Prefab/Shop/FloorStandRing.png");
+            if (loaded != null) return loaded;
 #endif
             return GetOrCreateRingSprite();
         }

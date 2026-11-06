@@ -177,6 +177,7 @@ MonoBehaviour:
   potName: Pork Boiling Pot
   requiredIngredient: 1
   cookedDishPrefab: {fileID: 7363532395944061772, guid: 81eebd7f1eeddcd4a89f74e7b0149e5b, type: 3}
+  specialDishPrefab: {fileID: 7100000000000000, guid: a3f1c8e25b7d4e60918c2d4f6b0a1e73, type: 3}
   cookingDuration: 3
   maxCookingCapacity: 20
   standZonePoint: {fileID: 0}

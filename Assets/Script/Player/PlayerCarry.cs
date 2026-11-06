@@ -167,14 +167,16 @@ namespace GI351.KitchenGame
         }
 
         /// <summary>
-        /// ตรวจสอบว่าไอเทมนี้เป็นอาหารปรุงสุกหรือไม่ (ไม่ใช่เนื้อดิบ)
+        /// ตรวจสอบว่าไอเทมนี้เป็นอาหารปรุงสุกหรือไม่ (ไม่ใช่เนื้อดิบ และไม่ใช่โจรที่สลบ)
         /// </summary>
         public static bool IsCookedFood(Item item)
         {
             if (item == null) return false;
+            if (item.Type == ItemType.UnconsciousThief) return false;
+            if (item.Type == ItemType.ChickenMeat || item.Type == ItemType.PigMeat) return false;
+            if (item.Type == ItemType.SpecialDish || item.Type == ItemType.MixedDish) return true;
             if (item is CookedDish) return true;
             if (item.Type == ItemType.CookedChicken || item.Type == ItemType.CookedPig) return true;
-            if (item.Type != ItemType.ChickenMeat && item.Type != ItemType.PigMeat) return true;
             return false;
         }
 
