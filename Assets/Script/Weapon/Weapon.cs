@@ -10,21 +10,9 @@ namespace GI351.KitchenGame
 {
     public class Weapon : MonoBehaviour
     {
-        [Header("Aiming Settings (การเล็งทิศทาง)")]
-        [Tooltip("เล็งทิศทางการโจมตีตามตำแหน่งเมาส์")]
-        [SerializeField] private bool aimTowardsMouse = true;
-
-        [Tooltip("หมุนภาพเอฟเฟกต์หรืออาวุธให้ชี้ไปตามมุมเมาส์")]
+        [Header("Aiming Settings (การเล็งทิศทาง: ใช้ทิศจาก PlayerAim)")]
+        [Tooltip("หมุนภาพเอฟเฟกต์ให้ชี้ไปตามทิศที่หัน")]
         [SerializeField] private bool rotateVisualTowardsTarget = true;
-
-        [Tooltip("หันหน้าตัวละครตามเมาส์เวลาโจมตี")]
-        [SerializeField] private bool flipPlayerToMouseOnAttack = true;
-
-        [Tooltip("กล้องหลักสำหรับแปลงพิกัดเมาส์ (ถ้าว่างจะค้นหา Camera.main ให้อัตโนมัติ)")]
-        [SerializeField] private Camera mainCamera;
-
-        [Tooltip("แสดงองศาที่เล็งใน Console ตอนฟัน (ไว้เช็คว่าเมาส์ถูกอ่านได้ไหม)")]
-        [SerializeField] private bool debugAim = true;
 
         [Header("Sword Swing Settings (การฟันดาบแบบกวาดโค้ง)")]
         [Tooltip("เปิดใช้งานแอนิเมชันการฟันดาบกวาดโค้งจากบนลงล่าง")]
@@ -93,7 +81,6 @@ namespace GI351.KitchenGame
         private SpriteRenderer playerSpriteRenderer;
         private Transform weaponPivot;
         private SpriteRenderer weaponSpriteRenderer;
-        private Coroutine activeSwingCoroutine;
         private bool isSwinging;
         private PlayerHealth playerHealth;
         private PlayerAim playerAim;
@@ -102,7 +89,6 @@ namespace GI351.KitchenGame
         public int Damage => damage;
         public float AttackRange => attackRange;
         public float AttackCooldown => attackCooldown;
-        public bool AimTowardsMouse => aimTowardsMouse;
         public bool IsSwinging => isSwinging;
 
         // ถ้าลืมตั้ง Target Layer (เป็น Nothing) ให้ชนทุก Layer แทน เพื่อไม่ให้ฟันแล้วไม่โดนอะไรเลย
@@ -128,8 +114,6 @@ namespace GI351.KitchenGame
             }
 
             playerAim = GetComponentInParent<PlayerAim>();
-
-            ResolveCamera();
 
             SetupWeaponVisual();
 
@@ -303,13 +287,6 @@ namespace GI351.KitchenGame
 
             Vector2 aimDirection = GetAimDirection();
 
-            // หันหน้าตัวละครตามทิศทางเมาส์เมื่อกดโจมตี
-            if (flipPlayerToMouseOnAttack && playerSpriteRenderer != null)
-            {
-                if (aimDirection.x > 0.05f) playerSpriteRenderer.flipX = false;
-                else if (aimDirection.x < -0.05f) playerSpriteRenderer.flipX = true;
-            }
-
             if (enableArcSwing && weaponPivot != null && weaponVisualObject != null)
             {
                 BeginSwing(aimDirection);
@@ -341,12 +318,6 @@ namespace GI351.KitchenGame
             if (weaponSpriteRenderer != null)
             {
                 weaponSpriteRenderer.flipY = swingSign < 0f;
-            }
-
-            if (debugAim)
-            {
-                float a = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
-                Debug.Log($"[Weapon] Swing start | aim angle = {a:F0} deg | camera = {(mainCamera != null ? mainCamera.name : "NONE")} | aimTowardsMouse = {aimTowardsMouse}", this);
             }
 
             if (attackVisualEffect != null)
@@ -547,71 +518,16 @@ namespace GI351.KitchenGame
         }
 
         /// <summary>
-        /// ดึงเวกเตอร์ทิศทางการเล็ง (ถ้าเปิด aimTowardsMouse จะหาทิศทางจากตัวละครไปยังตำแหน่งเมาส์)
+        /// ทิศที่ฟัน/ถืออาวุธ = ทิศที่ผู้เล่นหัน (ล็อก 8 ทิศจาก PlayerAim) ให้ตรงกับภาพตัวละคร
         /// </summary>
-        private void ResolveCamera()
-        {
-            if (mainCamera != null) return;
-
-            mainCamera = Camera.main;
-            if (mainCamera == null)
-            {
-                // กล้องอาจไม่ได้ตั้ง Tag เป็น MainCamera ให้หากล้องตัวแรกในฉากแทน
-                mainCamera = FindFirstObjectByType<Camera>();
-                if (mainCamera == null)
-                {
-                    Debug.LogWarning("[Weapon] หา Camera ในฉากไม่เจอ เล่นแล้วดาบจะชี้ตามทิศเดินแทนเมาส์", this);
-                }
-            }
-        }
-
         public Vector2 GetAimDirection()
         {
-            // ใช้ทิศที่ผู้เล่นหัน (ล็อก 8 ทิศ) ให้ตรงกับภาพตัวละคร
             if (playerAim != null)
             {
                 return playerAim.FacingDirection;
             }
 
-            if (aimTowardsMouse)
-            {
-                ResolveCamera();
-
-                if (mainCamera != null)
-                {
-                    Vector3 mouseScreenPos = Vector3.zero;
-                    bool gotMouse = false;
-
-#if ENABLE_INPUT_SYSTEM
-                    if (Mouse.current != null)
-                    {
-                        Vector2 p = Mouse.current.position.ReadValue();
-                        mouseScreenPos = new Vector3(p.x, p.y, 0f);
-                        gotMouse = true;
-                    }
-#endif
-
-#if ENABLE_LEGACY_INPUT_MANAGER
-                    if (!gotMouse)
-                    {
-                        mouseScreenPos = Input.mousePosition;
-                    }
-#endif
-
-                    // ต้องกำหนดระยะ z จากกล้องถึงตัวละคร ไม่งั้นกล้อง Perspective จะได้ตำแหน่งเมาส์เพี้ยน
-                    mouseScreenPos.z = Mathf.Abs(mainCamera.transform.position.z - transform.position.z);
-                    Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(mouseScreenPos);
-                    mouseWorldPos.z = transform.position.z;
-
-                    Vector2 aimDir = (mouseWorldPos - transform.position);
-                    if (aimDir.sqrMagnitude > 0.001f)
-                    {
-                        return aimDir.normalized;
-                    }
-                }
-            }
-
-            // ถ้าไม่ได้เล็งตามเมาส์ หรือไม่พบเมาส์ ให้ใช้ทิศทางการเดินล่าสุดของผู้เล่น
+            // ไม่มี PlayerAim: ใช้ทิศทางการเดินล่าสุดของผู้เล่น
             if (playerMovement != null)
             {
                 return playerMovement.LastFacingDirection;

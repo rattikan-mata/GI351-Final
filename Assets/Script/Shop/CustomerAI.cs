@@ -564,28 +564,23 @@ namespace GI351.KitchenGame
                     float distToWaitPoint = Vector2.Distance(rb.position, targetCounter.CustomerWaitPoint.position);
                     if (distToWaitPoint <= 0.4f && targetCounter.HasFoodAvailable(wantSpecificFood ? preferredDish : (ItemType?)null))
                     {
-                        ItemType? wanted = wantSpecificFood ? preferredDish : (ItemType?)null;
-                        if (cashier != null)
+                        // หยิบอาหารไปถือ แล้วเดินไปจ่ายเงินที่โต๊ะจ่ายเงิน
+                        Item dish = targetCounter.CustomerTakeDish(wantSpecificFood ? preferredDish : (ItemType?)null);
+                        if (dish != null)
                         {
-                            // หยิบอาหารไปถือ แล้วเดินไปจ่ายเงินที่โต๊ะจ่ายเงิน
-                            Item dish = targetCounter.CustomerTakeDish(wanted);
-                            if (dish != null)
+                            HoldDish(dish);
+                            if (cashier != null)
                             {
-                                HoldDish(dish);
                                 GoToCashier();
-                                return;
                             }
-                        }
-                        else
-                        {
-                            // ไม่มีโต๊ะจ่ายเงิน: ซื้อและจ่ายที่โต๊ะอาหารเลย (แบบเดิม)
-                            Item dish = targetCounter.CustomerBuyDish(wanted);
-                            if (dish != null)
+                            else
                             {
+                                // ไม่มีโต๊ะจ่ายเงินในฉาก: ถืออาหารกลับไปเลย (ไม่ได้เงิน)
+                                Debug.LogWarning("[CustomerAI] ไม่มี CashierCounter ในฉาก ลูกค้าเอาอาหารไปโดยไม่ได้จ่ายเงิน", this);
                                 ShowHappy();
                                 LeaveCounterAndExit();
-                                return;
                             }
+                            return;
                         }
                     }
                 }
@@ -945,7 +940,7 @@ namespace GI351.KitchenGame
         {
             var myColliders = GetComponentsInChildren<Collider2D>();
 #if UNITY_2023_1_OR_NEWER
-            var allCustomers = Object.FindObjectsByType<CustomerAI>(FindObjectsSortMode.None);
+            var allCustomers = Object.FindObjectsByType<CustomerAI>();
 #else
             var allCustomers = FindObjectsOfType<CustomerAI>();
 #endif

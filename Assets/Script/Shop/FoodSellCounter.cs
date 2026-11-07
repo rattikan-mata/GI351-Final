@@ -58,41 +58,10 @@ namespace GI351.KitchenGame
         [Tooltip("สีของวงแหวนเมื่อผู้เล่นเข้ามายืนในโซน")]
         [SerializeField] private Color depositRingActiveColor = new Color(0.3f, 1f, 0.6f, 0.95f);
 
-        [Tooltip("ลำดับการวาด (Sorting Order) ของวงแหวนบนพื้นทั้งสองวง")]
+        [Tooltip("ลำดับการวาด (Sorting Order) ของวงแหวนวางอาหารบนพื้น")]
         [SerializeField] private int ringSortingOrder = 1;
 
-        [Header("Money Output Zone (วงที่เงินออกมา - สีเหลืองทอง)")]
-        [Tooltip("จุดที่เงินจะเด้งออกมา (ลาก Transform มาใส่ หรือปล่อยว่างเพื่อใช้ระยะเยื้องด้านล่าง)")]
-        [SerializeField] private Transform moneyOutputPoint;
-
-        [Tooltip("ตำแหน่งเยื้องจากโต๊ะที่เงินจะเด้งออกมา (เช่น (1.0, -0.8) อยู่ด้านหน้าฝั่งขวาของโต๊ะ)")]
-        [SerializeField] private Vector2 moneyOutputOffset = new Vector2(1.0f, -0.8f);
-
-        [Tooltip("รัศมีของวงกลมจุดเงินออก (เมตร)")]
-        [SerializeField] private float moneyZoneRadius = 0.5f;
-
-        [Tooltip("เปิดแสดงวงแหวนสีเหลืองทองจุดเงินออกในหน้า Game")]
-        [SerializeField] private bool showMoneyRing = true;
-
-        [Tooltip("สีของวงแหวนจุดเงินออก (สีเหลืองทอง)")]
-        [SerializeField] private Color moneyRingColor = new Color(1f, 0.85f, 0.2f, 0.9f);
-
-        [Tooltip("Prefab เหรียญเงินที่จะเด้งออกมาเมื่อลูกค้าซื้ออาหาร (ถ้าปล่อยว่างจะเพิ่มเงินเข้า MoneyManager โดยตรง)")]
-        [SerializeField] private GameObject coinPrefab;
-
-        [Tooltip("แรงดีดเหรียญเงินออกมาจากจุดขาย")]
-        [SerializeField] private float moneyPopForce = 2f;
-
-        [Tooltip("ให้เหรียญหล่นวางบนโต๊ะ (สุ่มตำแหน่งบนโต๊ะ) แทนการเด้งออกที่วงเงินออก")]
-        [SerializeField] private bool dropMoneyOnCounter = true;
-
-        [Tooltip("ระยะเว้นจากขอบโต๊ะตอนสุ่มตำแหน่งเหรียญ (เมตร)")]
-        [SerializeField] private float counterMoneyInset = 0.3f;
-
         [Header("Audio & Effects")]
-        [Tooltip("เสียงตอนลูกค้าซื้ออาหารสำเร็จและเงินเด้งออกมา")]
-        [SerializeField] private AudioClip sellSound;
-
         [Tooltip("เสียงตอนวางอาหารลงโต๊ะ")]
         [SerializeField] private AudioClip depositSound;
 
@@ -114,16 +83,10 @@ namespace GI351.KitchenGame
 
         [Header("Events")]
         public UnityEvent<int> onDishesCountChanged;
-        public UnityEvent<Item> onDishSold;
-        public UnityEvent<int> onMoneyEarned;
 
         // Visual Rings
         private GameObject depositRingObject;
         private SpriteRenderer depositRingRenderer;
-
-        private GameObject moneyRingObject;
-        private SpriteRenderer moneyRingRenderer;
-        private float moneyRingPulseTimer = 0f;
 
         private static Sprite cachedRingSprite;
 
@@ -134,13 +97,9 @@ namespace GI351.KitchenGame
         private PlayerCarry cachedPlayerCarry;
         private Transform playerTransform;
 
-        public Transform[] PlateSlots => plateSlots;
-        public GameObject CoinPrefab => coinPrefab;
         public int DishesCount => dishesOnCounter.Count;
         public int MaxPlates => (plateSlots != null && plateSlots.Length > 0) ? plateSlots.Length : maxPlates;
-        public int MaxFoodCount => MaxPlates;
         public Transform CustomerWaitPoint => customerWaitPoint != null ? customerWaitPoint : transform;
-        public Vector2 QueueDirection => queueDirection;
 
         // คิวของลูกค้าที่กำลังยืนรอซื้ออาหาร
         private readonly List<CustomerAI> customerQueue = new List<CustomerAI>();
@@ -155,7 +114,6 @@ namespace GI351.KitchenGame
         }
 
         public bool IsQueueFull => CurrentQueueCount >= maxQueueCapacity;
-        public int MaxQueueCapacity => maxQueueCapacity;
 
         /// <summary>
         /// ให้ลูกค้าลงทะเบียนเข้าแถวรอคิว
@@ -260,38 +218,21 @@ namespace GI351.KitchenGame
         {
             SetupCounterSolidCollider();
             SetupDepositZoneAndRing();
-            SetupMoneyOutputRing();
-            TryAutoAssignCoinPrefab();
         }
 
         private void OnEnable()
         {
             SetupCounterSolidCollider();
             SetupDepositZoneAndRing();
-            SetupMoneyOutputRing();
-            TryAutoAssignCoinPrefab();
         }
 
         private void OnValidate()
         {
             if (depositZoneRadius < 0.1f) depositZoneRadius = 0.1f;
-            if (moneyZoneRadius < 0.1f) moneyZoneRadius = 0.1f;
             if (Application.isPlaying)
             {
                 SetupDepositZoneAndRing();
-                SetupMoneyOutputRing();
             }
-            TryAutoAssignCoinPrefab();
-        }
-
-        private void TryAutoAssignCoinPrefab()
-        {
-#if UNITY_EDITOR
-            if (coinPrefab == null)
-            {
-                coinPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Shop/Coin.prefab");
-            }
-#endif
         }
 
         /// <summary>
@@ -397,59 +338,6 @@ namespace GI351.KitchenGame
             }
         }
 
-        /// <summary>
-        /// สร้างวงแหวนสีเหลืองทองตรงจุดที่เงิน/เหรียญจะเด้งออกมา (มองเห็นได้ทั้งหน้า Game และ Scene)
-        /// </summary>
-        public void SetupMoneyOutputRing()
-        {
-            Transform existingRing = transform.Find("MoneyOutputRing");
-            if (existingRing != null)
-            {
-                moneyRingObject = existingRing.gameObject;
-            }
-            else
-            {
-                moneyRingObject = new GameObject("MoneyOutputRing");
-                moneyRingObject.transform.SetParent(transform);
-            }
-
-            moneyRingObject.transform.position = GetMoneyOutputPosition();
-            moneyRingObject.transform.localRotation = Quaternion.identity;
-
-            Vector3 lossy = transform.lossyScale;
-            float pX = Mathf.Abs(lossy.x) > 0.0001f ? Mathf.Abs(lossy.x) : 1f;
-            float pY = Mathf.Abs(lossy.y) > 0.0001f ? Mathf.Abs(lossy.y) : 1f;
-            float targetDiameter = moneyZoneRadius * 2f;
-            moneyRingObject.transform.localScale = new Vector3(targetDiameter / pX, targetDiameter / pY, 1f);
-
-            moneyRingRenderer = moneyRingObject.GetComponent<SpriteRenderer>();
-            if (showMoneyRing)
-            {
-                if (moneyRingRenderer == null)
-                {
-                    moneyRingRenderer = moneyRingObject.AddComponent<SpriteRenderer>();
-                }
-                moneyRingRenderer.enabled = true;
-                moneyRingRenderer.sprite = GetRingSprite();
-                moneyRingRenderer.color = moneyRingColor;
-
-                SpriteRenderer mainRenderer = GetComponent<SpriteRenderer>();
-                if (mainRenderer != null)
-                {
-                    if (mainRenderer.sharedMaterial != null)
-                    {
-                        moneyRingRenderer.sharedMaterial = mainRenderer.sharedMaterial;
-                    }
-                    moneyRingRenderer.sortingLayerID = mainRenderer.sortingLayerID;
-                }
-                moneyRingRenderer.sortingOrder = ringSortingOrder;
-            }
-            else if (moneyRingRenderer != null)
-            {
-                moneyRingRenderer.enabled = false;
-            }
-        }
-
         private void Update()
         {
             if (!Application.isPlaying)
@@ -549,11 +437,6 @@ namespace GI351.KitchenGame
                 SetupDepositZoneAndRing();
             }
 
-            if (moneyRingObject == null || moneyRingRenderer == null || moneyRingRenderer.sprite == null)
-            {
-                SetupMoneyOutputRing();
-            }
-
             Vector3 lossy = transform.lossyScale;
             float pX = Mathf.Abs(lossy.x) > 0.0001f ? Mathf.Abs(lossy.x) : 1f;
             float pY = Mathf.Abs(lossy.y) > 0.0001f ? Mathf.Abs(lossy.y) : 1f;
@@ -563,13 +446,6 @@ namespace GI351.KitchenGame
                 depositRingObject.transform.position = GetDepositPosition();
                 float d1 = depositZoneRadius * 2f;
                 depositRingObject.transform.localScale = new Vector3(d1 / pX, d1 / pY, 1f);
-            }
-
-            if (moneyRingObject != null)
-            {
-                moneyRingObject.transform.position = GetMoneyOutputPosition();
-                float d2 = moneyZoneRadius * 2f;
-                moneyRingObject.transform.localScale = new Vector3(d2 / pX, d2 / pY, 1f);
             }
         }
 
@@ -584,12 +460,8 @@ namespace GI351.KitchenGame
             {
                 depositRingRenderer.sprite = GetRingSprite();
             }
-            if (moneyRingRenderer != null && moneyRingRenderer.sprite == null)
-            {
-                moneyRingRenderer.sprite = GetRingSprite();
-            }
 
-            // 1. วงแหวนวางอาหาร (Pulse และเปลี่ยนสีเมื่อผู้เล่นยืน)
+            // วงแหวนวางอาหาร (Pulse และเปลี่ยนสีเมื่อผู้เล่นยืน)
             if (depositRingRenderer != null && showDepositRing && depositRingObject != null)
             {
                 Color targetCol = isPlayerInRange ? depositRingActiveColor : depositRingColor;
@@ -599,25 +471,6 @@ namespace GI351.KitchenGame
                 float d1 = depositZoneRadius * 2f * pulse1;
                 depositRingObject.transform.position = GetDepositPosition();
                 depositRingObject.transform.localScale = new Vector3(d1 / pX, d1 / pY, 1f);
-            }
-
-            // 2. วงแหวนเงินออก (Pulse และ Pop Bounce ตอนเงินเด้ง)
-            if (moneyRingRenderer != null && showMoneyRing && moneyRingObject != null)
-            {
-                float popBounce = 0f;
-                if (moneyRingPulseTimer > 0f)
-                {
-                    moneyRingPulseTimer -= Time.deltaTime;
-                    popBounce = Mathf.Sin((moneyRingPulseTimer / 0.35f) * Mathf.PI) * 0.2f;
-                }
-
-                float pulse2 = 1f + Mathf.Sin(Time.time * 2f) * 0.03f + popBounce;
-                float d2 = moneyZoneRadius * 2f * pulse2;
-                moneyRingObject.transform.position = GetMoneyOutputPosition();
-                moneyRingObject.transform.localScale = new Vector3(d2 / pX, d2 / pY, 1f);
-
-                Color targetCol = popBounce > 0.01f ? Color.Lerp(moneyRingColor, Color.white, 0.5f) : moneyRingColor;
-                moneyRingRenderer.color = Color.Lerp(moneyRingRenderer.color, targetCol, Time.deltaTime * 12f);
             }
         }
 
@@ -786,35 +639,6 @@ namespace GI351.KitchenGame
         }
 
         /// <summary>
-        /// <summary>
-        /// เมื่อลูกค้าเดินมาซื้ออาหาร:
-        /// 1. หักอาหารออกจากโต๊ะ
-        /// 2. ดีดเหรียญเงิน/เงินออกมาที่วงเงินออก (Money Output Zone)
-        /// </summary>
-        public Item CustomerBuyDish(ItemType? preferredType = null)
-        {
-            Item selectedDish = RemoveDishForCustomer(preferredType);
-
-            if (selectedDish != null)
-            {
-                // ลูกค้าจ่ายเงิน -> ดีดเงินออกมาที่วงแหวนสีเหลือง
-                SpawnMoneyFromSale(selectedDish.SellPrice);
-
-                if (sellSound != null)
-                {
-                    AudioSource.PlayClipAtPoint(sellSound, transform.position);
-                }
-
-                onDishSold?.Invoke(selectedDish);
-
-                // ทำลายอาหาร (ลูกค้าทาน/รับไป)
-                Destroy(selectedDish.gameObject);
-            }
-
-            return selectedDish;
-        }
-
-        /// <summary>
         /// ลูกค้าหยิบอาหารจากโต๊ะไปถือ (ยังไม่จ่ายเงิน) แล้วค่อยไปจ่ายที่โต๊ะจ่ายเงิน (CashierCounter)
         /// </summary>
         public Item CustomerTakeDish(ItemType? preferredType = null)
@@ -907,70 +731,6 @@ namespace GI351.KitchenGame
             return stolenDish;
         }
 
-        /// <summary>
-        /// ดีดเหรียญเงินออกมาที่วงเงินออก (Money Output Zone)
-        /// </summary>
-        private void SpawnMoneyFromSale(int earnedMoney)
-        {
-            if (earnedMoney <= 0) earnedMoney = 10;
-            Vector3 finalSpawnPos;
-            if (dropMoneyOnCounter)
-            {
-                finalSpawnPos = GetRandomPointOnCounter();
-            }
-            else
-            {
-                Vector2 randomSpread = Random.insideUnitCircle * 0.15f;
-                finalSpawnPos = GetMoneyOutputPosition() + new Vector3(randomSpread.x, randomSpread.y, 0f);
-                moneyRingPulseTimer = 0.35f;
-            }
-
-            if (coinPrefab != null)
-            {
-                // สร้างเหรียญจริงดีดออกมา
-                GameObject coinObj = Instantiate(coinPrefab, finalSpawnPos, Quaternion.identity);
-                if (coinObj.TryGetComponent<CoinPickup>(out var coinPickup))
-                {
-                    coinPickup.Value = earnedMoney;
-                }
-
-                if (!dropMoneyOnCounter && coinObj.TryGetComponent<Rigidbody2D>(out var coinRb) && moneyPopForce > 0f)
-                {
-                    Vector2 popDir = ((Vector2)(finalSpawnPos - transform.position)).normalized;
-                    if (popDir == Vector2.zero) popDir = Vector2.down;
-                    popDir = Quaternion.Euler(0, 0, Random.Range(-25f, 25f)) * popDir;
-                    coinRb.AddForce(popDir * moneyPopForce, ForceMode2D.Impulse);
-                }
-            }
-            else
-            {
-                // ถ้าไม่มี Coin Prefab ให้เพิ่มเงินเข้า MoneyManager ให้โดยตรง
-                if (MoneyManager.Instance != null)
-                {
-                    MoneyManager.Instance.AddMoney(earnedMoney);
-                }
-            }
-
-            onMoneyEarned?.Invoke(earnedMoney);
-        }
-
-        /// <summary>
-        /// สุ่มตำแหน่งบนพื้นผิวโต๊ะ (เว้นระยะจากขอบตาม counterMoneyInset)
-        /// </summary>
-        private Vector3 GetRandomPointOnCounter()
-        {
-            Collider2D mainCol = GetComponent<Collider2D>();
-            if (mainCol == null) return transform.position;
-
-            Bounds b = mainCol.bounds;
-            float halfW = Mathf.Max(0f, b.extents.x - counterMoneyInset);
-            float halfH = Mathf.Max(0f, b.extents.y - counterMoneyInset);
-            return new Vector3(
-                b.center.x + Random.Range(-halfW, halfW),
-                b.center.y + Random.Range(-halfH, halfH),
-                transform.position.z);
-        }
-
         public bool HasFoodAvailable(ItemType? preferredType = null)
         {
             if (dishesOnCounter.Count == 0) return false;
@@ -982,35 +742,6 @@ namespace GI351.KitchenGame
             }
             return false;
         }
-
-        /// <summary>
-        /// สำหรับดึงอาหารกลับคืนลงกระเป๋าผู้เล่น (ถ้าต้องการ)
-        /// </summary>
-        public Item TakeFoodFromCounter()
-        {
-            dishesOnCounter.RemoveAll(d => d == null);
-            if (dishesOnCounter.Count == 0) return null;
-
-            int lastIdx = dishesOnCounter.Count - 1;
-            Item dish = dishesOnCounter[lastIdx];
-            dishesOnCounter.RemoveAt(lastIdx);
-            foodWorldScales.Remove(dish);
-
-            dish.transform.SetParent(null);
-            dish.SetCarriedState(false);
-
-            if (dish.TryGetComponent<Collider2D>(out var col)) col.enabled = true;
-            if (dish.TryGetComponent<Rigidbody2D>(out var rb)) rb.simulated = true;
-
-            RearrangeFoodOnCounter();
-            onDishesCountChanged?.Invoke(dishesOnCounter.Count);
-            return dish;
-        }
-
-        // Backward compatibility
-        public void PlaceDishOnCounter(Item dish) => PlaceFoodOnCounter(dish);
-        public Item TakeDishFromCounter() => TakeFoodFromCounter();
-        public void Interact(PlayerCarry playerCarry) => DepositFoodFromPlayer(playerCarry);
 
         // ========================== ตำแหน่งและ Ring Sprite ==========================
 
@@ -1030,15 +761,6 @@ namespace GI351.KitchenGame
                 return foodDepositPoint.position;
             }
             return transform.position + new Vector3(depositZoneOffset.x, depositZoneOffset.y, 0f);
-        }
-
-        public Vector3 GetMoneyOutputPosition()
-        {
-            if (moneyOutputPoint != null)
-            {
-                return moneyOutputPoint.position;
-            }
-            return transform.position + new Vector3(moneyOutputOffset.x, moneyOutputOffset.y, 0f);
         }
 
         private static Sprite generatedRingSprite;
@@ -1205,14 +927,6 @@ namespace GI351.KitchenGame
             Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.9f);
             Gizmos.DrawWireSphere(depositPos, depositZoneRadius);
             Gizmos.DrawLine(transform.position, depositPos);
-
-            // วาดโซนเงินออก (สีเหลืองทอง)
-            Vector3 moneyPos = GetMoneyOutputPosition();
-            Gizmos.color = new Color(moneyRingColor.r, moneyRingColor.g, moneyRingColor.b, 0.35f);
-            Gizmos.DrawSphere(moneyPos, moneyZoneRadius);
-            Gizmos.color = moneyRingColor;
-            Gizmos.DrawWireSphere(moneyPos, moneyZoneRadius);
-            Gizmos.DrawLine(transform.position, moneyPos);
 
             // วาดแถวต่อคิวของลูกค้า (สีส้ม/ทอง)
             Gizmos.color = new Color(1f, 0.65f, 0.1f, 0.85f);

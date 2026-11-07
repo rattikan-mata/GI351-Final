@@ -22,9 +22,12 @@ namespace GI351.KitchenGame
         [Tooltip("เวลาคงอยู่ของเหรียญก่อนหายไป (0 คืออยู่ตลอดไป)")]
         [SerializeField] private float lifetime = 60f;
 
-        private Rigidbody2D rb;
         private Transform targetPlayer;
         private bool isCollected = false;
+
+        // เหรียญบนโต๊ะจ่ายเงิน: รอจนผู้เล่นเข้าวงก่อน แล้วโต๊ะจะสั่งให้ดูดเข้าตัว
+        private bool waitForCollectZone;
+        private bool isAttracted;
 
         public int Value
         {
@@ -32,9 +35,27 @@ namespace GI351.KitchenGame
             set => coinValue = value;
         }
 
+        /// <summary>
+        /// ไม่ดูดเข้าหาผู้เล่นเอง และไม่หายตามเวลา รอให้ผู้เล่นเข้าวงที่โต๊ะ (เรียกก่อน Start)
+        /// </summary>
+        public void WaitForCollectZone()
+        {
+            waitForCollectZone = true;
+            lifetime = 0f;
+        }
+
+        /// <summary>
+        /// สั่งให้ลอยเข้าหาผู้เล่นทันที ไม่จำกัดระยะ
+        /// </summary>
+        public void AttractTo(Transform target)
+        {
+            if (target == null) return;
+            targetPlayer = target;
+            isAttracted = true;
+        }
+
         private void Awake()
         {
-            rb = GetComponent<Rigidbody2D>();
             Collider2D col = GetComponent<Collider2D>();
             if (col != null)
             {
@@ -46,17 +67,20 @@ namespace GI351.KitchenGame
         {
             // ค้นหา Player เพื่อให้ระบบดูดเหรียญทำงานได้
             // Player prefab ไม่ได้ตั้ง Tag "Player" ไว้ จึงค้นหาจาก PlayerMovement เป็นหลัก
-            var playerMovement = FindAnyObjectByType<PlayerMovement>();
-            if (playerMovement != null)
+            if (targetPlayer == null)
             {
-                targetPlayer = playerMovement.transform;
-            }
-            else
-            {
-                var player = GameObject.FindGameObjectWithTag("Player");
-                if (player != null)
+                var playerMovement = FindAnyObjectByType<PlayerMovement>();
+                if (playerMovement != null)
                 {
-                    targetPlayer = player.transform;
+                    targetPlayer = playerMovement.transform;
+                }
+                else
+                {
+                    var player = GameObject.FindGameObjectWithTag("Player");
+                    if (player != null)
+                    {
+                        targetPlayer = player.transform;
+                    }
                 }
             }
 
@@ -70,11 +94,14 @@ namespace GI351.KitchenGame
         {
             if (isCollected) return;
 
-            // ระบบแม่เหล็กดูดเหรียญเข้าหาตัวผู้เล่นอัตโนมัติเมื่อเข้าใกล้
-            if (targetPlayer != null && magnetDistance > 0f)
+            // เหรียญบนโต๊ะจ่ายเงินจะไม่ขยับ จนกว่าโต๊ะจะสั่งดูด (ผู้เล่นเข้าวง)
+            if (waitForCollectZone && !isAttracted) return;
+
+            // ระบบแม่เหล็กดูดเหรียญเข้าหาตัวผู้เล่นอัตโนมัติเมื่อเข้าใกล้ (หรือถูกสั่งดูดแล้วไม่จำกัดระยะ)
+            if (targetPlayer != null && (magnetDistance > 0f || isAttracted))
             {
                 float dist = Vector2.Distance(transform.position, targetPlayer.position);
-                if (dist <= magnetDistance)
+                if (isAttracted || dist <= magnetDistance)
                 {
                     Vector3 moveDir = (targetPlayer.position - transform.position).normalized;
                     transform.position += moveDir * magnetSpeed * Time.deltaTime;
@@ -93,6 +120,7 @@ namespace GI351.KitchenGame
         private void OnTriggerEnter2D(Collider2D other)
         {
             if (isCollected) return;
+            if (waitForCollectZone && !isAttracted) return;
 
             if (other.CompareTag("Player") || other.GetComponentInParent<PlayerMovement>() != null || other.GetComponentInParent<PlayerCarry>() != null)
             {

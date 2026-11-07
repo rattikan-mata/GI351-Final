@@ -196,7 +196,7 @@ namespace GI351.KitchenGame
 
         private void FindPlayer()
         {
-            var player = FindFirstObjectByType<PlayerMovement>();
+            var player = FindAnyObjectByType<PlayerMovement>();
             if (player != null)
             {
                 targetPlayer = player.transform;

@@ -20,7 +20,7 @@ namespace GI351.KitchenGame
             if (pots.Count == 0)
             {
 #if UNITY_2023_1_OR_NEWER
-                var found = Object.FindObjectsByType<CookingPot>(FindObjectsSortMode.None);
+                var found = Object.FindObjectsByType<CookingPot>();
 #else
                 var found = Object.FindObjectsOfType<CookingPot>();
 #endif
@@ -45,7 +45,7 @@ namespace GI351.KitchenGame
             if (mixers.Count == 0)
             {
 #if UNITY_2023_1_OR_NEWER
-                var found = Object.FindObjectsByType<MeatMixer>(FindObjectsSortMode.None);
+                var found = Object.FindObjectsByType<MeatMixer>();
 #else
                 var found = Object.FindObjectsOfType<MeatMixer>();
 #endif

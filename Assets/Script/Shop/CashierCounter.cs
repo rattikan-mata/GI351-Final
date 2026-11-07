@@ -25,7 +25,7 @@ namespace GI351.KitchenGame
         [SerializeField] private float payDuration = 0.6f;
 
         [Header("Money (เงินที่ได้)")]
-        [Tooltip("Prefab เหรียญ (ปล่อยว่างจะใช้เหรียญเดียวกับโต๊ะอาหาร ถ้าไม่มีเลยจะเพิ่มเงินเข้า MoneyManager โดยตรง)")]
+        [Tooltip("Prefab เหรียญ (ปล่อยว่างจะเพิ่มเงินเข้า MoneyManager โดยตรง)")]
         [SerializeField] private GameObject coinPrefab;
 
         [Tooltip("ระยะเว้นจากขอบโต๊ะตอนสุ่มตำแหน่งเหรียญ (เมตร)")]
@@ -34,10 +34,26 @@ namespace GI351.KitchenGame
         [Tooltip("เสียงตอนลูกค้าจ่ายเงิน (ถ้ามี)")]
         [SerializeField] private AudioClip paySound;
 
+        [Header("Player Ring (วงขาวจุดยืนผู้เล่น เหมือน Sell point)")]
+        [Tooltip("วงขาวบนพื้นที่ให้ผู้เล่นยืน (child ของโต๊ะ) ผู้เล่นเข้าวงแล้วเหรียญบนโต๊ะจะลอยเข้าตัว")]
+        [SerializeField] private Transform playerRing;
+
+        [Tooltip("รัศมีวง (เมตร)")]
+        [SerializeField] private float playerRingRadius = 0.5f;
+
+        [Tooltip("สีวงตอนปกติ (สีขาว)")]
+        [SerializeField] private Color playerRingColor = new Color(1f, 1f, 1f, 0.9f);
+
+        [Tooltip("สีวงตอนผู้เล่นยืนอยู่ในวง")]
+        [SerializeField] private Color playerRingActiveColor = new Color(0.3f, 1f, 0.6f, 0.95f);
+
         [Header("Events")]
         public UnityEvent<int> onPaid; // จำนวนเงินที่ได้
 
         private readonly List<CustomerAI> queue = new List<CustomerAI>();
+        private readonly List<CoinPickup> coinsOnCounter = new List<CoinPickup>();
+        private SpriteRenderer playerRingRenderer;
+        private Transform playerTransform;
 
         public Transform CustomerPayPoint => customerPayPoint != null ? customerPayPoint : transform;
         public float PayDuration => payDuration;
@@ -65,12 +81,53 @@ namespace GI351.KitchenGame
                 }
             }
 
-            if (coinPrefab == null)
+            if (playerRing != null)
             {
-                // ใช้เหรียญเดียวกับโต๊ะอาหาร
-                var food = FindAnyObjectByType<FoodSellCounter>();
-                if (food != null) coinPrefab = food.CoinPrefab;
+                playerRingRenderer = playerRing.GetComponent<SpriteRenderer>();
             }
+        }
+
+        private void Update()
+        {
+            UpdatePlayerRing();
+        }
+
+        /// <summary>
+        /// วงขาวกระพริบเบา ๆ และเปลี่ยนเป็นสีเขียวเมื่อผู้เล่นเข้ามายืน (แบบเดียวกับ Sell point)
+        /// </summary>
+        private void UpdatePlayerRing()
+        {
+            if (playerRing == null || playerRingRenderer == null) return;
+
+            if (playerTransform == null)
+            {
+                var player = FindAnyObjectByType<PlayerCarry>();
+                if (player != null) playerTransform = player.transform;
+            }
+
+            bool inRange = playerTransform != null &&
+                           Vector2.Distance(playerRing.position, playerTransform.position) <= playerRingRadius;
+            Color target = inRange ? playerRingActiveColor : playerRingColor;
+            playerRingRenderer.color = Color.Lerp(playerRingRenderer.color, target, Time.deltaTime * 10f);
+
+            // ผู้เล่นเข้าวง -> ดูดเหรียญทั้งหมดบนโต๊ะเข้าตัว
+            if (inRange && coinsOnCounter.Count > 0)
+            {
+                foreach (var coin in coinsOnCounter)
+                {
+                    if (coin != null) coin.AttractTo(playerTransform);
+                }
+                coinsOnCounter.Clear();
+            }
+
+            // ชดเชยสเกลของโต๊ะ ให้วงมีขนาดในโลกตาม playerRingRadius
+            Vector3 lossy = transform.lossyScale;
+            float pulse = 1f + Mathf.Sin(Time.time * 2.5f) * 0.04f;
+            float d = playerRingRadius * 2f * pulse;
+            playerRing.localScale = new Vector3(
+                d / Mathf.Max(0.0001f, Mathf.Abs(lossy.x)),
+                d / Mathf.Max(0.0001f, Mathf.Abs(lossy.y)),
+                1f);
         }
 
         // ========================== แถว ==========================
@@ -115,7 +172,17 @@ namespace GI351.KitchenGame
             if (coinPrefab != null)
             {
                 GameObject coin = Instantiate(coinPrefab, GetRandomPointOnCounter(), Quaternion.identity);
-                if (coin.TryGetComponent<CoinPickup>(out var pickup)) pickup.Value = price;
+                if (coin.TryGetComponent<CoinPickup>(out var pickup))
+                {
+                    pickup.Value = price;
+
+                    // เหรียญวางรอบนโต๊ะ ต้องเข้าวงขาวถึงจะดูดเข้าตัว (ไม่หายตามเวลา)
+                    if (playerRing != null)
+                    {
+                        pickup.WaitForCollectZone();
+                        coinsOnCounter.Add(pickup);
+                    }
+                }
             }
             else if (MoneyManager.Instance != null)
             {
@@ -148,6 +215,14 @@ namespace GI351.KitchenGame
 
         private void OnDrawGizmos()
         {
+            // วงจุดยืนผู้เล่น (สีฟ้า เหมือน Sell point)
+            if (playerRing != null)
+            {
+                Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.9f);
+                Gizmos.DrawWireSphere(playerRing.position, playerRingRadius);
+                Gizmos.DrawLine(transform.position, playerRing.position);
+            }
+
             // จุดจ่ายเงินและแถว (สีเขียว)
             Gizmos.color = new Color(0.3f, 1f, 0.4f, 0.9f);
             Vector3 start = customerPayPoint != null ? customerPayPoint.position : transform.position + Vector3.down * 1.85f;
