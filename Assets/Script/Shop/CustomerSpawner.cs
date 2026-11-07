@@ -22,6 +22,23 @@ namespace GI351.KitchenGame
         [Range(0f, 1f)]
         [SerializeField] private float thiefSpawnChance = 0.3f;
 
+        [Header("Thief Limits (จำกัดการเกิดของโจร)")]
+        [Tooltip("จำนวนโจรสูงสุดที่อยู่ในฉากพร้อมกัน (0 = ไม่ให้มีโจรเลย)")]
+        [Min(0)]
+        [SerializeField] private int maxConcurrentThieves = 1;
+
+        [Tooltip("ระยะเวลาขั้นต่ำระหว่างโจรแต่ละตัว นับจากตอนที่โจรตัวก่อนเกิด (วินาที)")]
+        [Min(0f)]
+        [SerializeField] private float thiefCooldown = 25f;
+
+        [Tooltip("ไม่มีโจรในช่วงแรกของเกม (วินาที) ให้ผู้เล่นตั้งตัวก่อน")]
+        [Min(0f)]
+        [SerializeField] private float firstThiefDelay = 30f;
+
+        [Tooltip("จำนวนโจรสูงสุดทั้งเกม (0 = ไม่จำกัด)")]
+        [Min(0)]
+        [SerializeField] private int maxThievesPerGame = 0;
+
         [Header("Waypoints")]
         [Tooltip("จุดเกิดของลูกค้า (ถ้าว่างจะใช้ตำแหน่งของ Spawner นี้)")]
         [SerializeField] private Transform spawnPoint;
@@ -34,6 +51,35 @@ namespace GI351.KitchenGame
 
         private readonly List<CustomerAI> activeCustomers = new List<CustomerAI>();
         private float spawnTimer;
+        private float lastThiefSpawnTime = float.NegativeInfinity;
+        private int thievesSpawnedTotal;
+
+        public int ActiveThiefCount
+        {
+            get
+            {
+                activeCustomers.RemoveAll(c => c == null);
+                int count = 0;
+                foreach (var c in activeCustomers)
+                {
+                    // โจรที่สลบแล้วไม่นับ (กลายเป็นของให้แบกไปต้มแล้ว)
+                    if (c.IsThief && !c.IsUnconscious) count++;
+                }
+                return count;
+            }
+        }
+
+        /// <summary>
+        /// เช็คว่าตอนนี้ยอมให้เกิดโจรได้หรือไม่ ตามค่าที่ตั้งใน Thief Limits
+        /// </summary>
+        public bool CanSpawnThief()
+        {
+            if (maxConcurrentThieves <= 0) return false;
+            if (Time.timeSinceLevelLoad < firstThiefDelay) return false;
+            if (Time.time - lastThiefSpawnTime < thiefCooldown) return false;
+            if (maxThievesPerGame > 0 && thievesSpawnedTotal >= maxThievesPerGame) return false;
+            return ActiveThiefCount < maxConcurrentThieves;
+        }
 
         private void Awake()
         {
@@ -79,7 +125,8 @@ namespace GI351.KitchenGame
 
             if (targetCounter == null) return;
 
-            bool isThief = Random.value < thiefSpawnChance;
+            // สุ่มเป็นโจรได้เฉพาะตอนที่ไม่ติดข้อจำกัด ถ้าติดจะกลายเป็นลูกค้าปกติแทน
+            bool isThief = Random.value < thiefSpawnChance && CanSpawnThief();
 
             // ถ้าเป็นลูกค้าปกติ และแถวต่อคิวเต็มแล้ว จะไม่เสกเพิ่ม (แต่โจรสามารถเสกออกมาเพื่อแซงคิวได้เสมอ)
             if (!isThief && targetCounter.IsQueueFull) return;
@@ -97,6 +144,12 @@ namespace GI351.KitchenGame
                 customerAI.Init(targetCounter, exitPoint, this);
                 customerAI.IgnoreCollisionWithOtherCustomers();
                 activeCustomers.Add(customerAI);
+
+                if (isThief)
+                {
+                    lastThiefSpawnTime = Time.time;
+                    thievesSpawnedTotal++;
+                }
             }
         }
 

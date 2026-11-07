@@ -25,6 +25,19 @@ namespace GI351.KitchenGame
         [Tooltip("รัศมีพื้นที่สุ่มตำแหน่งเกิดรอบจุดนี้")]
         [SerializeField] private float spawnRadius = 2.5f;
 
+        [Header("Boundary (ขอบเขตที่สัตว์จะไม่เดินออกไป)")]
+        [Tooltip("ล็อกสัตว์ที่เกิดจากจุดนี้ให้อยู่ในกรอบสี่เหลี่ยมด้านล่าง (เดินสุ่ม/โดนตีกระเด็นก็ไม่หลุดออกไป)")]
+        [SerializeField] private bool confineToBoundary = true;
+
+        [Tooltip("ขนาดกรอบ กว้าง x สูง (เมตร) มีจุดกึ่งกลางอยู่ที่ Spawner")]
+        [SerializeField] private Vector2 boundarySize = new Vector2(8f, 6f);
+
+        [Tooltip("เลื่อนจุดกึ่งกลางกรอบออกจากตำแหน่ง Spawner (เมตร)")]
+        [SerializeField] private Vector2 boundaryOffset = Vector2.zero;
+
+        [Tooltip("สีของกรอบใน Scene View")]
+        [SerializeField] private Color boundaryGizmoColor = new Color(1f, 0.35f, 0.2f, 0.9f);
+
         [Header("Gizmo Settings")]
         [Tooltip("สีของวงกลมจุดเกิดใน Scene View")]
         [SerializeField] private Color gizmoColor = new Color(0.9f, 0.7f, 0.1f, 0.35f);
@@ -34,6 +47,8 @@ namespace GI351.KitchenGame
 
         public int CurrentAliveCount => GetActiveCount();
         public int MaxCount => maxConcurrentCount;
+        public Vector2 BoundaryCenter => (Vector2)transform.position + boundaryOffset;
+        public Vector2 BoundarySize => boundarySize;
 
         private void Start()
         {
@@ -81,7 +96,22 @@ namespace GI351.KitchenGame
             Vector2 randomOffset = Random.insideUnitCircle * spawnRadius;
             Vector3 spawnPosition = transform.position + new Vector3(randomOffset.x, randomOffset.y, 0f);
 
+            if (confineToBoundary)
+            {
+                // ไม่ให้เกิดนอกกรอบ
+                Vector2 half = boundarySize * 0.5f;
+                Vector2 c = BoundaryCenter;
+                spawnPosition.x = Mathf.Clamp(spawnPosition.x, c.x - half.x, c.x + half.x);
+                spawnPosition.y = Mathf.Clamp(spawnPosition.y, c.y - half.y, c.y + half.y);
+            }
+
             GameObject spawnedObj = Instantiate(prefabToSpawn, spawnPosition, Quaternion.identity);
+
+            // ให้ทุกตัวจากจุดนี้ใช้กรอบเดียวกัน
+            if (confineToBoundary && spawnedObj.TryGetComponent<EnemyWander>(out var wander))
+            {
+                wander.SetBoundary(BoundaryCenter, boundarySize);
+            }
 
             // เก็บรายการตัวที่ยังมีชีวิตอยู่
             activeSpawns.Add(spawnedObj);
@@ -108,6 +138,16 @@ namespace GI351.KitchenGame
             // วาดจุดกึ่งกลางของ Spawner
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireCube(transform.position, new Vector3(0.3f, 0.3f, 0.1f));
+
+            // วาดกรอบขอบเขต
+            if (confineToBoundary)
+            {
+                Vector2 c = BoundaryCenter;
+                Gizmos.color = boundaryGizmoColor;
+                Gizmos.DrawWireCube(new Vector3(c.x, c.y, 0f), new Vector3(boundarySize.x, boundarySize.y, 0.1f));
+                Gizmos.color = new Color(boundaryGizmoColor.r, boundaryGizmoColor.g, boundaryGizmoColor.b, 0.08f);
+                Gizmos.DrawCube(new Vector3(c.x, c.y, 0f), new Vector3(boundarySize.x, boundarySize.y, 0.1f));
+            }
         }
     }
 }

@@ -137,9 +137,12 @@ MonoBehaviour:
   patienceDuration: 15
   wantSpecificFood: 0
   preferredDish: 2
+  avoidanceRadius: 0.4
+  avoidanceMargin: 0.15
   isThief: 1
   thiefHealth: 20
-  thiefFleeSpeedMultiplier: 2.2
+  thiefFleeSpeedMultiplier: 1.3
+  thiefEscapedMessage: "\u0E42\u0E08\u0E23\u0E2B\u0E19\u0E35\u0E44\u0E1B\u0E44\u0E14\u0E49!"
   targetCounter: {fileID: 8507393914842812104, guid: 7c826388d620c024e8e792ab45d5684e, type: 3}
   exitPoint: {fileID: 0}
   happyIcon: {fileID: 0}
@@ -147,4 +150,3 @@ MonoBehaviour:
   spriteRenderer: {fileID: 0}
   hurtColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   hurtFlashDuration: 0.18
-

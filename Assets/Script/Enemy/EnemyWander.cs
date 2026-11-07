@@ -45,6 +45,12 @@ namespace GI351.KitchenGame
         private bool isIdle;
         private float idleTimer;
 
+        // ขอบเขตที่ห้ามออก (ตั้งจาก EnemySpawner)
+        private bool hasBoundary;
+        private Vector2 boundaryMin;
+        private Vector2 boundaryMax;
+        private const float BoundaryEdgePadding = 0.3f;
+
         public float MoveSpeed
         {
             get => moveSpeed;
@@ -83,8 +89,44 @@ namespace GI351.KitchenGame
             }
         }
 
+        /// <summary>
+        /// ล็อกให้เดินอยู่แค่ในกรอบสี่เหลี่ยมนี้ (ใช้กรอบเป็นโซนเดินสุ่มด้วย)
+        /// </summary>
+        public void SetBoundary(Vector2 center, Vector2 size)
+        {
+            hasBoundary = true;
+            Vector2 half = new Vector2(Mathf.Abs(size.x), Mathf.Abs(size.y)) * 0.5f;
+            boundaryMin = center - half;
+            boundaryMax = center + half;
+
+            zoneShape = ZoneShape.Rectangle;
+            centerPoint = center;
+            rectangleSize = new Vector2(Mathf.Abs(size.x), Mathf.Abs(size.y));
+        }
+
+        /// <summary>
+        /// ดึงตัวกลับเข้ากรอบถ้าหลุดออกไป (เช่น โดนตีกระเด็น) และตัดความเร็วที่พุ่งออกนอกกรอบ
+        /// </summary>
+        private void KeepInsideBoundary()
+        {
+            Vector2 pos = rb.position;
+            Vector2 clamped = new Vector2(
+                Mathf.Clamp(pos.x, boundaryMin.x, boundaryMax.x),
+                Mathf.Clamp(pos.y, boundaryMin.y, boundaryMax.y));
+
+            if (clamped == pos) return;
+
+            rb.position = clamped;
+            Vector2 vel = rb.linearVelocity;
+            if ((pos.x < boundaryMin.x && vel.x < 0f) || (pos.x > boundaryMax.x && vel.x > 0f)) vel.x = 0f;
+            if ((pos.y < boundaryMin.y && vel.y < 0f) || (pos.y > boundaryMax.y && vel.y > 0f)) vel.y = 0f;
+            rb.linearVelocity = vel;
+        }
+
         private void FixedUpdate()
         {
+            if (hasBoundary) KeepInsideBoundary();
+
             // ระหว่างกระเด็น ปล่อยให้ EnemyHealth ควบคุมความเร็ว
             if (health != null && health.IsKnockedBack) return;
 
@@ -139,8 +181,10 @@ namespace GI351.KitchenGame
             }
             else
             {
-                float halfW = rectangleSize.x * 0.5f;
-                float halfH = rectangleSize.y * 0.5f;
+                // ถ้ามีกรอบ เว้นระยะจากขอบนิดหน่อยไม่ให้เดินไปเบียดขอบ
+                float pad = hasBoundary ? BoundaryEdgePadding : 0f;
+                float halfW = Mathf.Max(0f, rectangleSize.x * 0.5f - pad);
+                float halfH = Mathf.Max(0f, rectangleSize.y * 0.5f - pad);
                 float rx = Random.Range(-halfW, halfW);
                 float ry = Random.Range(-halfH, halfH);
                 currentTargetPoint = centerPoint + new Vector2(rx, ry);

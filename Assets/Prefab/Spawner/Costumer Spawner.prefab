@@ -138,8 +138,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CustomerSpawner
   customerPrefab: {fileID: 1480874739530231457, guid: b21f9ff48dd24c24c8e75e5565e61508, type: 3}
+  thiefPrefab: {fileID: 1480874739530231457, guid: 899df47affcd45ea8a31ad94a1a2f7c3, type: 3}
   spawnInterval: 5
   maxConcurrentCustomers: 4
+  thiefSpawnChance: 0.3
+  maxConcurrentThieves: 1
+  thiefCooldown: 25
+  firstThiefDelay: 30
+  maxThievesPerGame: 0
   spawnPoint: {fileID: 8846347712403543222}
   exitPoint: {fileID: 0}
   targetCounter: {fileID: 0}

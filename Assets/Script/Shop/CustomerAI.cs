@@ -539,6 +539,20 @@ namespace GI351.KitchenGame
                     LeaveCounterAndExit();
                 }
             }
+            else
+            {
+                // โจรก็มีความอดทนเหมือนลูกค้าปกติ: รอนานจนไม่มีอาหารให้ฉก จะเดินกลับมือเปล่า
+                currentPatienceTimer -= Time.deltaTime;
+                if (currentPatienceTimer <= 0f)
+                {
+                    // คืนช่องหัวแถวให้ลูกค้าคนอื่น
+                    targetCounter.UnregisterThief(this);
+                    isAngry = true;
+                    ShowAngry();
+                    LeaveCounterAndExit();
+                    Debug.Log("[CustomerAI] โจรรอนานเกินไป ไม่มีอาหารให้ขโมย เดินกลับมือเปล่า");
+                }
+            }
         }
 
         public void LeaveCounterAndExit()
