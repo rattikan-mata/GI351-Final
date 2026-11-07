@@ -135,7 +135,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CustomerAI
   moveSpeed: 3
   patienceDuration: 100000000
-  wantSpecificFood: 0
+  wantSpecificFood: 1
   preferredDish: 2
   targetCounter: {fileID: 8507393914842812104, guid: 7c826388d620c024e8e792ab45d5684e, type: 3}
   exitPoint: {fileID: 0}

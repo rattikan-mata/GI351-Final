@@ -53,6 +53,9 @@ namespace GI351.KitchenGame
         [Tooltip("Prefab อาหารปรุงสุกที่จะได้รับเมื่อต้มเสร็จ")]
         [SerializeField] private GameObject cookedDishPrefab;
 
+        [Tooltip("Prefab อาหารพิเศษที่ได้จากการยัดโจรลงหม้อ (ถ้าว่างจะใช้ Cooked Dish Prefab แล้วย้อมสีทองแทน)")]
+        [SerializeField] private GameObject specialDishPrefab;
+
         [Tooltip("ระยะเวลาในการต้มอาหารแต่ละชิ้นในคิว (วินาที) - จะต้มทีละ 1 ชิ้นเรียงตามคิว")]
         [SerializeField] private float cookingDuration = 3f;
 
@@ -117,38 +120,6 @@ namespace GI351.KitchenGame
         [Tooltip("เสียงตอนอาหารต้มเสร็จแล้วเด้งออกมา (ถ้ามี)")]
         [SerializeField] private AudioClip foodDoneSound;
 
-        [Header("Ingredient Stack (วัตถุดิบลอยไปเรียงบนหม้อ)")]
-        [Tooltip("เวลาที่วัตถุดิบ 1 ชิ้นลอยจากตัวผู้เล่นไปถึงหม้อ (วินาที)")]
-        [SerializeField] private float ingredientFlyDuration = 0.35f;
-
-        [Tooltip("เว้นช่วงระหว่างการลอยของแต่ละชิ้น (วินาที) ทำให้ลอยไปทีละชิ้น")]
-        [SerializeField] private float ingredientLaunchInterval = 0.12f;
-
-        [Tooltip("ความสูงของโค้งตอนลอย (เมตร)")]
-        [SerializeField] private float ingredientArcHeight = 0.6f;
-
-        [Tooltip("จุดเริ่มกองชิ้นล่างสุด เยื้องจากกลางหม้อ (เมตร) (0,0) คือกลางหม้อพอดี")]
-        [SerializeField] private Vector2 ingredientStackBase = Vector2.zero;
-
-        [Tooltip("ระยะซ้อนสำรอง ใช้เฉพาะตอนหา Player ไม่เจอ (ปกติจะใช้ระยะเดียวกับกองบนหลังผู้เล่น)")]
-        [SerializeField] private Vector3 ingredientStackOffset = new Vector3(0f, 0.315f, -0.014f);
-
-        [Tooltip("จำนวนชิ้นสูงสุดที่โชว์บนหม้อ (เกินนี้จะซ่อนไว้แต่ยังอยู่ในคิว)")]
-        [SerializeField] private int maxVisibleIngredients = 10;
-
-        [Header("Cooking Progress Bar (หลอดความคืบหน้าใต้หม้อ)")]
-        [Tooltip("เปิดแสดงหลอดความคืบหน้า เต็มหลอดแล้วจะได้อาหาร")]
-        [SerializeField] private bool showProgressBar = true;
-
-        [Tooltip("ตำแหน่งเยื้องจากกลางหม้อ (เมตร)")]
-        [SerializeField] private Vector2 progressBarOffset = new Vector2(0f, -1.15f);
-
-        [Tooltip("ขนาดหลอด (กว้าง x สูง เมตร)")]
-        [SerializeField] private Vector2 progressBarSize = new Vector2(1.6f, 0.16f);
-
-        [SerializeField] private Color progressBarBackColor = new Color(0f, 0f, 0f, 0.6f);
-        [SerializeField] private Color progressBarFillColor = new Color(0.35f, 0.95f, 0.45f, 1f);
-
         [Header("Gizmo Settings")]
         [Tooltip("สีของโซนตรวจจับใน Scene View")]
         [SerializeField] private Color zoneGizmoColor = new Color(0.2f, 0.8f, 1f, 0.25f);
@@ -175,6 +146,8 @@ namespace GI351.KitchenGame
         private int queuedIngredientCount = 0;
         private float currentCookTimer = 0f;
         private bool isCurrentlyCooking = false;
+        private bool isCurrentlyCookingSpecial = false;
+        private int queuedSpecialDishCount = 0;
 
         private bool isPlayerInRange;
         private PlayerCarry cachedPlayerCarry;
@@ -188,43 +161,22 @@ namespace GI351.KitchenGame
         private float outputRingSpawnPulseTimer = 0f;
 
         private static Sprite generatedRingSprite;
-        private static Sprite whitePixelSprite;
-
-        // วัตถุดิบที่ลอยไปวางบนหม้อ (ชิ้นแรกคือชิ้นที่กำลังต้ม)
-        private class IngredientVisual
-        {
-            public Item item;
-            public Vector3 startPos;
-            public Vector3 startScale;
-            public float launchTime;
-        }
-        private readonly List<IngredientVisual> ingredientVisuals = new List<IngredientVisual>();
-        private float lastIngredientLaunchTime = -999f;
-
-        // หลอดความคืบหน้า
-        private GameObject progressBarRoot;
-        private Transform progressBarFill;
-        private TextMesh progressCountText;
 
         public bool IsUnlocked => isUnlocked;
         public bool RequiresPurchase => requiresPurchase;
         public int PurchasePrice => purchasePrice;
         public string PotName => potName;
-        public int QueuedCount => queuedIngredientCount;
-        public int CookingItemsCount => (isCurrentlyCooking ? 1 : 0) + queuedIngredientCount;
+        public int QueuedCount => queuedIngredientCount + queuedSpecialDishCount;
+        public int CookingItemsCount => (isCurrentlyCooking ? 1 : 0) + queuedIngredientCount + queuedSpecialDishCount;
         public int MaxCapacity => maxCookingCapacity;
         public bool IsCooking => isCurrentlyCooking;
         public float CurrentProgress => isCurrentlyCooking && cookingDuration > 0f ? Mathf.Clamp01(1f - (currentCookTimer / cookingDuration)) : 0f;
         public float CurrentRemainingTime => isCurrentlyCooking ? Mathf.Max(0f, currentCookTimer) : 0f;
-        public float TotalRemainingTime => (isCurrentlyCooking ? currentCookTimer : 0f) + (queuedIngredientCount * cookingDuration);
+        public float TotalRemainingTime => (isCurrentlyCooking ? currentCookTimer : 0f) + ((queuedIngredientCount + queuedSpecialDishCount) * cookingDuration);
 
         private void Awake()
         {
             InitPotComponents();
-            FindExistingZoneObjects();
-
-            // ใน Edit Mode ห้ามเปลี่ยนสี/Collider ของหม้อ ไม่งั้นค่าจะถูกบันทึกลง Scene/Prefab
-            if (!Application.isPlaying) return;
 
             // ตรวจสอบอัตโนมัติ: ถ้าเป็นหม้อหมู ให้เปิดระบบต้องซื้อก่อนใช้งาน
             bool needPurchase = requiresPurchase || (autoRequirePurchaseForPork && IsPigPot());
@@ -241,12 +193,16 @@ namespace GI351.KitchenGame
             }
         }
 
+        public static readonly List<CookingPot> AllPots = new List<CookingPot>();
+
+        /// <summary>วัตถุดิบที่หม้อนี้ใช้ (ใช้ดูว่าหม้อนี้ทำอาหารอะไร)</summary>
+        public ItemType RequiredIngredient => requiredIngredient;
+
         private void OnEnable()
         {
-            InitPotComponents();
-            FindExistingZoneObjects();
+            if (!AllPots.Contains(this)) AllPots.Add(this);
 
-            if (!Application.isPlaying) return;
+            InitPotComponents();
 
             bool needPurchase = requiresPurchase || (autoRequirePurchaseForPork && IsPigPot());
             if (needPurchase && !isUnlocked)
@@ -257,6 +213,11 @@ namespace GI351.KitchenGame
             {
                 ApplyUnlockedState();
             }
+        }
+
+        private void OnDisable()
+        {
+            AllPots.Remove(this);
         }
 
         private void OnValidate()
@@ -279,33 +240,11 @@ namespace GI351.KitchenGame
             }
         }
 
-        private bool IsPigPot()
+        public bool IsPigPot()
         {
             string pName = potName != null ? potName.ToLower() : "";
             string gName = gameObject != null ? gameObject.name.ToLower() : "";
             return requiredIngredient == ItemType.PigMeat || pName.Contains("pig") || pName.Contains("pork") || gName.Contains("pig") || gName.Contains("pork");
-        }
-
-        /// <summary>
-        /// ดึง child วงแหวนที่บันทึกอยู่ใน Scene/Prefab แล้ว เพื่อให้ซ่อน/แสดงได้ตั้งแต่ Awake
-        /// </summary>
-        private void FindExistingZoneObjects()
-        {
-            if (standZoneObject == null)
-            {
-                Transform t = transform.Find("PlayerStandZone");
-                if (t != null) standZoneObject = t.gameObject;
-            }
-            if (outputRingObject == null)
-            {
-                Transform t = transform.Find("FoodOutputRing");
-                if (t != null) outputRingObject = t.gameObject;
-            }
-            if (purchaseZoneObject == null)
-            {
-                Transform t = transform.Find("PotPurchaseZone");
-                if (t != null) purchaseZoneObject = t.gameObject;
-            }
         }
 
         private void InitPotComponents()
@@ -616,10 +555,6 @@ namespace GI351.KitchenGame
             // อัปเดตเวลาการต้มอาหารทีละ 1 ชิ้นตามคิว
             UpdateCookingQueue();
 
-            // วัตถุดิบลอยไปเรียงบนหม้อ + หลอดความคืบหน้าใต้หม้อ
-            UpdateIngredientVisuals();
-            UpdateProgressBar();
-
             // แอนิเมชันของวงแหวนสีขาว (จุดยืนผู้เล่น)
             UpdateFloorRingAnimation();
 
@@ -705,9 +640,6 @@ namespace GI351.KitchenGame
 
             if (MoneyManager.Instance != null)
             {
-                // เช็คเงินก่อน ไม่งั้น SpendMoney จะ log "Not enough money!" ทุกเฟรมที่ยืนในวง
-                if (MoneyManager.Instance.CurrentMoney < purchasePrice) return false;
-
                 if (MoneyManager.Instance.SpendMoney(purchasePrice))
                 {
                     UnlockPot();
@@ -737,7 +669,18 @@ namespace GI351.KitchenGame
 
         private void UpdateEditorVisuals()
         {
-            // ไม่เปลี่ยนสีหม้อใน Edit Mode (จะถูกบันทึกลง Scene) ใช้ Gizmo วงซื้อหม้อแทนการพรีวิว
+            InitPotComponents();
+
+            bool needPurchase = requiresPurchase || (autoRequirePurchaseForPork && IsPigPot());
+
+            // แสดงตัวอย่างความโปร่งใสใน Scene View
+            if (potSpriteRenderer != null)
+            {
+                Color c = defaultPotColor;
+                c.a = needPurchase ? lockedAlpha : 1f;
+                potSpriteRenderer.color = c;
+            }
+
             Vector3 lossy = transform.lossyScale;
             float pX = Mathf.Abs(lossy.x) > 0.0001f ? Mathf.Abs(lossy.x) : 1f;
             float pY = Mathf.Abs(lossy.y) > 0.0001f ? Mathf.Abs(lossy.y) : 1f;
@@ -827,10 +770,15 @@ namespace GI351.KitchenGame
 
             if (currentCookTimer <= 0f)
             {
-                // ชิ้นที่ต้มเสร็จ (ชิ้นแรกบนหม้อ) หายไปกลายเป็นอาหาร
-                RemoveFirstIngredientVisual();
+                if (isCurrentlyCookingSpecial)
+                {
+                    SpawnSpecialCookedDishAtOutput();
+                }
+                else
+                {
+                    SpawnCookedDishAtOutput();
+                }
 
-                SpawnCookedDishAtOutput();
                 onCookingFinished?.Invoke();
 
                 if (foodDoneSound != null)
@@ -838,15 +786,25 @@ namespace GI351.KitchenGame
                     AudioSource.PlayClipAtPoint(foodDoneSound, transform.position);
                 }
 
-                if (queuedIngredientCount > 0)
+                // ตรวจสอบคิวชิ้นถัดไป (จานพิเศษหรือจานธรรมดา)
+                if (queuedSpecialDishCount > 0)
+                {
+                    queuedSpecialDishCount--;
+                    isCurrentlyCookingSpecial = true;
+                    currentCookTimer = cookingDuration;
+                    isCurrentlyCooking = true;
+                }
+                else if (queuedIngredientCount > 0)
                 {
                     queuedIngredientCount--;
+                    isCurrentlyCookingSpecial = false;
                     currentCookTimer = cookingDuration;
                     isCurrentlyCooking = true;
                 }
                 else
                 {
                     isCurrentlyCooking = false;
+                    isCurrentlyCookingSpecial = false;
                     currentCookTimer = 0f;
                 }
 
@@ -861,12 +819,30 @@ namespace GI351.KitchenGame
 
             int fedCount = 0;
 
+            // 1. ตรวจสอบว่าผู้เล่นแบก "โจรที่สลบ" (UnconsciousThief) มาหรือไม่ (สามารถจับยัดเข้าหม้อไหนก็ได้!)
+            while (CookingItemsCount < maxCookingCapacity && playerCarry.HasItemOfType(ItemType.UnconsciousThief))
+            {
+                Item thief = playerCarry.PopItemOfType(ItemType.UnconsciousThief);
+                if (thief != null)
+                {
+                    Destroy(thief.gameObject);
+                    AddSpecialIngredientToQueue();
+                    fedCount++;
+                    Debug.Log($"[CookingPot] ยัดโจรเข้า {potName} สำเร็จ! กำลังปรุงอาหารพิเศษราคาแพง x10...");
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // 2. ป้อนวัตถุดิบเนื้อปกติประจำหม้อ (เนื้อไก่ หรือ เนื้อหมู)
             while (CookingItemsCount < maxCookingCapacity && playerCarry.HasItemOfType(requiredIngredient))
             {
                 Item meat = playerCarry.PopItemOfType(requiredIngredient);
                 if (meat != null)
                 {
-                    AddIngredientVisual(meat);
+                    Destroy(meat.gameObject);
                     AddIngredientToQueue();
                     fedCount++;
                 }
@@ -888,6 +864,7 @@ namespace GI351.KitchenGame
             if (wasIdle)
             {
                 isCurrentlyCooking = true;
+                isCurrentlyCookingSpecial = false;
                 currentCookTimer = cookingDuration;
                 onCookingStarted?.Invoke();
             }
@@ -905,216 +882,34 @@ namespace GI351.KitchenGame
             }
         }
 
-        // ========================== วัตถุดิบลอยไปเรียงบนหม้อ ==========================
-
         /// <summary>
-        /// เก็บวัตถุดิบไว้แสดงบนหม้อแทนการทำลายทันที จะลอยจากตัวผู้เล่นไปเรียงบนหม้อทีละชิ้น
+        /// เพิ่มวัตถุดิบพิเศษ (โจรที่สลบ) เข้าคิวทำอาหารพิเศษ
         /// </summary>
-        private void AddIngredientVisual(Item meat)
+        private void AddSpecialIngredientToQueue()
         {
-            // ปิดการเก็บ/ชน/สลายตัวของไอเทม ขณะอยู่บนหม้อ
-            meat.SetCarriedState(true);
-            meat.transform.SetParent(transform, true);
+            if (!isUnlocked) return;
 
-            float launch = Mathf.Max(Time.time, lastIngredientLaunchTime + ingredientLaunchInterval);
-            lastIngredientLaunchTime = launch;
+            bool wasIdle = !isCurrentlyCooking;
 
-            ingredientVisuals.Add(new IngredientVisual
+            if (wasIdle)
             {
-                item = meat,
-                startPos = meat.transform.position,
-                startScale = meat.transform.lossyScale,
-                launchTime = launch
-            });
-
-            if (meat.SpriteRenderer != null)
-            {
-                SpriteRenderer potRenderer = GetComponent<SpriteRenderer>();
-                if (potRenderer != null)
-                {
-                    meat.SpriteRenderer.sortingLayerID = potRenderer.sortingLayerID;
-                    meat.SpriteRenderer.sortingOrder = potRenderer.sortingOrder + 2;
-                }
+                isCurrentlyCooking = true;
+                isCurrentlyCookingSpecial = true;
+                currentCookTimer = cookingDuration;
+                onCookingStarted?.Invoke();
             }
-        }
-
-        private void RemoveFirstIngredientVisual()
-        {
-            if (ingredientVisuals.Count == 0) return;
-
-            IngredientVisual first = ingredientVisuals[0];
-            ingredientVisuals.RemoveAt(0);
-            if (first.item != null)
+            else
             {
-                Destroy(first.item.gameObject);
-            }
-        }
-
-        /// <summary>
-        /// ตำแหน่งชิ้นที่ index ในกองแนวตั้งบนหม้อ (ชิ้น 0 อยู่ล่างสุดและต้มก่อน)
-        /// </summary>
-        private Vector3 GetIngredientSlotPosition(int index)
-        {
-            // ใช้ระยะซ้อนเดียวกับกองบนหลังผู้เล่น
-            Vector3 step = cachedPlayerCarry != null ? cachedPlayerCarry.WorldStackOffset : ingredientStackOffset;
-            return transform.position
-                + new Vector3(ingredientStackBase.x, ingredientStackBase.y, -0.05f)
-                + step * index;
-        }
-
-        private void UpdateIngredientVisuals()
-        {
-            ingredientVisuals.RemoveAll(v => v.item == null);
-
-            int visibleCount = Mathf.Min(ingredientVisuals.Count, Mathf.Max(1, maxVisibleIngredients));
-            Vector3 lossy = transform.lossyScale;
-
-            SpriteRenderer potRenderer = GetComponent<SpriteRenderer>();
-            int baseIngredientOrder = (potRenderer != null ? potRenderer.sortingOrder : 0) + 2;
-
-            for (int i = 0; i < ingredientVisuals.Count; i++)
-            {
-                IngredientVisual v = ingredientVisuals[i];
-                Transform t = v.item.transform;
-                bool visible = i < visibleCount;
-
-                // คงขนาดในโลกเท่าตอนที่แบกอยู่ (ชดเชยสเกลของหม้อ)
-                Vector3 displayLocalScale = new Vector3(
-                    v.startScale.x / Mathf.Max(0.0001f, Mathf.Abs(lossy.x)),
-                    v.startScale.y / Mathf.Max(0.0001f, Mathf.Abs(lossy.y)),
-                    1f);
-
-                if (v.item.SpriteRenderer != null)
-                {
-                    // ก่อนถึงคิวลอยยังเห็นอยู่ตรงตำแหน่งเดิม หลังลอยแล้วเห็นเฉพาะชิ้นที่อยู่ในจำนวนโชว์
-                    v.item.SpriteRenderer.enabled = Time.time < v.launchTime || visible;
-                }
-
-                // ยังไม่ถึงคิวลอย: ค้างอยู่ที่ตำแหน่งเดิม
-                if (Time.time < v.launchTime) continue;
-
-                if (!visible)
-                {
-                    // ชิ้นที่เกินจำนวนโชว์ ซ่อนไว้กลางหม้อ เมื่อมีที่ว่างจะเลื่อนออกมาเอง
-                    t.position = transform.position;
-                    t.localScale = displayLocalScale;
-                    continue;
-                }
-
-                Vector3 slot = GetIngredientSlotPosition(i);
-
-                // ชิ้นที่อยู่สูงกว่าวาดทับชิ้นที่อยู่ต่ำกว่า (เหมือนกองบนหลังผู้เล่น)
-                if (v.item.SpriteRenderer != null)
-                {
-                    v.item.SpriteRenderer.sortingOrder = baseIngredientOrder + i;
-                }
-                float progress = ingredientFlyDuration > 0f ? (Time.time - v.launchTime) / ingredientFlyDuration : 1f;
-
-                if (progress < 1f)
-                {
-                    // ลอยเป็นโค้งจากตัวผู้เล่นไปยังช่องบนหม้อ
-                    float eased = Mathf.SmoothStep(0f, 1f, progress);
-                    Vector3 pos = Vector3.Lerp(v.startPos, slot, eased);
-                    pos.y += Mathf.Sin(progress * Mathf.PI) * ingredientArcHeight;
-                    t.position = pos;
-                    t.localScale = displayLocalScale;
-                }
-                else
-                {
-                    // ถึงแล้ว: เลื่อนเข้าช่องนุ่ม ๆ (ช่องขยับเมื่อชิ้นแรกต้มเสร็จ)
-                    t.position = Vector3.Lerp(t.position, slot, Time.deltaTime * 12f);
-                    t.localScale = displayLocalScale;
-                }
-                t.localRotation = Quaternion.identity;
-            }
-        }
-
-        // ========================== หลอดความคืบหน้าใต้หม้อ ==========================
-
-        private void SetupProgressBar()
-        {
-            if (progressBarRoot != null) return;
-
-            SpriteRenderer potRenderer = GetComponent<SpriteRenderer>();
-            int layerId = potRenderer != null ? potRenderer.sortingLayerID : 0;
-            int baseOrder = potRenderer != null ? potRenderer.sortingOrder : 0;
-
-            progressBarRoot = new GameObject("CookingProgressBar");
-            progressBarRoot.transform.SetParent(transform, false);
-
-            // พื้นหลังหลอด
-            var back = new GameObject("Back");
-            back.transform.SetParent(progressBarRoot.transform, false);
-            var backSr = back.AddComponent<SpriteRenderer>();
-            backSr.sprite = GetWhitePixelSprite(new Vector2(0.5f, 0.5f));
-            backSr.color = progressBarBackColor;
-            backSr.sortingLayerID = layerId;
-            backSr.sortingOrder = baseOrder + 5;
-            back.transform.localScale = new Vector3(progressBarSize.x, progressBarSize.y, 1f);
-
-            // ตัวหลอด (pivot ซ้าย ยืดไปทางขวาตามความคืบหน้า)
-            var fill = new GameObject("Fill");
-            fill.transform.SetParent(progressBarRoot.transform, false);
-            var fillSr = fill.AddComponent<SpriteRenderer>();
-            fillSr.sprite = GetWhitePixelSprite(new Vector2(0f, 0.5f));
-            fillSr.color = progressBarFillColor;
-            fillSr.sortingLayerID = layerId;
-            fillSr.sortingOrder = baseOrder + 6;
-            fill.transform.localPosition = new Vector3(-progressBarSize.x * 0.5f, 0f, 0f);
-            progressBarFill = fill.transform;
-
-            // จำนวนชิ้นที่รอต้ม (เช่น x3)
-            var text = new GameObject("Count");
-            text.transform.SetParent(progressBarRoot.transform, false);
-            text.transform.localPosition = new Vector3(progressBarSize.x * 0.5f + 0.1f, 0f, 0f);
-            progressCountText = text.AddComponent<TextMesh>();
-            progressCountText.anchor = TextAnchor.MiddleLeft;
-            progressCountText.characterSize = 0.05f;
-            progressCountText.fontSize = 48;
-            progressCountText.color = Color.white;
-            var mr = text.GetComponent<MeshRenderer>();
-            mr.sortingLayerID = layerId;
-            mr.sortingOrder = baseOrder + 7;
-        }
-
-        private void UpdateProgressBar()
-        {
-            bool show = showProgressBar && isCurrentlyCooking;
-            if (!show)
-            {
-                if (progressBarRoot != null) progressBarRoot.SetActive(false);
-                return;
+                queuedSpecialDishCount++;
             }
 
-            SetupProgressBar();
-            progressBarRoot.SetActive(true);
+            UpdateVisuals();
+            onIngredientAdded?.Invoke();
 
-            // ให้หลอดมีสเกลในโลกเท่ากับ 1 ไม่ว่าหม้อจะถูกสเกลเท่าไหร่
-            Vector3 lossy = transform.lossyScale;
-            progressBarRoot.transform.localScale = new Vector3(
-                1f / Mathf.Max(0.0001f, Mathf.Abs(lossy.x)),
-                1f / Mathf.Max(0.0001f, Mathf.Abs(lossy.y)),
-                1f);
-            progressBarRoot.transform.position = transform.position + new Vector3(progressBarOffset.x, progressBarOffset.y, -0.1f);
-            progressBarRoot.transform.rotation = Quaternion.identity;
-
-            progressBarFill.localScale = new Vector3(progressBarSize.x * CurrentProgress, progressBarSize.y, 1f);
-
-            int count = CookingItemsCount;
-            progressCountText.text = count > 1 ? $"x{count}" : "";
-        }
-
-        /// <summary>
-        /// Sprite สีขาว 1x1 หน่วย (ใช้ทำหลอด) แยกตาม pivot
-        /// </summary>
-        private static Sprite GetWhitePixelSprite(Vector2 pivot)
-        {
-            if (pivot == new Vector2(0.5f, 0.5f) && whitePixelSprite != null) return whitePixelSprite;
-
-            var tex = Texture2D.whiteTexture;
-            var sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), pivot, tex.width);
-            if (pivot == new Vector2(0.5f, 0.5f)) whitePixelSprite = sprite;
-            return sprite;
+            if (ingredientDropSound != null)
+            {
+                AudioSource.PlayClipAtPoint(ingredientDropSound, transform.position);
+            }
         }
 
         private void SpawnCookedDishAtOutput()
@@ -1137,6 +932,55 @@ namespace GI351.KitchenGame
             }
 
             onFoodOutputSpawned?.Invoke();
+        }
+
+        /// <summary>
+        /// ผลิตอาหารพิเศษจากโจร: ราคาแพง x10 จากไก่ (ไก่ 10 เหรียญ -> อาหารพิเศษ 100 เหรียญ)
+        /// เปล่งออร่าสีเหลืองทองอร่าม
+        /// </summary>
+        private void SpawnSpecialCookedDishAtOutput()
+        {
+            GameObject specialPrefab = specialDishPrefab != null ? specialDishPrefab : cookedDishPrefab;
+            if (specialPrefab == null) return;
+
+            Vector3 spawnPos = GetOutputPosition();
+            outputRingSpawnPulseTimer = 0.35f;
+
+            Vector2 randomSpread = Random.insideUnitCircle * 0.15f;
+            Vector3 finalSpawnPos = spawnPos + new Vector3(randomSpread.x, randomSpread.y, 0f);
+
+            GameObject dishObj = Instantiate(specialPrefab, finalSpawnPos, Quaternion.identity);
+
+            // ตั้งค่าไอเทมให้เป็นอาหารพิเศษราคาแพง x10
+            if (dishObj.TryGetComponent<Item>(out var item))
+            {
+                item.SetItemType(ItemType.SpecialDish);
+                item.SetItemName("Special Golden Dish");
+                item.SetSellPrice(100);
+                item.SetItemColor(new Color(1f, 0.85f, 0.12f, 1f));
+            }
+
+            if (dishObj.TryGetComponent<CookedDish>(out var cookedDish))
+            {
+                cookedDish.SetDishName("Special Dish (x10)");
+                cookedDish.SetDishQuality(5);
+            }
+
+            // ย้อมสีทองอร่ามให้เห็นเด่นชัดว่าเป็นอาหารชั้นยอด
+            if (dishObj.TryGetComponent<SpriteRenderer>(out var sr))
+            {
+                sr.color = new Color(1f, 0.85f, 0.12f, 1f);
+            }
+
+            if (foodPopForce > 0f && dishObj.TryGetComponent<Rigidbody2D>(out var dishRb))
+            {
+                Vector2 popDir = ((Vector2)(finalSpawnPos - transform.position)).normalized;
+                if (popDir == Vector2.zero) popDir = Vector2.down;
+                dishRb.AddForce(popDir * foodPopForce, ForceMode2D.Impulse);
+            }
+
+            onFoodOutputSpawned?.Invoke();
+            Debug.Log("[CookingPot] ปรุงเสร็จแล้ว! อาหารพิเศษ Special Golden Dish (100 coins) กระเด็นออกมาจากหม้อ!");
         }
 
         public Vector3 GetStandZonePosition()
@@ -1258,6 +1102,18 @@ namespace GI351.KitchenGame
                 customRingSprite = loaded;
                 return loaded;
             }
+#endif
+            return GetOrCreateRingSprite();
+        }
+
+        /// <summary>
+        /// Sprite วงแหวนที่ใช้ร่วมกับเครื่องอื่น (เช่น เครื่องผสมเนื้อ) ให้หน้าตาเหมือนวงของหม้อ
+        /// </summary>
+        public static Sprite GetSharedRingSprite()
+        {
+#if UNITY_EDITOR
+            Sprite loaded = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Prefab/Shop/FloorStandRing.png");
+            if (loaded != null) return loaded;
 #endif
             return GetOrCreateRingSprite();
         }

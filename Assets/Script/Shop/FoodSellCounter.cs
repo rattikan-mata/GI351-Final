@@ -139,6 +139,7 @@ namespace GI351.KitchenGame
         public int MaxPlates => (plateSlots != null && plateSlots.Length > 0) ? plateSlots.Length : maxPlates;
         public int MaxFoodCount => MaxPlates;
         public Transform CustomerWaitPoint => customerWaitPoint != null ? customerWaitPoint : transform;
+        public Vector2 QueueDirection => queueDirection;
 
         // คิวของลูกค้าที่กำลังยืนรอซื้ออาหาร
         private readonly List<CustomerAI> customerQueue = new List<CustomerAI>();
@@ -184,6 +185,28 @@ namespace GI351.KitchenGame
         /// <summary>
         /// หาตำแหน่งในคิวของลูกค้า (Index 0 คือหัวแถว)
         /// </summary>
+        private readonly HashSet<CustomerAI> cuttingThieves = new HashSet<CustomerAI>();
+
+        /// <summary>โจรแซงคิว: ลูกค้าในแถวจะขยับถอยหลังไปหนึ่งช่องต่อโจรหนึ่งตัว</summary>
+        public void RegisterThief(CustomerAI thief)
+        {
+            if (thief != null) cuttingThieves.Add(thief);
+        }
+
+        public void UnregisterThief(CustomerAI thief)
+        {
+            cuttingThieves.Remove(thief);
+        }
+
+        private int ThiefOffset
+        {
+            get
+            {
+                cuttingThieves.RemoveWhere(t => t == null);
+                return cuttingThieves.Count;
+            }
+        }
+
         public int GetQueueIndex(CustomerAI customer)
         {
             customerQueue.RemoveAll(c => c == null);
@@ -207,6 +230,9 @@ namespace GI351.KitchenGame
                     index = customerQueue.Count;
                 }
             }
+
+            // เลื่อนช่องถอยหลังตามจำนวนโจรที่แซงคิวอยู่
+            index += ThiefOffset;
 
             // ถ้ากำหนด customQueuePoints ไว้ ให้ใช้ตาม Transform ที่ระบุ
             if (customQueuePoints != null && index < customQueuePoints.Length && customQueuePoints[index] != null)
@@ -759,6 +785,7 @@ namespace GI351.KitchenGame
         }
 
         /// <summary>
+        /// <summary>
         /// เมื่อลูกค้าเดินมาซื้ออาหาร:
         /// 1. หักอาหารออกจากโต๊ะ
         /// 2. ดีดเหรียญเงิน/เงินออกมาที่วงเงินออก (Money Output Zone)
@@ -770,11 +797,24 @@ namespace GI351.KitchenGame
             if (dishesOnCounter.Count == 0) return null;
 
             Item selectedDish = null;
-            if (preferredType.HasValue)
+
+            // 1. ถ้ามีอาหารพิเศษ (SpecialDish) บนโต๊ะ ให้ขายอาหารพิเศษก่อน (ราคาแพง x10)
+            for (int i = 0; i < dishesOnCounter.Count; i++)
+            {
+                if (dishesOnCounter[i] != null && dishesOnCounter[i].Type == ItemType.SpecialDish)
+                {
+                    selectedDish = dishesOnCounter[i];
+                    dishesOnCounter.RemoveAt(i);
+                    break;
+                }
+            }
+
+            // 2. ถ้าไม่มีอาหารพิเศษ ให้หาอาหารตามที่ลูกค้าอยากทาน
+            if (selectedDish == null && preferredType.HasValue)
             {
                 for (int i = 0; i < dishesOnCounter.Count; i++)
                 {
-                    if (dishesOnCounter[i].Type == preferredType.Value)
+                    if (dishesOnCounter[i] != null && dishesOnCounter[i].Type == preferredType.Value)
                     {
                         selectedDish = dishesOnCounter[i];
                         dishesOnCounter.RemoveAt(i);
@@ -783,7 +823,8 @@ namespace GI351.KitchenGame
                 }
             }
 
-            if (selectedDish == null && dishesOnCounter.Count > 0)
+            // 3. ถ้าลูกค้าไม่เจาะจงเมนู ให้หยิบชิ้นแรกบนโต๊ะ (ถ้าเจาะจงแล้วไม่มีเมนูนั้น จะไม่ขายอย่างอื่นให้)
+            if (selectedDish == null && !preferredType.HasValue && dishesOnCounter.Count > 0)
             {
                 selectedDish = dishesOnCounter[0];
                 dishesOnCounter.RemoveAt(0);
@@ -813,6 +854,28 @@ namespace GI351.KitchenGame
             }
 
             return selectedDish;
+        }
+
+        /// <summary>
+        /// โจรแซงคิวฉกอาหารบนโต๊ะไป (กินไม่จ่าย / ไม่มีการเสกเงินออกมา)
+        /// </summary>
+        public Item ThiefStealDish(CustomerAI thief = null)
+        {
+            dishesOnCounter.RemoveAll(d => d == null);
+            if (dishesOnCounter.Count == 0) return null;
+
+            // ฉกอาหารชิ้นแรกบนโต๊ะ
+            Item stolenDish = dishesOnCounter[0];
+            dishesOnCounter.RemoveAt(0);
+
+            if (stolenDish != null)
+            {
+                stolenDish.transform.SetParent(null);
+                RearrangeFoodOnCounter();
+                onDishesCountChanged?.Invoke(dishesOnCounter.Count);
+            }
+
+            return stolenDish;
         }
 
         /// <summary>
@@ -886,7 +949,7 @@ namespace GI351.KitchenGame
 
             foreach (var dish in dishesOnCounter)
             {
-                if (dish != null && dish.Type == preferredType.Value) return true;
+                if (dish != null && (dish.Type == preferredType.Value || dish.Type == ItemType.SpecialDish)) return true;
             }
             return false;
         }

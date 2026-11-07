@@ -6,14 +6,21 @@ namespace GI351.KitchenGame
     public class CustomerSpawner : MonoBehaviour
     {
         [Header("Customer Spawner Settings (ปรับได้ใน Inspector)")]
-        [Tooltip("Prefab ของลูกค้าที่มีสคริปต์ CustomerAI")]
+        [Tooltip("Prefab ของลูกค้าปกติที่มีสคริปต์ CustomerAI")]
         [SerializeField] private GameObject customerPrefab;
+
+        [Tooltip("Prefab สำหรับโจรโดยเฉพาะ (ถ้ากำหนดไว้จะใช้ตัวนี้เสกโจร หากเว้นว่างจะเสกจาก customerPrefab แล้วตั้งเป็นโจร)")]
+        [SerializeField] private GameObject thiefPrefab;
 
         [Tooltip("ระยะเวลาระหว่างการเสกลูกค้าแต่ละคน (วินาที)")]
         [SerializeField] private float spawnInterval = 10f;
 
         [Tooltip("จำนวนลูกค้าสูงสุดที่อยู่ในฉากพร้อมกัน")]
         [SerializeField] private int maxConcurrentCustomers = 3;
+
+        [Tooltip("โอกาสที่จะเสกเป็นลูกค้าโจรแซงคิว กินไม่จ่าย (เช่น 0.3 คือ 30%)")]
+        [Range(0f, 1f)]
+        [SerializeField] private float thiefSpawnChance = 0.3f;
 
         [Header("Waypoints")]
         [Tooltip("จุดเกิดของลูกค้า (ถ้าว่างจะใช้ตำแหน่งของ Spawner นี้)")]
@@ -72,15 +79,23 @@ namespace GI351.KitchenGame
 
             if (targetCounter == null) return;
 
-            // ถ้าแถวต่อคิวที่โต๊ะขายอาหารเต็มแล้ว ไม่ต้องเสกลูกค้าเพิ่ม
-            if (targetCounter.IsQueueFull) return;
+            bool isThief = Random.value < thiefSpawnChance;
+
+            // ถ้าเป็นลูกค้าปกติ และแถวต่อคิวเต็มแล้ว จะไม่เสกเพิ่ม (แต่โจรสามารถเสกออกมาเพื่อแซงคิวได้เสมอ)
+            if (!isThief && targetCounter.IsQueueFull) return;
+
+            GameObject prefabToUse = (isThief && thiefPrefab != null) ? thiefPrefab : customerPrefab;
+            if (prefabToUse == null) prefabToUse = customerPrefab;
+            if (prefabToUse == null) return;
 
             Vector3 pos = spawnPoint != null ? spawnPoint.position : transform.position;
-            GameObject customerObj = Instantiate(customerPrefab, pos, Quaternion.identity);
+            GameObject customerObj = Instantiate(prefabToUse, pos, Quaternion.identity);
 
             if (customerObj.TryGetComponent<CustomerAI>(out var customerAI))
             {
+                customerAI.SetAsThief(isThief);
                 customerAI.Init(targetCounter, exitPoint, this);
+                customerAI.IgnoreCollisionWithOtherCustomers();
                 activeCustomers.Add(customerAI);
             }
         }

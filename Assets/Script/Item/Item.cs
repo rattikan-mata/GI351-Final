@@ -136,6 +136,32 @@ namespace GI351.KitchenGame
         }
 
         /// <summary>
+        /// กำหนดประเภทไอเทมผ่านโค้ด
+        /// </summary>
+        public void SetItemType(ItemType type)
+        {
+            itemType = type;
+        }
+
+        /// <summary>
+        /// กำหนดชื่อไอเทมผ่านโค้ด
+        /// </summary>
+        public void SetItemName(string name)
+        {
+            itemName = name;
+        }
+
+        /// <summary>
+        /// ย้อมสีไอเทมแบบถาวร (จะไม่ถูกรีเซ็ตกลับเป็นสีเดิมตอนแบก/ปล่อย)
+        /// </summary>
+        public void SetItemColor(Color color)
+        {
+            defaultColor = color;
+            if (spriteRenderer == null) spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            if (spriteRenderer != null) spriteRenderer.color = color;
+        }
+
+        /// <summary>
         /// ตั้งค่าระบบ Despawn ผ่านโค้ด
         /// </summary>
         public void SetDespawnSettings(bool enable, float timeInSeconds)
