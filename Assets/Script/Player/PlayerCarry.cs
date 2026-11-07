@@ -20,6 +20,16 @@ namespace GI351.KitchenGame
         [Tooltip("ระยะห่างของการซ้อนของแต่ละชิ้น (แกน X, Y, Z)")]
         [SerializeField] private Vector3 stackOffset = new Vector3(0f, 0.45f, -0.02f);
 
+        [Header("Carry On Back (กองของอยู่บนหลัง = ฝั่งตรงข้ามกับทิศที่หัน)")]
+        [Tooltip("ย้ายกองของไปฝั่งหลังของตัวละครตามทิศที่หัน (ต้องมี PlayerAim)")]
+        [SerializeField] private bool carryOnBack = true;
+
+        [Tooltip("ระยะจากกลางตัวไปทางด้านหลัง (เมตร) ค่าน้อยจะดูติดตัวมากกว่า")]
+        [SerializeField] private float backDistance = 0.15f;
+
+        [Tooltip("ความเร็วที่กองของเลื่อนตามตอนหันตัว (0 = ย้ายทันที ติดตัวแน่น ไม่ลอยตาม)")]
+        [SerializeField] private float backFollowSpeed = 0f;
+
         [Header("Controls")]
         [Tooltip("ปุ่มสำหรับกดทิ้งของชิ้นบนสุด (เช่น ปุ่ม Q)")]
         [SerializeField] private bool enableDropKey = true;
@@ -29,6 +39,9 @@ namespace GI351.KitchenGame
 
         private readonly List<Item> carriedItems = new List<Item>();
         private SpriteRenderer playerRenderer;
+        private PlayerAim playerAim;
+        private Vector3 carryPointBaseLocal;
+        private bool stackInFront;
 
         public int MaxCarryCapacity => maxCarryCapacity;
         public int CurrentCarriedCount => carriedItems.Count;
@@ -50,6 +63,29 @@ namespace GI351.KitchenGame
                 point.transform.SetParent(transform);
                 point.transform.localPosition = new Vector3(0f, 0.6f, -0.01f);
                 carryPoint = point.transform;
+            }
+
+            playerAim = GetComponent<PlayerAim>();
+            carryPointBaseLocal = carryPoint.localPosition;
+        }
+
+        private void LateUpdate()
+        {
+            if (!carryOnBack || playerAim == null || carryPoint == null) return;
+
+            // ด้านหลัง = ตรงข้ามกับทิศที่หัน (แปลงระยะในโลกเป็นพิกัดของตัวละคร)
+            Vector3 backWorld = (Vector3)(-playerAim.FacingDirection * backDistance);
+            Vector3 targetLocal = carryPointBaseLocal + transform.InverseTransformVector(backWorld);
+            carryPoint.localPosition = backFollowSpeed > 0f
+                ? Vector3.Lerp(carryPoint.localPosition, targetLocal, Time.deltaTime * backFollowSpeed)
+                : targetLocal;
+
+            // หันขึ้นบน = หลังหันเข้ากล้อง กองของอยู่หน้าตัว / ทิศอื่นกองของอยู่หลังตัว
+            bool inFront = playerAim.IsFacingAway;
+            if (inFront != stackInFront)
+            {
+                stackInFront = inFront;
+                UpdateStackPositions();
             }
         }
 
@@ -261,6 +297,10 @@ namespace GI351.KitchenGame
 
         private Vector2 GetFacingDirection()
         {
+            if (playerAim != null)
+            {
+                return playerAim.FacingDirection;
+            }
             if (TryGetComponent<PlayerMovement>(out var movement))
             {
                 return movement.LastFacingDirection;
@@ -284,9 +324,13 @@ namespace GI351.KitchenGame
                 item.transform.localPosition = stackOffset * i;
 
                 // ปรับ Sorting Order ให้ชิ้นที่อยู่สูงกว่า วาดทับชิ้นที่อยู่ต่ำกว่า
+                // กองอยู่หลังตัว (ไม่ได้หันขึ้นบน) ให้วาดใต้ตัวละคร
                 if (item.SpriteRenderer != null)
                 {
-                    item.SpriteRenderer.sortingOrder = baseSortingOrder + 1 + i;
+                    bool behind = carryOnBack && playerAim != null && !stackInFront;
+                    item.SpriteRenderer.sortingOrder = behind
+                        ? baseSortingOrder - carriedItems.Count + i
+                        : baseSortingOrder + 1 + i;
                 }
             }
         }

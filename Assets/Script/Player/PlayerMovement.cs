@@ -20,6 +20,7 @@ namespace GI351.KitchenGame
         private Vector2 movementInput;
         private Vector2 lastFacingDirection = Vector2.down;
         private PlayerHealth playerHealth;
+        private PlayerAim playerAim;
 
         public Vector2 MovementInput => movementInput;
         public Vector2 LastFacingDirection => lastFacingDirection;
@@ -28,6 +29,7 @@ namespace GI351.KitchenGame
         {
             rb = GetComponent<Rigidbody2D>();
             playerHealth = GetComponent<PlayerHealth>();
+            playerAim = GetComponent<PlayerAim>();
 
             if (spriteRenderer == null)
             {
@@ -49,7 +51,12 @@ namespace GI351.KitchenGame
             }
 
             ReadInput();
-            HandleFacingDirection();
+
+            // ถ้ามี PlayerAim ให้หันตามเมาส์แทนทิศที่เดิน
+            if (playerAim == null)
+            {
+                HandleFacingDirection();
+            }
         }
 
         private void FixedUpdate()

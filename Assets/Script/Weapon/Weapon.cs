@@ -51,6 +51,13 @@ namespace GI351.KitchenGame
         [Tooltip("ปรับองศาชดเชยของรูปดาบ (ถ้าภาพ Sprite วาดเฉียงแนวทแยง 45 องศา ให้ใส่ -45 หรือ 45)")]
         [SerializeField] private float spriteRotationOffset = 0f;
 
+        [Header("Hold In Front (ถืออาวุธไว้ด้านหน้าตลอด)")]
+        [Tooltip("ถืออาวุธไว้ด้านหน้าตามทิศที่ผู้เล่นหัน (ทับค่า Hide Weapon When Idle)")]
+        [SerializeField] private bool holdWeaponInFront = true;
+
+        [Tooltip("ระยะจากกลางตัวผู้เล่นถึงอาวุธตอนถือ (เมตร)")]
+        [SerializeField] private float holdDistance = 0.55f;
+
         [Header("Weapon Stats (ปรับได้ใน Inspector)")]
         [Tooltip("ความเสียหายต่อการโจมตี 1 ครั้ง")]
         [SerializeField] private int damage = 25;
@@ -89,6 +96,8 @@ namespace GI351.KitchenGame
         private Coroutine activeSwingCoroutine;
         private bool isSwinging;
         private PlayerHealth playerHealth;
+        private PlayerAim playerAim;
+        private SpriteRenderer[] weaponRenderers;
 
         public int Damage => damage;
         public float AttackRange => attackRange;
@@ -117,6 +126,8 @@ namespace GI351.KitchenGame
             {
                 playerSpriteRenderer = playerMovement.GetComponentInChildren<SpriteRenderer>();
             }
+
+            playerAim = GetComponentInParent<PlayerAim>();
 
             ResolveCamera();
 
@@ -196,10 +207,11 @@ namespace GI351.KitchenGame
 
             weaponVisualObject.SetActive(true);
             weaponSpriteRenderer = weaponVisualObject.GetComponentInChildren<SpriteRenderer>(true);
+            weaponRenderers = weaponVisualObject.GetComponentsInChildren<SpriteRenderer>(true);
 
-            // วาดดาบให้อยู่เหนือตัวผู้เล่นเสมอ
+            // วาดดาบให้อยู่เหนือตัวผู้เล่น (ตอนหันหลังจะสลับไปอยู่หลังตัวใน UpdateWeaponSorting)
             int baseOrder = playerSpriteRenderer != null ? playerSpriteRenderer.sortingOrder : 0;
-            foreach (var sr in weaponVisualObject.GetComponentsInChildren<SpriteRenderer>(true))
+            foreach (var sr in weaponRenderers)
             {
                 if (playerSpriteRenderer != null) sr.sortingLayerID = playerSpriteRenderer.sortingLayerID;
                 sr.sortingOrder = baseOrder + 10;
@@ -209,7 +221,7 @@ namespace GI351.KitchenGame
             weaponVisualObject.transform.localPosition = new Vector3(swordDistance, 0f, 0f);
             weaponVisualObject.transform.localRotation = Quaternion.Euler(0f, 0f, spriteRotationOffset);
 
-            if (hideWeaponWhenIdle)
+            if (hideWeaponWhenIdle && !holdWeaponInFront)
             {
                 weaponVisualObject.SetActive(false);
             }
@@ -243,6 +255,10 @@ namespace GI351.KitchenGame
             if (isSwinging)
             {
                 UpdateSwing();
+            }
+            else if (holdWeaponInFront)
+            {
+                UpdateHoldPose();
             }
             else if (hideWeaponWhenIdle && weaponVisualObject != null && weaponVisualObject.activeSelf)
             {
@@ -335,7 +351,7 @@ namespace GI351.KitchenGame
 
             if (attackVisualEffect != null)
             {
-                attackVisualEffect.transform.position = transform.position + (Vector3)(aimDirection * attackOffsetDistance);
+                attackVisualEffect.transform.position = GetPivotOrigin() + (Vector3)(aimDirection * attackOffsetDistance);
                 if (rotateVisualTowardsTarget)
                 {
                     float baseAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
@@ -372,7 +388,8 @@ namespace GI351.KitchenGame
             weaponPivot.rotation = swingRotation;
 
             // วางดาบด้วยตำแหน่งโลกโดยตรง (ศูนย์กลาง + ทิศที่หมุน * ระยะ) ไม่พึ่งลำดับชั้นของ Pivot
-            Vector3 origin = transform.position;
+            Vector3 origin = GetPivotOrigin();
+            UpdateWeaponSorting(liveAim);
             Vector3 bladeDirection = swingRotation * Vector3.right;
             weaponVisualObject.transform.SetPositionAndRotation(
                 origin + bladeDirection * swordDistance,
@@ -397,7 +414,7 @@ namespace GI351.KitchenGame
         {
             isSwinging = false;
 
-            if (hideWeaponWhenIdle && weaponVisualObject != null)
+            if (!holdWeaponInFront && hideWeaponWhenIdle && weaponVisualObject != null)
             {
                 weaponVisualObject.SetActive(false);
             }
@@ -455,13 +472,60 @@ namespace GI351.KitchenGame
         }
 
         /// <summary>
+        /// จุดหมุนของอาวุธ = กลางตัวผู้เล่น (ตัว Weapon อาจถูกวางเยื้องไว้ใน Prefab)
+        /// </summary>
+        private Vector3 GetPivotOrigin()
+        {
+            return playerMovement != null ? playerMovement.transform.position : transform.position;
+        }
+
+        /// <summary>
+        /// ท่าถืออาวุธ: ยื่นไปด้านหน้าตามทิศที่ผู้เล่นหัน
+        /// </summary>
+        private void UpdateHoldPose()
+        {
+            if (weaponVisualObject == null) return;
+            if (!weaponVisualObject.activeSelf) weaponVisualObject.SetActive(true);
+
+            Vector2 dir = GetAimDirection();
+            float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+
+            weaponPivot.rotation = Quaternion.Euler(0f, 0f, angle);
+            weaponVisualObject.transform.SetPositionAndRotation(
+                GetPivotOrigin() + (Vector3)(dir * holdDistance),
+                Quaternion.Euler(0f, 0f, angle + spriteRotationOffset));
+
+            // หันซ้ายแล้วกลับภาพดาบ ไม่ให้ดาบกลับหัว
+            if (weaponSpriteRenderer != null)
+            {
+                weaponSpriteRenderer.flipY = dir.x < -0.01f;
+            }
+
+            UpdateWeaponSorting(dir);
+        }
+
+        /// <summary>
+        /// หันขึ้นบน (หันหลังให้กล้อง) อาวุธจะอยู่หลังตัว ทิศอื่นอาวุธอยู่หน้าตัว
+        /// </summary>
+        private void UpdateWeaponSorting(Vector2 dir)
+        {
+            if (weaponRenderers == null || playerSpriteRenderer == null) return;
+
+            int order = dir.y > 0.1f ? playerSpriteRenderer.sortingOrder - 1 : playerSpriteRenderer.sortingOrder + 10;
+            foreach (var sr in weaponRenderers)
+            {
+                if (sr != null) sr.sortingOrder = order;
+            }
+        }
+
+        /// <summary>
         /// แรงผลัก (Knockback) พุ่งออกจากตัวผู้เล่น
         /// </summary>
         private void ApplyKnockbackTo(Collider2D col)
         {
             if (knockbackForce <= 0f || col == null) return;
 
-            Vector2 pushDir = (col.transform.position - transform.position).normalized;
+            Vector2 pushDir = (col.transform.position - GetPivotOrigin()).normalized;
 
             // ศัตรูตั้ง linearVelocity เองทุกเฟรม ต้องผ่าน EnemyHealth เพื่อพักระบบเดินระหว่างกระเด็น
             if (col.TryGetComponent<EnemyHealth>(out var enemyHealth))
@@ -503,6 +567,12 @@ namespace GI351.KitchenGame
 
         public Vector2 GetAimDirection()
         {
+            // ใช้ทิศที่ผู้เล่นหัน (ล็อก 8 ทิศ) ให้ตรงกับภาพตัวละคร
+            if (playerAim != null)
+            {
+                return playerAim.FacingDirection;
+            }
+
             if (aimTowardsMouse)
             {
                 ResolveCamera();
@@ -562,7 +632,7 @@ namespace GI351.KitchenGame
                 return customAttackPoint.position;
             }
 
-            return transform.position + (Vector3)(direction.normalized * attackOffsetDistance);
+            return GetPivotOrigin() + (Vector3)(direction.normalized * attackOffsetDistance);
         }
 
         /// <summary>
