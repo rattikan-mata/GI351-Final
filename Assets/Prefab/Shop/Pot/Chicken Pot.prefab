@@ -24,9 +24,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2954393442361958381}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.83, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.9175235, z: 0}
+  m_LocalScale: {x: 1.10545, y: 1.10545, z: 2.2109}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 479670953343942881}
@@ -41,8 +41,8 @@ GameObject:
   m_Component:
   - component: {fileID: 479670953343942881}
   - component: {fileID: 828730705174813161}
-  - component: {fileID: 5123216724663924477}
   - component: {fileID: 2167870834008877363}
+  - component: {fileID: 8347054340469610659}
   m_Layer: 0
   m_Name: Chicken Pot
   m_TagString: Untagged
@@ -60,7 +60,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 3.146, y: 2.99, z: 0}
-  m_LocalScale: {x: 2.2109, y: 2.2109, z: 2.2109}
+  m_LocalScale: {x: 2, y: 2, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8829113731059736762}
@@ -115,7 +115,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
+  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
   m_Color: {r: 0.084905684, g: 0.084905684, b: 0.084905684, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -126,8 +126,81 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
---- !u!58 &5123216724663924477
-CircleCollider2D:
+--- !u!114 &2167870834008877363
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7233924952745703980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb3cf74e517428e43b64d1849a795a96, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CookingPot
+  requiresPurchase: 0
+  autoRequirePurchaseForPork: 1
+  purchasePrice: 50
+  purchaseZonePoint: {fileID: 0}
+  purchaseZoneOffset: {x: 0, y: -0.6}
+  purchaseZoneRadius: 0.65
+  purchaseRingColor: {r: 1, g: 0.85, b: 0.2, a: 0.95}
+  lockedAlpha: 0.35
+  requireKeyPressToBuy: 0
+  purchaseSuccessSound: {fileID: 0}
+  potName: Chicken Boiling Pot
+  requiredIngredient: 0
+  cookedDishPrefab: {fileID: 4828094788533645892, guid: 2f1daf50f377f6544bbcd510a1dc8926, type: 3}
+  specialDishPrefab: {fileID: 7100000000000000, guid: a3f1c8e25b7d4e60918c2d4f6b0a1e73, type: 3}
+  cookingDuration: 3
+  maxCookingCapacity: 20
+  standZonePoint: {fileID: 0}
+  standZoneOffset: {x: -1.2, y: 0}
+  standZoneRadius: 0.65
+  requireKeyPress: 0
+  showFloorRing: 1
+  ringColor: {r: 1, g: 1, b: 1, a: 0.9}
+  ringActiveColor: {r: 0.4, g: 1, b: 0.6, a: 0.95}
+  ringSortingOrder: 1
+  customRingSprite: {fileID: 21300000, guid: 12dc0ec2e793ffc48b40e02d50874817, type: 3}
+  foodOutputPoint: {fileID: 8829113731059736762}
+  outputOffset: {x: 0, y: -0.9}
+  foodPopForce: 1.5
+  showOutputRing: 1
+  outputRingColor: {r: 1, g: 0.85, b: 0.2, a: 0.9}
+  outputZoneRadius: 0.5
+  cookingEffect: {fileID: 0}
+  ingredientDropSound: {fileID: 0}
+  foodDoneSound: {fileID: 0}
+  ingredientFlyDuration: 0.35
+  ingredientLaunchInterval: 0.12
+  ingredientArcHeight: 0.6
+  ingredientStackBase: {x: 0, y: 0}
+  ingredientStackOffset: {x: 0, y: 0.315, z: -0.014}
+  maxVisibleIngredients: 10
+  showProgressBar: 1
+  progressBarOffset: {x: 0, y: -1.15}
+  progressBarSize: {x: 1.6, y: 0.16}
+  progressBarBackColor: {r: 0, g: 0, b: 0, a: 0.6}
+  progressBarFillColor: {r: 0.35, g: 0.95, b: 0.45, a: 1}
+  zoneGizmoColor: {r: 0.2, g: 0.8, b: 1, a: 0.25}
+  onPotPurchased:
+    m_PersistentCalls:
+      m_Calls: []
+  onIngredientAdded:
+    m_PersistentCalls:
+      m_Calls: []
+  onCookingStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  onCookingFinished:
+    m_PersistentCalls:
+      m_Calls: []
+  onFoodOutputSpawned:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!61 &8347054340469610659
+BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -156,58 +229,19 @@ CircleCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
-  m_Radius: 0.50000006
---- !u!114 &2167870834008877363
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7233924952745703980}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb3cf74e517428e43b64d1849a795a96, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CookingPot
-  potName: Chicken Boiling Pot
-  requiredIngredient: 0
-  cookedDishPrefab: {fileID: 4828094788533645892, guid: 2f1daf50f377f6544bbcd510a1dc8926, type: 3}
-  specialDishPrefab: {fileID: 7100000000000000, guid: a3f1c8e25b7d4e60918c2d4f6b0a1e73, type: 3}
-  cookingDuration: 3
-  maxCookingCapacity: 20
-  standZonePoint: {fileID: 0}
-  standZoneOffset: {x: -1.2, y: 0}
-  standZoneRadius: 0.65
-  requireKeyPress: 0
-  showFloorRing: 1
-  ringColor: {r: 1, g: 1, b: 1, a: 0.9}
-  ringActiveColor: {r: 0.4, g: 1, b: 0.6, a: 0.95}
-  ringSortingOrder: 1
-  customRingSprite: {fileID: 21300000, guid: 12dc0ec2e793ffc48b40e02d50874817, type: 3}
-  foodOutputPoint: {fileID: 8829113731059736762}
-  outputOffset: {x: 0, y: -0.9}
-  foodPopForce: 1.5
-  showOutputRing: 1
-  outputRingColor: {r: 1, g: 0.85, b: 0.2, a: 0.9}
-  outputZoneRadius: 0.5
-  cookingEffect: {fileID: 0}
-  ingredientDropSound: {fileID: 0}
-  foodDoneSound: {fileID: 0}
-  zoneGizmoColor: {r: 0.2, g: 0.8, b: 1, a: 0.25}
-  onIngredientAdded:
-    m_PersistentCalls:
-      m_Calls: []
-  onCookingStarted:
-    m_PersistentCalls:
-      m_Calls: []
-  onCookingFinished:
-    m_PersistentCalls:
-      m_Calls: []
-  onFoodOutputSpawned:
-    m_PersistentCalls:
-      m_Calls: []
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1, y: 1}
+    newSize: {x: 1, y: 1}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 1, y: 1}
+  m_EdgeRadius: 0
