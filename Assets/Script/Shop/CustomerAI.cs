@@ -9,7 +9,9 @@ namespace GI351.KitchenGame
         WaitingAtCounter,
         WalkingToExit,
         ThiefFleeing,    // โจรวิ่งหนีพร้อมของที่ขโมยมา
-        Unconscious      // โดนตีสลบแล้ว (สามารถยกขึ้นหลังได้)
+        Unconscious,     // โดนตีสลบแล้ว (สามารถยกขึ้นหลังได้)
+        WalkingToCashier, // ถืออาหารเดินไปต่อแถวที่โต๊ะจ่ายเงิน
+        WaitingAtCashier  // ยืนต่อแถวรอจ่ายเงิน
     }
 
     [RequireComponent(typeof(Rigidbody2D))]
@@ -48,6 +50,12 @@ namespace GI351.KitchenGame
         [SerializeField] private FoodSellCounter targetCounter;
         [SerializeField] private Transform exitPoint;
 
+        [Tooltip("โต๊ะจ่ายเงิน (ถ้ามี ลูกค้าจะหยิบอาหารจากโต๊ะอาหารแล้วถือมาจ่ายที่นี่ ถ้าว่างจะหาในฉากให้อัตโนมัติ)")]
+        [SerializeField] private CashierCounter cashier;
+
+        [Tooltip("ขนาดอาหารตอนลูกค้าถือ (สเกลในโลก)")]
+        [SerializeField] private float heldDishScale = 0.6f;
+
         [Header("Visual Feedback (Optional)")]
         [Tooltip("ไอคอนแสดงตอนได้กินอาหาร (มีความสุข)")]
         [SerializeField] private GameObject happyIcon;
@@ -75,6 +83,10 @@ namespace GI351.KitchenGame
         private Color thiefColor = new Color(0.4f, 0.45f, 0.55f, 1f);
         private Color defaultCustomerColor = Color.white;
         private Coroutine hurtFlashCoroutine;
+
+        // อาหารที่ลูกค้าถือไปจ่ายเงิน
+        private Item carriedDish;
+        private float payTimer;
 
         // โจรและไอเทมที่ถูกขโมย
         private Item stolenDish;
@@ -138,6 +150,11 @@ namespace GI351.KitchenGame
 #else
                 targetCounter = FindObjectOfType<FoodSellCounter>();
 #endif
+            }
+
+            if (cashier == null)
+            {
+                cashier = FindAnyObjectByType<CashierCounter>();
             }
         }
 
@@ -244,6 +261,10 @@ namespace GI351.KitchenGame
             {
                 HandleWaiting();
             }
+            else if (currentState == CustomerState.WaitingAtCashier)
+            {
+                HandlePaying();
+            }
         }
 
         private void FixedUpdate()
@@ -330,6 +351,30 @@ namespace GI351.KitchenGame
                     else
                     {
                         rb.linearVelocity = Vector2.zero;
+                    }
+                    break;
+
+                case CustomerState.WalkingToCashier:
+                    if (cashier != null)
+                    {
+                        MoveTowards(cashier.GetQueuePosition(this), moveSpeed, () => currentState = CustomerState.WaitingAtCashier);
+                    }
+                    break;
+
+                case CustomerState.WaitingAtCashier:
+                    if (cashier != null)
+                    {
+                        // แถวขยับขึ้นเมื่อคนหน้าจ่ายเสร็จ ให้เดินตามไปช่องใหม่
+                        Vector3 paySlot = cashier.GetQueuePosition(this);
+                        if (Vector2.Distance(rb.position, paySlot) > 0.12f)
+                        {
+                            MoveTowards(paySlot, moveSpeed, null);
+                        }
+                        else
+                        {
+                            rb.linearVelocity = Vector2.zero;
+                            FaceTowards(cashier.transform.position);
+                        }
                     }
                     break;
 
@@ -519,12 +564,28 @@ namespace GI351.KitchenGame
                     float distToWaitPoint = Vector2.Distance(rb.position, targetCounter.CustomerWaitPoint.position);
                     if (distToWaitPoint <= 0.4f && targetCounter.HasFoodAvailable(wantSpecificFood ? preferredDish : (ItemType?)null))
                     {
-                        Item dish = targetCounter.CustomerBuyDish(wantSpecificFood ? preferredDish : (ItemType?)null);
-                        if (dish != null)
+                        ItemType? wanted = wantSpecificFood ? preferredDish : (ItemType?)null;
+                        if (cashier != null)
                         {
-                            ShowHappy();
-                            LeaveCounterAndExit();
-                            return;
+                            // หยิบอาหารไปถือ แล้วเดินไปจ่ายเงินที่โต๊ะจ่ายเงิน
+                            Item dish = targetCounter.CustomerTakeDish(wanted);
+                            if (dish != null)
+                            {
+                                HoldDish(dish);
+                                GoToCashier();
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            // ไม่มีโต๊ะจ่ายเงิน: ซื้อและจ่ายที่โต๊ะอาหารเลย (แบบเดิม)
+                            Item dish = targetCounter.CustomerBuyDish(wanted);
+                            if (dish != null)
+                            {
+                                ShowHappy();
+                                LeaveCounterAndExit();
+                                return;
+                            }
                         }
                     }
                 }
@@ -553,6 +614,66 @@ namespace GI351.KitchenGame
                     Debug.Log("[CustomerAI] โจรรอนานเกินไป ไม่มีอาหารให้ขโมย เดินกลับมือเปล่า");
                 }
             }
+        }
+
+        /// <summary>
+        /// ถืออาหารไว้เหนือหัว ระหว่างเดินไปจ่ายเงิน
+        /// </summary>
+        private void HoldDish(Item dish)
+        {
+            carriedDish = dish;
+            dish.SetCarriedState(true);
+            dish.transform.SetParent(transform, true);
+
+            float lossy = Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.x));
+            dish.transform.localScale = Vector3.one * (heldDishScale / lossy);
+            dish.transform.localRotation = Quaternion.identity;
+
+            float headY = 0.9f;
+            if (spriteRenderer != null)
+            {
+                headY = (spriteRenderer.bounds.max.y - transform.position.y) + 0.15f;
+            }
+            dish.transform.position = transform.position + new Vector3(0f, headY, -0.05f);
+
+            if (dish.SpriteRenderer != null && spriteRenderer != null)
+            {
+                dish.SpriteRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+                dish.SpriteRenderer.sortingOrder = spriteRenderer.sortingOrder + 1;
+            }
+        }
+
+        private void GoToCashier()
+        {
+            targetCounter.LeaveQueue(this);
+            HideWantBubble();
+            cashier.JoinQueue(this);
+            payTimer = 0f;
+            currentState = CustomerState.WalkingToCashier;
+        }
+
+        /// <summary>
+        /// ยืนหัวแถวที่โต๊ะจ่ายเงินครบเวลา -> จ่ายเงิน แล้วเดินกลับบ้านพร้อมอาหาร
+        /// </summary>
+        private void HandlePaying()
+        {
+            if (cashier == null) return;
+
+            if (!cashier.IsHeadOfQueue(this)) return;
+            if (Vector2.Distance(rb.position, cashier.CustomerPayPoint.position) > 0.4f) return;
+
+            payTimer += Time.deltaTime;
+            if (payTimer < cashier.PayDuration) return;
+
+            cashier.ReceivePayment(this, carriedDish);
+            if (carriedDish != null)
+            {
+                Destroy(carriedDish.gameObject);
+                carriedDish = null;
+            }
+
+            ShowHappy();
+            currentState = CustomerState.WalkingToExit;
         }
 
         public void LeaveCounterAndExit()
@@ -811,6 +932,10 @@ namespace GI351.KitchenGame
             {
                 targetCounter.LeaveQueue(this);
             }
+            if (cashier != null)
+            {
+                cashier.LeaveQueue(this);
+            }
         }
 
         /// <summary>
@@ -867,6 +992,10 @@ namespace GI351.KitchenGame
             if (targetCounter != null && isThief)
             {
                 targetCounter.UnregisterThief(this);
+            }
+            if (cashier != null)
+            {
+                cashier.LeaveQueue(this);
             }
         }
     }

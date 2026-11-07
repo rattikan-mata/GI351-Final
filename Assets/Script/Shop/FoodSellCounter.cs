@@ -135,6 +135,7 @@ namespace GI351.KitchenGame
         private Transform playerTransform;
 
         public Transform[] PlateSlots => plateSlots;
+        public GameObject CoinPrefab => coinPrefab;
         public int DishesCount => dishesOnCounter.Count;
         public int MaxPlates => (plateSlots != null && plateSlots.Length > 0) ? plateSlots.Length : maxPlates;
         public int MaxFoodCount => MaxPlates;
@@ -792,6 +793,47 @@ namespace GI351.KitchenGame
         /// </summary>
         public Item CustomerBuyDish(ItemType? preferredType = null)
         {
+            Item selectedDish = RemoveDishForCustomer(preferredType);
+
+            if (selectedDish != null)
+            {
+                // ลูกค้าจ่ายเงิน -> ดีดเงินออกมาที่วงแหวนสีเหลือง
+                SpawnMoneyFromSale(selectedDish.SellPrice);
+
+                if (sellSound != null)
+                {
+                    AudioSource.PlayClipAtPoint(sellSound, transform.position);
+                }
+
+                onDishSold?.Invoke(selectedDish);
+
+                // ทำลายอาหาร (ลูกค้าทาน/รับไป)
+                Destroy(selectedDish.gameObject);
+            }
+
+            return selectedDish;
+        }
+
+        /// <summary>
+        /// ลูกค้าหยิบอาหารจากโต๊ะไปถือ (ยังไม่จ่ายเงิน) แล้วค่อยไปจ่ายที่โต๊ะจ่ายเงิน (CashierCounter)
+        /// </summary>
+        public Item CustomerTakeDish(ItemType? preferredType = null)
+        {
+            Item selectedDish = RemoveDishForCustomer(preferredType);
+
+            if (selectedDish != null && depositSound != null)
+            {
+                AudioSource.PlayClipAtPoint(depositSound, transform.position);
+            }
+
+            return selectedDish;
+        }
+
+        /// <summary>
+        /// เลือกและเอาอาหารออกจากโต๊ะให้ลูกค้า (อาหารพิเศษก่อน > เมนูที่อยากกิน > ชิ้นแรกถ้าไม่เจาะจง)
+        /// </summary>
+        private Item RemoveDishForCustomer(ItemType? preferredType)
+        {
             // กวาดอาหารที่ถูกทำลายไปแล้วออกก่อน กัน NullReference ตอนเช็ค Type
             dishesOnCounter.RemoveAll(d => d == null);
             if (dishesOnCounter.Count == 0) return null;
@@ -833,24 +875,11 @@ namespace GI351.KitchenGame
             if (selectedDish != null)
             {
                 selectedDish.transform.SetParent(null);
+                foodWorldScales.Remove(selectedDish);
 
                 // จัดตำแหน่งอาหารที่เหลือบนโต๊ะใหม่
                 RearrangeFoodOnCounter();
-
-                // ลูกค้าจ่ายเงิน -> ดีดเงินออกมาที่วงแหวนสีเหลือง
-                SpawnMoneyFromSale(selectedDish.SellPrice);
-
-                if (sellSound != null)
-                {
-                    AudioSource.PlayClipAtPoint(sellSound, transform.position);
-                }
-
-                onDishSold?.Invoke(selectedDish);
                 onDishesCountChanged?.Invoke(dishesOnCounter.Count);
-
-                // ทำลายอาหาร (ลูกค้าทาน/รับไป)
-                foodWorldScales.Remove(selectedDish);
-                Destroy(selectedDish.gameObject);
             }
 
             return selectedDish;
