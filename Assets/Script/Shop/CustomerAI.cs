@@ -184,13 +184,10 @@ namespace GI351.KitchenGame
             // เพิกเฉยการชนระหว่างลูกค้าทุกคน เพื่อให้โจรเดินทะลุลูกค้าแซงคิวได้เสมอ
             IgnoreCollisionWithOtherCustomers();
 
-            if (isThief)
-            {
-                ApplyThiefAppearance();
-                // โจรจะไม่ต่อคิว แต่จะเดินตรงไปที่หน้าสุดของแถวคิวทันที
-                currentState = CustomerState.WalkingToCounter;
-            }
-            else if (targetCounter != null && currentState == CustomerState.WalkingToCounter)
+            if (isThief) ApplyThiefAppearance();
+
+            // โจรก็ต่อท้ายแถวตามปกติ เหมือนลูกค้าทั่วไป (ไม่แซงคิว)
+            if (targetCounter != null && currentState == CustomerState.WalkingToCounter)
             {
                 bool joined = targetCounter.TryJoinQueue(this);
                 if (!joined && targetCounter.IsQueueFull)
@@ -234,12 +231,10 @@ namespace GI351.KitchenGame
             exitPoint = exit;
             spawnerReference = spawner;
 
-            if (isThief)
-            {
-                ApplyThiefAppearance();
-                currentState = CustomerState.WalkingToCounter;
-            }
-            else if (targetCounter != null)
+            if (isThief) ApplyThiefAppearance();
+
+            // โจรก็ต่อท้ายแถวตามปกติ เหมือนลูกค้าทั่วไป (ไม่แซงคิว)
+            if (targetCounter != null)
             {
                 bool joined = targetCounter.TryJoinQueue(this);
                 if (!joined && targetCounter.IsQueueFull)
@@ -280,50 +275,14 @@ namespace GI351.KitchenGame
                 case CustomerState.WalkingToCounter:
                     if (targetCounter != null)
                     {
-                        if (isThief)
-                        {
-                            // ลงทะเบียนแซงคิว เพื่อให้ลูกค้าในแถวขยับถอยหลังไปหนึ่งช่อง
-                            targetCounter.RegisterThief(this);
-
-                            // โจรแซงคิว: วิ่งตรงไปยังหัวแถว (ช่องแรก) ส่วนลูกค้าถอยหลังให้
-                            Vector3 frontPos = targetCounter.CustomerWaitPoint.position;
-
-                            MoveTowards(frontPos, moveSpeed * 1.35f, OnThiefReachedCounter);
-
-                            // หากวิ่งเข้ามาใกล้โต๊ะแล้ว และมีอาหารอยู่ ให้ฉกทันที
-                            float distToWait = Vector2.Distance(rb.position, frontPos);
-                            if (distToWait <= 0.45f && targetCounter.DishesCount > 0)
-                            {
-                                ThiefSnatchFoodAndFlee();
-                            }
-                        }
-                        else
-                        {
-                            // ลูกค้าปกติ: เดินเข้าประจำช่องในแถวคิว
-                            Vector3 targetSlotPos = targetCounter.GetQueuePosition(this);
-                            MoveTowards(targetSlotPos, moveSpeed, OnReachedCounter);
-                        }
+                        // ทั้งลูกค้าปกติและโจร: เดินเข้าประจำช่องท้ายแถวคิว
+                        Vector3 targetSlotPos = targetCounter.GetQueuePosition(this);
+                        MoveTowards(targetSlotPos, moveSpeed, OnReachedCounter);
                     }
                     break;
 
                 case CustomerState.WaitingAtCounter:
-                    if (isThief)
-                    {
-                        // โจรยืนรอหน้าสุดของแถวคิว ถ้ามีอาหารวางลงเมื่อไหร่ ให้ฉกแล้ววิ่งหนีทันที
-                        if (targetCounter != null)
-                        {
-                            Vector3 frontPos = targetCounter.CustomerWaitPoint.position;
-                            rb.linearVelocity = Vector2.zero;
-                            rb.position = Vector2.MoveTowards(rb.position, frontPos, Time.fixedDeltaTime * 3f);
-                            FaceTowards(targetCounter.CustomerWaitPoint.position);
-
-                            if (targetCounter.DishesCount > 0)
-                            {
-                                ThiefSnatchFoodAndFlee();
-                            }
-                        }
-                    }
-                    else if (targetCounter != null)
+                    if (targetCounter != null)
                     {
                         Vector3 targetSlotPos = targetCounter.GetQueuePosition(this);
                         float distToSlot = Vector2.Distance(rb.position, targetSlotPos);
@@ -517,19 +476,6 @@ namespace GI351.KitchenGame
             }
         }
 
-        private void OnThiefReachedCounter()
-        {
-            currentState = CustomerState.WaitingAtCounter;
-            if (targetCounter != null)
-            {
-                FaceTowards(targetCounter.CustomerWaitPoint.position);
-                if (targetCounter.DishesCount > 0)
-                {
-                    ThiefSnatchFoodAndFlee();
-                }
-            }
-        }
-
         /// <summary>
         /// โจรฉกอาหารบนโต๊ะโดยไม่จ่ายเงิน แล้วขึ้นเครื่องหมายตกใจพร้อมวิ่งหนี
         /// </summary>
@@ -537,7 +483,7 @@ namespace GI351.KitchenGame
         {
             if (targetCounter == null) return;
 
-            targetCounter.UnregisterThief(this);
+            targetCounter.LeaveQueue(this);
             stolenDish = targetCounter.ThiefStealDish(this);
             if (stolenDish != null)
             {
@@ -597,12 +543,21 @@ namespace GI351.KitchenGame
             }
             else
             {
+                // โจรรอคิวตามลำดับ พอถึงหัวแถวและมีอาหารบนโต๊ะ ให้ฉกแล้ววิ่งหนี (ไม่จ่ายเงิน)
+                if (targetCounter.IsHeadOfQueue(this))
+                {
+                    float distToWaitPoint = Vector2.Distance(rb.position, targetCounter.CustomerWaitPoint.position);
+                    if (distToWaitPoint <= 0.4f && targetCounter.DishesCount > 0)
+                    {
+                        ThiefSnatchFoodAndFlee();
+                        return;
+                    }
+                }
+
                 // โจรก็มีความอดทนเหมือนลูกค้าปกติ: รอนานจนไม่มีอาหารให้ฉก จะเดินกลับมือเปล่า
                 currentPatienceTimer -= Time.deltaTime;
                 if (currentPatienceTimer <= 0f)
                 {
-                    // คืนช่องหัวแถวให้ลูกค้าคนอื่น
-                    targetCounter.UnregisterThief(this);
                     isAngry = true;
                     ShowAngry();
                     LeaveCounterAndExit();
@@ -673,7 +628,7 @@ namespace GI351.KitchenGame
 
         public void LeaveCounterAndExit()
         {
-            if (targetCounter != null && !isThief)
+            if (targetCounter != null)
             {
                 targetCounter.LeaveQueue(this);
             }
@@ -787,7 +742,7 @@ namespace GI351.KitchenGame
         public void KnockOut()
         {
             currentState = CustomerState.Unconscious;
-            if (targetCounter != null) targetCounter.UnregisterThief(this);
+            if (targetCounter != null) targetCounter.LeaveQueue(this);
             rb.linearVelocity = Vector2.zero;
             rb.bodyType = RigidbodyType2D.Kinematic;
 
@@ -910,7 +865,7 @@ namespace GI351.KitchenGame
 
         private void OnReachedExit()
         {
-            if (targetCounter != null && !isThief)
+            if (targetCounter != null)
             {
                 targetCounter.LeaveQueue(this);
             }
@@ -923,7 +878,7 @@ namespace GI351.KitchenGame
 
         private void OnDisable()
         {
-            if (targetCounter != null && !isThief)
+            if (targetCounter != null)
             {
                 targetCounter.LeaveQueue(this);
             }
@@ -980,13 +935,9 @@ namespace GI351.KitchenGame
 
         private void OnDestroy()
         {
-            if (targetCounter != null && !isThief)
+            if (targetCounter != null)
             {
                 targetCounter.LeaveQueue(this);
-            }
-            if (targetCounter != null && isThief)
-            {
-                targetCounter.UnregisterThief(this);
             }
             if (cashier != null)
             {

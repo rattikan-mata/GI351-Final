@@ -144,28 +144,6 @@ namespace GI351.KitchenGame
         /// <summary>
         /// หาตำแหน่งในคิวของลูกค้า (Index 0 คือหัวแถว)
         /// </summary>
-        private readonly HashSet<CustomerAI> cuttingThieves = new HashSet<CustomerAI>();
-
-        /// <summary>โจรแซงคิว: ลูกค้าในแถวจะขยับถอยหลังไปหนึ่งช่องต่อโจรหนึ่งตัว</summary>
-        public void RegisterThief(CustomerAI thief)
-        {
-            if (thief != null) cuttingThieves.Add(thief);
-        }
-
-        public void UnregisterThief(CustomerAI thief)
-        {
-            cuttingThieves.Remove(thief);
-        }
-
-        private int ThiefOffset
-        {
-            get
-            {
-                cuttingThieves.RemoveWhere(t => t == null);
-                return cuttingThieves.Count;
-            }
-        }
-
         public int GetQueueIndex(CustomerAI customer)
         {
             customerQueue.RemoveAll(c => c == null);
@@ -189,9 +167,6 @@ namespace GI351.KitchenGame
                     index = customerQueue.Count;
                 }
             }
-
-            // เลื่อนช่องถอยหลังตามจำนวนโจรที่แซงคิวอยู่
-            index += ThiefOffset;
 
             // ถ้ากำหนด customQueuePoints ไว้ ให้ใช้ตาม Transform ที่ระบุ
             if (customQueuePoints != null && index < customQueuePoints.Length && customQueuePoints[index] != null)
@@ -710,7 +685,7 @@ namespace GI351.KitchenGame
         }
 
         /// <summary>
-        /// โจรแซงคิวฉกอาหารบนโต๊ะไป (กินไม่จ่าย / ไม่มีการเสกเงินออกมา)
+        /// โจรฉกอาหารบนโต๊ะไป (กินไม่จ่าย / ไม่มีการเสกเงินออกมา)
         /// </summary>
         public Item ThiefStealDish(CustomerAI thief = null)
         {
