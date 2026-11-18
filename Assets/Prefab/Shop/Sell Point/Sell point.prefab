@@ -518,7 +518,10 @@ MonoBehaviour:
   foodDisplayPoint: {fileID: 0}
   foodDisplayOffset: {x: 0, y: 0}
   foodDisplaySpacing: 0.45
+  unlimitedFood: 1
   maxPlates: 6
+  foodStackHeight: 6
+  foodColumnSpacing: 0.5
   foodDisplaySortingOrder: 4
   foodDepositPoint: {fileID: 1697021705898018168}
   depositZoneOffset: {x: -1.2, y: 0}
@@ -533,6 +536,11 @@ MonoBehaviour:
   customerWaitPoint: {fileID: 7355949789579986085}
   queueDirection: {x: 0, y: -1}
   queueSpacing: 0.9
+  crowdMode: 1
+  crowdColumns: 5
+  crowdSpacing: 0.85
+  crowdRowSpacing: 0.6
+  crowdJitter: 0.08
   maxQueueCapacity: 5
   customQueuePoints: []
   onDishesCountChanged:

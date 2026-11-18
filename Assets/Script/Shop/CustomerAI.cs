@@ -24,6 +24,9 @@ namespace GI351.KitchenGame
         [Tooltip("ความอดทนในการยืนรออาหาร (วินาที)")]
         [SerializeField] private float patienceDuration = 15f;
 
+        [Tooltip("เปิด = ลูกค้าปกติที่รอนานจนหมดเวลาจะโมโหแล้วเดินกลับ / ปิด = รอได้ไม่จำกัด (โจรยังหมดความอดทนเสมอ ไม่งั้นจะค้างหน้าโต๊ะ)")]
+        [SerializeField] private bool normalCustomerLeavesWhenImpatient = false;
+
         [Tooltip("สุ่มอาหารที่อยากกิน (CookedChicken หรือ CookedPig หรือ กินอะไรก็ได้)")]
         [SerializeField] private bool wantSpecificFood = true;
 
@@ -100,6 +103,9 @@ namespace GI351.KitchenGame
         private ContactFilter2D obstacleFilter;
 
         public CustomerState State => currentState;
+
+        /// <summary>เมนูที่ลูกค้าอยากกินโดยเฉพาะ (null = กินอะไรก็ได้ เช่น โจร)</summary>
+        public ItemType? RequestedDish => (!isThief && wantSpecificFood) ? preferredDish : (ItemType?)null;
         public ItemType PreferredDish => preferredDish;
         public float RemainingPatience => currentPatienceTimer;
         public bool IsThief => isThief;
@@ -289,15 +295,13 @@ namespace GI351.KitchenGame
 
                         if (distToSlot > 0.12f)
                         {
-                            MoveTowards(targetSlotPos, moveSpeed, () =>
-                            {
-                                if (targetCounter != null) FaceTowards(targetCounter.CustomerWaitPoint.position);
-                            });
+                            MoveTowards(targetSlotPos, moveSpeed, null);
                         }
                         else
                         {
                             rb.linearVelocity = Vector2.zero;
-                            FaceTowards(targetCounter.CustomerWaitPoint.position);
+                            // หันหน้าเข้าหาเคาน์เตอร์
+                            FaceTowards(targetCounter.transform.position);
                         }
 
                         int currentQueueIndex = targetCounter.GetQueueIndex(this);
@@ -505,9 +509,10 @@ namespace GI351.KitchenGame
             // กรณีลูกค้าปกติ
             if (!isThief)
             {
-                if (targetCounter.IsHeadOfQueue(this))
+                if (targetCounter.CanTakeNow(this))
                 {
-                    float distToWaitPoint = Vector2.Distance(rb.position, targetCounter.CustomerWaitPoint.position);
+                    // ยืนมุง: รับอาหารตรงจุดที่ตัวเองยืน (ใครใกล้เคาน์เตอร์ที่สุดและมีของที่อยากกินหยิบก่อน) / ต่อแถว: ต้องอยู่หัวแถว
+                    float distToWaitPoint = Vector2.Distance(rb.position, ServePoint());
                     if (distToWaitPoint <= 0.4f && targetCounter.HasFoodAvailable(wantSpecificFood ? preferredDish : (ItemType?)null))
                     {
                         // หยิบอาหารไปถือ แล้วเดินไปจ่ายเงินที่โต๊ะจ่ายเงิน
@@ -531,7 +536,13 @@ namespace GI351.KitchenGame
                     }
                 }
 
-                // นับเวลาความอดทน
+                // นับเวลาความอดทน (ปิดไว้ = ลูกค้าปกติรอได้ไม่จำกัด)
+                if (!normalCustomerLeavesWhenImpatient)
+                {
+                    currentPatienceTimer = patienceDuration;
+                    return;
+                }
+
                 currentPatienceTimer -= Time.deltaTime;
                 if (currentPatienceTimer <= 0f)
                 {
@@ -544,9 +555,9 @@ namespace GI351.KitchenGame
             else
             {
                 // โจรรอคิวตามลำดับ พอถึงหัวแถวและมีอาหารบนโต๊ะ ให้ฉกแล้ววิ่งหนี (ไม่จ่ายเงิน)
-                if (targetCounter.IsHeadOfQueue(this))
+                if (targetCounter.CanTakeNow(this))
                 {
-                    float distToWaitPoint = Vector2.Distance(rb.position, targetCounter.CustomerWaitPoint.position);
+                    float distToWaitPoint = Vector2.Distance(rb.position, ServePoint());
                     if (distToWaitPoint <= 0.4f && targetCounter.DishesCount > 0)
                     {
                         ThiefSnatchFoodAndFlee();
@@ -564,6 +575,12 @@ namespace GI351.KitchenGame
                     Debug.Log("[CustomerAI] โจรรอนานเกินไป ไม่มีอาหารให้ขโมย เดินกลับมือเปล่า");
                 }
             }
+        }
+
+        /// <summary>จุดที่ลูกค้าต้องยืนเพื่อรับอาหาร: โหมดยืนมุง = จุดของตัวเอง, โหมดต่อแถว = จุดรอหน้าโต๊ะ</summary>
+        private Vector3 ServePoint()
+        {
+            return targetCounter.CrowdMode ? targetCounter.GetQueuePosition(this) : targetCounter.CustomerWaitPoint.position;
         }
 
         /// <summary>
@@ -610,7 +627,8 @@ namespace GI351.KitchenGame
             if (cashier == null) return;
 
             if (!cashier.IsHeadOfQueue(this)) return;
-            if (Vector2.Distance(rb.position, cashier.CustomerPayPoint.position) > 0.4f) return;
+            Vector3 payPoint = cashier.CrowdMode ? cashier.GetQueuePosition(this) : cashier.CustomerPayPoint.position;
+            if (Vector2.Distance(rb.position, payPoint) > 0.4f) return;
 
             payTimer += Time.deltaTime;
             if (payTimer < cashier.PayDuration) return;

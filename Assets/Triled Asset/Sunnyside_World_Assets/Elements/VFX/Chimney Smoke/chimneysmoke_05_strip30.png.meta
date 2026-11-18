@@ -1,0 +1,988 @@
+fileFormatVersion: 2
+guid: 0709e8cdc76f34048a76f0be53c5f3e3
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 3441088064190761952
+    second: chimneysmoke_05_strip30_0
+  - first:
+      213: -3054022928884316760
+    second: chimneysmoke_05_strip30_1
+  - first:
+      213: -2270389194954892657
+    second: chimneysmoke_05_strip30_2
+  - first:
+      213: 544515882290712812
+    second: chimneysmoke_05_strip30_3
+  - first:
+      213: -5417316438945167652
+    second: chimneysmoke_05_strip30_4
+  - first:
+      213: 8669655524858964035
+    second: chimneysmoke_05_strip30_5
+  - first:
+      213: 6194401352371285868
+    second: chimneysmoke_05_strip30_6
+  - first:
+      213: 1319158979279156048
+    second: chimneysmoke_05_strip30_7
+  - first:
+      213: -993024697484387352
+    second: chimneysmoke_05_strip30_8
+  - first:
+      213: -6526700766604159683
+    second: chimneysmoke_05_strip30_9
+  - first:
+      213: 2834212206317649193
+    second: chimneysmoke_05_strip30_10
+  - first:
+      213: 5899075309857524841
+    second: chimneysmoke_05_strip30_11
+  - first:
+      213: -1663218308625096076
+    second: chimneysmoke_05_strip30_12
+  - first:
+      213: -6761911928159911097
+    second: chimneysmoke_05_strip30_13
+  - first:
+      213: -6857215387501990570
+    second: chimneysmoke_05_strip30_14
+  - first:
+      213: 6341143637922980814
+    second: chimneysmoke_05_strip30_15
+  - first:
+      213: 4789583742831347755
+    second: chimneysmoke_05_strip30_16
+  - first:
+      213: -6928902990194173655
+    second: chimneysmoke_05_strip30_17
+  - first:
+      213: 3653468709938769264
+    second: chimneysmoke_05_strip30_18
+  - first:
+      213: 5653607529202206076
+    second: chimneysmoke_05_strip30_19
+  - first:
+      213: -2965956927433710187
+    second: chimneysmoke_05_strip30_20
+  - first:
+      213: -436245203951484367
+    second: chimneysmoke_05_strip30_21
+  - first:
+      213: -4324463663116451615
+    second: chimneysmoke_05_strip30_22
+  - first:
+      213: -3884859104972878472
+    second: chimneysmoke_05_strip30_23
+  - first:
+      213: -1274221289115169642
+    second: chimneysmoke_05_strip30_24
+  - first:
+      213: 7244395989273273856
+    second: chimneysmoke_05_strip30_25
+  - first:
+      213: -4857487120761848719
+    second: chimneysmoke_05_strip30_26
+  - first:
+      213: 2686841851116595481
+    second: chimneysmoke_05_strip30_27
+  - first:
+      213: 9146627693933343646
+    second: chimneysmoke_05_strip30_28
+  - first:
+      213: 8648880609817119933
+    second: chimneysmoke_05_strip30_29
+  - first:
+      213: 4462044269516947744
+    second: chimneysmoke_05_strip30_30
+  - first:
+      213: -3945172454202480601
+    second: chimneysmoke_05_strip30_31
+  - first:
+      213: -6865430619442307818
+    second: chimneysmoke_05_strip30_32
+  - first:
+      213: -8845029283740015210
+    second: chimneysmoke_05_strip30_33
+  - first:
+      213: 632273999521907987
+    second: chimneysmoke_05_strip30_34
+  - first:
+      213: -8670748182048316599
+    second: chimneysmoke_05_strip30_35
+  - first:
+      213: -1987994819700475810
+    second: chimneysmoke_05_strip30_36
+  - first:
+      213: 7331249207693464027
+    second: chimneysmoke_05_strip30_37
+  - first:
+      213: 1624428859963606570
+    second: chimneysmoke_05_strip30_38
+  - first:
+      213: 7003076916267911358
+    second: chimneysmoke_05_strip30_39
+  - first:
+      213: -7803013023176543690
+    second: chimneysmoke_05_strip30_40
+  - first:
+      213: -3142036617277046764
+    second: chimneysmoke_05_strip30_41
+  - first:
+      213: 1319256118593177541
+    second: chimneysmoke_05_strip30_42
+  - first:
+      213: 7117800568127674330
+    second: chimneysmoke_05_strip30_43
+  - first:
+      213: 1627052160679263645
+    second: chimneysmoke_05_strip30_44
+  - first:
+      213: 1255790070554826796
+    second: chimneysmoke_05_strip30_45
+  - first:
+      213: -7322957175977084927
+    second: chimneysmoke_05_strip30_46
+  - first:
+      213: -7186482176820479728
+    second: chimneysmoke_05_strip30_47
+  - first:
+      213: 8807188096751462194
+    second: chimneysmoke_05_strip30_48
+  - first:
+      213: 2867889041170612274
+    second: chimneysmoke_05_strip30_49
+  - first:
+      213: -8587571957399898913
+    second: chimneysmoke_05_strip30_50
+  - first:
+      213: 1981781084821477727
+    second: chimneysmoke_05_strip30_51
+  - first:
+      213: -4486569960645455598
+    second: chimneysmoke_05_strip30_52
+  - first:
+      213: -8538692447579848776
+    second: chimneysmoke_05_strip30_53
+  - first:
+      213: -6199447342969015925
+    second: chimneysmoke_05_strip30_54
+  - first:
+      213: -9213076749413059153
+    second: chimneysmoke_05_strip30_55
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 16
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 4096
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1cf3e5c38930a0e4ca5f24d29180efb3
+      internalID: 3441088064190761952
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_1
+      rect:
+        serializedVersion: 2
+        x: 24
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6222aa5888bc2dc4883179a2ccd4fb52
+      internalID: -3054022928884316760
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_2
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ac17d248bd318e343bae4195c4ed3624
+      internalID: -2270389194954892657
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_3
+      rect:
+        serializedVersion: 2
+        x: 72
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e933afbe350ca4745bf7fb5c30faca23
+      internalID: 544515882290712812
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_4
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4358b904947491f4aa80eaa3a170a58c
+      internalID: -5417316438945167652
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_5
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 597396ee605adff4f895593fac493a85
+      internalID: 8669655524858964035
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_6
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e6d74a0effcce534c8c1d0e2b8b7e8ea
+      internalID: 6194401352371285868
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_7
+      rect:
+        serializedVersion: 2
+        x: 168
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 223d91653c614ca4c843381b3943a572
+      internalID: 1319158979279156048
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_8
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0819b2a0af0764245ae54ca4ced7deec
+      internalID: -993024697484387352
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_9
+      rect:
+        serializedVersion: 2
+        x: 216
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1de861f59b9e0e34baee6e37c35e28dc
+      internalID: -6526700766604159683
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_10
+      rect:
+        serializedVersion: 2
+        x: 240
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9140a769b321bb3499e8f33b8b32a494
+      internalID: 2834212206317649193
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_11
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ed8f45ca06a024942bcc2d489c7aa154
+      internalID: 5899075309857524841
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_12
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 45a9c8d9b2dbd3a4c9ce696ef7a58ef1
+      internalID: -1663218308625096076
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_13
+      rect:
+        serializedVersion: 2
+        x: 312
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 66ba112812074d445914f3228d0f1ff7
+      internalID: -6761911928159911097
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_14
+      rect:
+        serializedVersion: 2
+        x: 336
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 211fea12eeb42a3458c290b01db052ab
+      internalID: -6857215387501990570
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_15
+      rect:
+        serializedVersion: 2
+        x: 360
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 08d8da29bfee05f498921a3c4425a070
+      internalID: 6341143637922980814
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_16
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f1cb320ea7a1df940a45aad36c2e62f4
+      internalID: 4789583742831347755
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_17
+      rect:
+        serializedVersion: 2
+        x: 408
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 82dc286c9d9ad95419749bf165e25e43
+      internalID: -6928902990194173655
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_18
+      rect:
+        serializedVersion: 2
+        x: 432
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ae9ecf709c4d0a84cb6c29d66285290b
+      internalID: 3653468709938769264
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_19
+      rect:
+        serializedVersion: 2
+        x: 456
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c783fde7d63da4b4a9b1af0945ca3e6d
+      internalID: 5653607529202206076
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_20
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b2d983d47edc8234cb6d6298ad39058b
+      internalID: -2965956927433710187
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_21
+      rect:
+        serializedVersion: 2
+        x: 504
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8cd4bb85669c2a84b9d0fe5fc4b8c8b3
+      internalID: -436245203951484367
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_22
+      rect:
+        serializedVersion: 2
+        x: 528
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2b9eb7cef12fb924697af214127899db
+      internalID: -4324463663116451615
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_23
+      rect:
+        serializedVersion: 2
+        x: 552
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7a48d6ed4bac9284d87364f627ea886e
+      internalID: -3884859104972878472
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_24
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5a35ebe21fa51a1469ec334faec065cc
+      internalID: -1274221289115169642
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_25
+      rect:
+        serializedVersion: 2
+        x: 600
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4ecfe21782727eb43bda89d4f65f0565
+      internalID: 7244395989273273856
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_26
+      rect:
+        serializedVersion: 2
+        x: 624
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 275ccac919b14714ca271e09edd11636
+      internalID: -4857487120761848719
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_27
+      rect:
+        serializedVersion: 2
+        x: 648
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fde845ded134cb44bb7db72c9ecef29a
+      internalID: 2686841851116595481
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_28
+      rect:
+        serializedVersion: 2
+        x: 672
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7a89395dee9772b4c85f10af892aac8c
+      internalID: 9146627693933343646
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chimneysmoke_05_strip30_29
+      rect:
+        serializedVersion: 2
+        x: 696
+        y: 0
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 05ec594ee38696a4485f1fde28e2888f
+      internalID: 8648880609817119933
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 93c1195f8c7adeb4b8d32de5881b8772
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      chimneysmoke_05_strip30_0: 3441088064190761952
+      chimneysmoke_05_strip30_1: -3054022928884316760
+      chimneysmoke_05_strip30_10: 2834212206317649193
+      chimneysmoke_05_strip30_11: 5899075309857524841
+      chimneysmoke_05_strip30_12: -1663218308625096076
+      chimneysmoke_05_strip30_13: -6761911928159911097
+      chimneysmoke_05_strip30_14: -6857215387501990570
+      chimneysmoke_05_strip30_15: 6341143637922980814
+      chimneysmoke_05_strip30_16: 4789583742831347755
+      chimneysmoke_05_strip30_17: -6928902990194173655
+      chimneysmoke_05_strip30_18: 3653468709938769264
+      chimneysmoke_05_strip30_19: 5653607529202206076
+      chimneysmoke_05_strip30_2: -2270389194954892657
+      chimneysmoke_05_strip30_20: -2965956927433710187
+      chimneysmoke_05_strip30_21: -436245203951484367
+      chimneysmoke_05_strip30_22: -4324463663116451615
+      chimneysmoke_05_strip30_23: -3884859104972878472
+      chimneysmoke_05_strip30_24: -1274221289115169642
+      chimneysmoke_05_strip30_25: 7244395989273273856
+      chimneysmoke_05_strip30_26: -4857487120761848719
+      chimneysmoke_05_strip30_27: 2686841851116595481
+      chimneysmoke_05_strip30_28: 9146627693933343646
+      chimneysmoke_05_strip30_29: 8648880609817119933
+      chimneysmoke_05_strip30_3: 544515882290712812
+      chimneysmoke_05_strip30_4: -5417316438945167652
+      chimneysmoke_05_strip30_5: 8669655524858964035
+      chimneysmoke_05_strip30_6: 6194401352371285868
+      chimneysmoke_05_strip30_7: 1319158979279156048
+      chimneysmoke_05_strip30_8: -993024697484387352
+      chimneysmoke_05_strip30_9: -6526700766604159683
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

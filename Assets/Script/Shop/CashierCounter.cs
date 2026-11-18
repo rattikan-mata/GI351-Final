@@ -21,6 +21,28 @@ namespace GI351.KitchenGame
         [Tooltip("ระยะห่างระหว่างลูกค้าในแถว (เมตร)")]
         [SerializeField] private float queueSpacing = 0.9f;
 
+        [Header("Crowd (ยืนมุงแทนต่อแถว)")]
+        [Tooltip("ให้ลูกค้ายืนมุงเป็นกลุ่มรอบจุดจ่ายเงิน แทนการต่อแถวเป็นเส้นตรง (ลำดับการจ่ายเงินยังเรียงตามคนมาก่อน)")]
+        [SerializeField] private bool crowdMode = true;
+
+        [Tooltip("จำนวนคนในแถวหน้าสุด (แถวถัดไปลดลงทีละ 1 คน)")]
+        [SerializeField] private int crowdColumns = 5;
+
+        [Tooltip("ระยะห่างระหว่างคนในแถว (เมตร)")]
+        [SerializeField] private float crowdSpacing = 0.85f;
+
+        [Tooltip("ระยะห่างระหว่างแถว (เมตร)")]
+        [SerializeField] private float crowdRowSpacing = 0.6f;
+
+        [Tooltip("สุ่มเยื้องจุดยืนเล็กน้อย (เมตร) ให้ดูไม่เป็นระเบียบเกินไป")]
+        [SerializeField] private float crowdJitter = 0.08f;
+
+        // จุดยืนที่จองไว้ของลูกค้าแต่ละคน (ยืนจุดเดิมจนออกไป)
+        private readonly CrowdSlots crowdSlots = new CrowdSlots();
+
+        /// <summary>เปิดโหมดยืนมุงอยู่หรือไม่</summary>
+        public bool CrowdMode => crowdMode;
+
         [Tooltip("ลูกค้าหัวแถวต้องยืนรอกี่วินาทีก่อนจ่ายเสร็จ")]
         [SerializeField] private float payDuration = 0.6f;
 
@@ -56,6 +78,35 @@ namespace GI351.KitchenGame
         private Transform playerTransform;
 
         public Transform CustomerPayPoint => customerPayPoint != null ? customerPayPoint : transform;
+
+        /// <summary>วงขาวที่ผู้เล่น/พนักงานแคชเชียร์ยืนเก็บเหรียญ</summary>
+        public Transform PlayerRing => playerRing;
+
+        /// <summary>จำนวนเหรียญที่วางรอบนโต๊ะ</summary>
+        public int CoinsOnCounter
+        {
+            get
+            {
+                coinsOnCounter.RemoveAll(c => c == null);
+                return coinsOnCounter.Count;
+            }
+        }
+
+        /// <summary>
+        /// ส่งเหรียญบนโต๊ะ 1 เหรียญให้ลอยไปหา target (ใช้กับพนักงานแคชเชียร์ ที่เก็บได้ทีละเหรียญ ช้ากว่าผู้เล่น)
+        /// เหรียญถึงตัวแล้วเงินจะเข้า MoneyManager เอง คืน true ถ้ามีเหรียญให้ส่ง
+        /// </summary>
+        public bool AttractOneCoinTo(Transform target)
+        {
+            if (target == null) return false;
+            coinsOnCounter.RemoveAll(c => c == null);
+            if (coinsOnCounter.Count == 0) return false;
+
+            CoinPickup coin = coinsOnCounter[0];
+            coinsOnCounter.RemoveAt(0);
+            coin.AttractTo(target);
+            return true;
+        }
         public float PayDuration => payDuration;
 
         private void Awake()
@@ -140,6 +191,7 @@ namespace GI351.KitchenGame
 
         public void LeaveQueue(CustomerAI customer)
         {
+            crowdSlots.Release(customer);
             queue.Remove(customer);
             queue.RemoveAll(c => c == null);
         }
@@ -157,6 +209,14 @@ namespace GI351.KitchenGame
             if (index < 0) index = queue.Count;
 
             Vector2 dir = queueDirection.sqrMagnitude > 0.001f ? queueDirection.normalized : Vector2.down;
+
+            // ยืนมุงเป็นกลุ่มก้อนรอบจุดจ่ายเงิน
+            if (crowdMode)
+            {
+                int slot = crowdSlots.GetSlot(customer);
+                return CustomerPayPoint.position + (Vector3)CrowdLayout.GetSlotOffset(slot, dir, crowdColumns, crowdSpacing, crowdRowSpacing, crowdJitter);
+            }
+
             return CustomerPayPoint.position + (Vector3)(dir * (index * queueSpacing));
         }
 

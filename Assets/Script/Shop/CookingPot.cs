@@ -215,6 +215,36 @@ namespace GI351.KitchenGame
         public bool RequiresPurchase => requiresPurchase;
         public int PurchasePrice => purchasePrice;
         public string PotName => potName;
+
+        /// <summary>ผู้เล่นยืนอยู่ในวงยืนของหม้อนี้หรือไม่ (ใช้เปิดแผงอัปเกรด)</summary>
+        public bool IsPlayerInRange => isPlayerInRange;
+
+        // ราคาอาหารที่ได้จากอัปเกรด (0 = ยังไม่อัปเกรด ใช้ราคาจาก Prefab อาหาร)
+        private int dishPriceOverride;
+
+        /// <summary>เวลาต้มต่อชิ้น (วินาที) ใช้กับอัปเกรดความเร็ว</summary>
+        public float CookingDuration
+        {
+            get => cookingDuration;
+            set => cookingDuration = Mathf.Max(0.05f, value);
+        }
+
+        /// <summary>ราคาขายต่อจานของอาหารที่หม้อนี้ทำออกมาตอนนี้</summary>
+        public int CurrentDishPrice
+        {
+            get
+            {
+                if (dishPriceOverride > 0) return dishPriceOverride;
+                if (cookedDishPrefab != null && cookedDishPrefab.TryGetComponent<Item>(out var it) && it.SellPrice > 0) return it.SellPrice;
+                return 10;
+            }
+        }
+
+        /// <summary>ตั้งราคาอาหารที่หม้อนี้ทำออกมา (อัปเกรดราคา) ส่ง 0 = กลับไปใช้ราคาจาก Prefab</summary>
+        public void SetDishPriceOverride(int price)
+        {
+            dishPriceOverride = Mathf.Max(0, price);
+        }
         public int QueuedCount => queuedIngredientCount + queuedSpecialDishCount;
         public int CookingItemsCount => (isCurrentlyCooking ? 1 : 0) + queuedIngredientCount + queuedSpecialDishCount;
         public int MaxCapacity => maxCookingCapacity;
@@ -282,18 +312,25 @@ namespace GI351.KitchenGame
             if (outputZoneRadius < 0.1f) outputZoneRadius = 0.1f;
             if (purchaseZoneRadius < 0.1f) purchaseZoneRadius = 0.1f;
 
+#if UNITY_EDITOR
+            // สร้าง/ย้าย GameObject ตรงๆ ใน OnValidate ไม่ได้ (Unity เตือน SendMessage) จึงเลื่อนไปทำหลังจากนี้
             if (Application.isPlaying)
             {
-                if (isUnlocked)
+                UnityEditor.EditorApplication.delayCall += () =>
                 {
-                    SetupStandZoneAndRing();
-                    SetupOutputRing();
-                }
-                else
-                {
-                    SetupPurchaseZone();
-                }
+                    if (this == null || !Application.isPlaying) return;
+                    if (isUnlocked)
+                    {
+                        SetupStandZoneAndRing();
+                        SetupOutputRing();
+                    }
+                    else
+                    {
+                        SetupPurchaseZone();
+                    }
+                };
             }
+#endif
         }
 
         public bool IsPigPot()
@@ -1215,6 +1252,12 @@ namespace GI351.KitchenGame
             Vector3 finalSpawnPos = spawnPos + new Vector3(randomSpread.x, randomSpread.y, 0f);
 
             GameObject dishObj = Instantiate(cookedDishPrefab, finalSpawnPos, Quaternion.identity);
+
+            // ใช้ราคาที่อัปเกรดไว้ (ถ้ามี)
+            if (dishPriceOverride > 0 && dishObj.TryGetComponent<Item>(out var pricedItem))
+            {
+                pricedItem.SetSellPrice(dishPriceOverride);
+            }
 
             if (foodPopForce > 0f && dishObj.TryGetComponent<Rigidbody2D>(out var dishRb))
             {

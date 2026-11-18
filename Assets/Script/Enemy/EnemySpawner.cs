@@ -50,6 +50,18 @@ namespace GI351.KitchenGame
         public Vector2 BoundaryCenter => (Vector2)transform.position + boundaryOffset;
         public Vector2 BoundarySize => boundarySize;
 
+        /// <summary>ตั้งค่าโซนจาก HuntArea (ขนาดกรอบ จำนวนสูงสุด ช่วงเวลาเกิด จำนวนเริ่มต้น และรัศมีจุดเกิด) กรอบอยู่กลางตัว Spawner</summary>
+        public void Configure(Vector2 size, int maxCount, float interval, int initialCount, float radius)
+        {
+            boundarySize = size;
+            boundaryOffset = Vector2.zero;
+            confineToBoundary = true;
+            maxConcurrentCount = Mathf.Max(0, maxCount);
+            spawnInterval = Mathf.Max(0.1f, interval);
+            initialSpawnCount = Mathf.Max(0, initialCount);
+            spawnRadius = Mathf.Max(0.1f, radius);
+        }
+
         private void Start()
         {
             // เสกจำนวนเริ่มต้นตอนเริ่มเกม

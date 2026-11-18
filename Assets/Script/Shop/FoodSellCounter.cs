@@ -26,9 +26,18 @@ namespace GI351.KitchenGame
         [Tooltip("ระยะห่างระหว่างอาหารแต่ละชิ้นที่วางเรียงบนโต๊ะ (เมตร) กรณีจัดเรียงอัตโนมัติ")]
         [SerializeField] private float foodDisplaySpacing = 0.45f;
 
-        [Tooltip("จำนวนอาหารสูงสุดที่วางรอบนโต๊ะนี้ได้ (ถ้ามี plateSlots จะใช้ตามจำนวนช่อง)")]
+        [Tooltip("วางอาหารบนโต๊ะได้ไม่จำกัด (ติ๊กถูก = ไม่สนใจ Max Plates)")]
+        [SerializeField] private bool unlimitedFood = true;
+
+        [Tooltip("จำนวนอาหารสูงสุดที่วางรอบนโต๊ะนี้ได้ เมื่อปิด Unlimited Food (ถ้ามี plateSlots จะใช้ตามจำนวนช่อง)")]
         [FormerlySerializedAs("maxFoodOnCounter")]
         [SerializeField] private int maxPlates = 6;
+
+        [Tooltip("กองอาหารซ้อนกันได้สูงสุดกี่ชิ้นต่อหนึ่งกอง ถ้ามากกว่านี้จะขึ้นกองใหม่ข้างๆ (กรณีจัดเรียงอัตโนมัติ)")]
+        [SerializeField] private int foodStackHeight = 6;
+
+        [Tooltip("ระยะห่างระหว่างกองอาหารแต่ละกอง (เมตร)")]
+        [SerializeField] private float foodColumnSpacing = 0.5f;
 
         [Tooltip("ลำดับการวาด (Sorting Order) ของอาหารขณะวางรอบนโต๊ะ เพื่อให้อยู่เหนือหน้าโต๊ะชัดเจน")]
         [SerializeField] private int foodDisplaySortingOrder = 4;
@@ -74,6 +83,28 @@ namespace GI351.KitchenGame
 
         [Tooltip("ระยะห่างระหว่างลูกค้าแต่ละคนในแถว (เมตร)")]
         [SerializeField] private float queueSpacing = 0.9f;
+
+        [Header("Crowd (ยืนมุงแทนต่อแถว)")]
+        [Tooltip("ให้ลูกค้ายืนมุงเป็นกลุ่มรอบจุดรอ แทนการต่อแถวเป็นเส้นตรง (ลำดับการซื้อยังเรียงตามคนมาก่อน)")]
+        [SerializeField] private bool crowdMode = true;
+
+        [Tooltip("จำนวนคนในแถวหน้าสุด (แถวถัดไปลดลงทีละ 1 คน)")]
+        [SerializeField] private int crowdColumns = 5;
+
+        [Tooltip("ระยะห่างระหว่างคนในแถว (เมตร)")]
+        [SerializeField] private float crowdSpacing = 0.85f;
+
+        [Tooltip("ระยะห่างระหว่างแถว (เมตร)")]
+        [SerializeField] private float crowdRowSpacing = 0.6f;
+
+        [Tooltip("สุ่มเยื้องจุดยืนเล็กน้อย (เมตร) ให้ดูไม่เป็นระเบียบเกินไป")]
+        [SerializeField] private float crowdJitter = 0.08f;
+
+        // จุดยืนที่จองไว้ของลูกค้าแต่ละคน (ยืนจุดเดิมจนออกไป)
+        private readonly CrowdSlots crowdSlots = new CrowdSlots();
+
+        /// <summary>เปิดโหมดยืนมุงอยู่หรือไม่</summary>
+        public bool CrowdMode => crowdMode;
 
         [Tooltip("จำนวนลูกค้าสูงสุดที่สามารถยืนต่อคิวได้")]
         [SerializeField] private int maxQueueCapacity = 5;
@@ -137,6 +168,7 @@ namespace GI351.KitchenGame
         public void LeaveQueue(CustomerAI customer)
         {
             if (customer == null) return;
+            crowdSlots.Release(customer);
             customerQueue.Remove(customer);
             customerQueue.RemoveAll(c => c == null);
         }
@@ -177,7 +209,42 @@ namespace GI351.KitchenGame
             // คำนวณตามทิศทางและระยะห่างอัตโนมัติ
             Vector3 basePoint = CustomerWaitPoint.position;
             Vector2 dir = queueDirection.sqrMagnitude > 0.001f ? queueDirection.normalized : Vector2.down;
+
+            // ยืนมุงเป็นกลุ่มก้อนรอบจุดรอ
+            if (crowdMode)
+            {
+                int slot = crowdSlots.GetSlot(customer);
+                return basePoint + (Vector3)CrowdLayout.GetSlotOffset(slot, dir, crowdColumns, crowdSpacing, crowdRowSpacing, crowdJitter);
+            }
+
             return basePoint + (Vector3)(dir * (index * queueSpacing));
+        }
+
+        /// <summary>
+        /// ลูกค้าคนนี้หยิบอาหารได้ตอนนี้หรือไม่
+        /// โหมดต่อแถว: ต้องเป็นหัวแถว
+        /// โหมดยืนมุง: ไม่ต้องเป็นหัวแถว ใครก็หยิบได้ถ้ามีอาหารที่อยากกินวางอยู่ โดยคนที่ยืนใกล้เคาน์เตอร์ที่สุดหยิบก่อน
+        /// (ไม่งั้นคนหน้าสุดที่อยากกินเมนูที่ยังไม่มี จะขวางทุกคนที่อยากกินเมนูที่มีอยู่)
+        /// </summary>
+        public bool CanTakeNow(CustomerAI customer)
+        {
+            if (customer == null) return false;
+            if (!crowdMode) return IsHeadOfQueue(customer);
+
+            customerQueue.RemoveAll(c => c == null);
+            if (!customerQueue.Contains(customer)) return false;
+
+            int mySlot = crowdSlots.GetSlot(customer);
+            foreach (CustomerAI other in customerQueue)
+            {
+                if (other == null || other == customer) continue;
+                if (other.State != CustomerState.WaitingAtCounter) continue;
+                if (!HasFoodAvailable(other.RequestedDish)) continue;
+
+                // มีคนยืนใกล้เคาน์เตอร์กว่าที่ก็หยิบอาหารชิ้นนี้ได้ ให้เขาหยิบก่อน
+                if (crowdSlots.GetSlot(other) < mySlot) return false;
+            }
+            return true;
         }
 
         /// <summary>
@@ -479,7 +546,7 @@ namespace GI351.KitchenGame
 
             int depositedCount = 0;
 
-            while (dishesOnCounter.Count < MaxPlates)
+            while (unlimitedFood || dishesOnCounter.Count < MaxPlates)
             {
                 // ดึงอาหารสุกชิ้นใดก็ได้ที่ผู้เล่นถืออยู่ (ไก่ต้ม, หมูต้ม, หรืออาหารปรุงสุกใดๆ)
                 Item cookedItem = playerCarry.PopAnyCookedFood();
@@ -578,7 +645,12 @@ namespace GI351.KitchenGame
                 {
                     // 2. กรณีไม่มี plateSlots กองซ้อนขึ้นแนวตั้งจากกลางโต๊ะ ขนาดและระยะเท่ากองบนหลังผู้เล่น
                     Vector3 step = cachedPlayerCarry != null ? cachedPlayerCarry.WorldStackOffset : new Vector3(0f, foodDisplaySpacing, -0.02f);
-                    Vector3 worldSlotPos = GetFoodDisplayCenterPosition() + new Vector3(0f, 0f, -0.05f) + step * i;
+                    // ซ้อนขึ้นเป็นกอง ครบความสูงแล้วขึ้นกองใหม่ข้างๆ (สลับขวา/ซ้ายจากกองแรก) วางได้ไม่จำกัด
+                    int stackH = Mathf.Max(1, foodStackHeight);
+                    int stackIndex = i / stackH;
+                    int rowInStack = i % stackH;
+                    float columnX = ((stackIndex + 1) / 2) * foodColumnSpacing * (stackIndex % 2 == 1 ? 1f : -1f);
+                    Vector3 worldSlotPos = GetFoodDisplayCenterPosition() + new Vector3(columnX, 0f, -0.05f) + step * rowInStack;
 
                     Vector3 worldScale = foodWorldScales.TryGetValue(dish, out var s) ? s : Vector3.one * 0.85f;
 

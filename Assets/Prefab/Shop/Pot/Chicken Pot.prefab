@@ -43,6 +43,7 @@ GameObject:
   - component: {fileID: 828730705174813161}
   - component: {fileID: 2167870834008877363}
   - component: {fileID: 8347054340469610659}
+  - component: {fileID: 6669926621995086435}
   m_Layer: 0
   m_Name: Chicken Pot
   m_TagString: Untagged
@@ -245,3 +246,35 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!114 &6669926621995086435
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7233924952745703980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 296bf86c0efd6514ab9516d393ecf11f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.PotUpgrade
+  priceLabel: Product Price
+  priceLevels:
+  - cost: 50
+    value: 12
+  - cost: 120
+    value: 15
+  - cost: 250
+    value: 20
+  speedLabel: Production Speed
+  speedLevels:
+  - cost: 40
+    value: 2.5
+  - cost: 100
+    value: 2
+  - cost: 220
+    value: 1.5
+  hideWhenNoLevels: 1
+  onUpgraded:
+    m_PersistentCalls:
+      m_Calls: []

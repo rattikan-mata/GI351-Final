@@ -28,7 +28,16 @@ namespace GI351.KitchenGame
         [Tooltip("จำนวนที่ซื้อได้ทั้งหมด (0 = ไม่จำกัด) หมดแล้วขึ้น SOLD OUT")]
         public int stock = 0;
 
-        [Tooltip("ยิงเมื่อซื้อสำเร็จ 1 ครั้ง ลากสคริปต์ที่จะให้ของ/ผลมาผูกที่นี่ (ตอนนี้ยังไม่ผูกอะไร)")]
+        [Tooltip("รหัสสินค้า ให้สคริปต์อื่นรู้ว่าซื้ออะไร (เช่น cashier) ปล่อยว่างได้")]
+        public string id = "";
+
+        [Tooltip("ล็อกไว้ ยังซื้อไม่ได้ (แสดงในร้านแต่ปุ่มเป็น Coming soon)")]
+        public bool locked = false;
+
+        [Tooltip("ข้อความบนปุ่มตอนล็อก")]
+        public string lockedText = "SOON";
+
+        [Tooltip("ยิงเมื่อซื้อสำเร็จ 1 ครั้ง ลากสคริปต์ที่จะให้ของ/ผลมาผูกที่นี่")]
         public UnityEvent onPurchased;
 
         [NonSerialized] public int sold;
@@ -97,6 +106,9 @@ namespace GI351.KitchenGame
         private Text emptyText;
 
         private static Font uiFont;
+
+        /// <summary>ยิงเมื่อซื้อสินค้าสำเร็จ (ใช้ให้สคริปต์อื่นทำงานตาม id ของสินค้า เช่น จ้างพนักงาน)</summary>
+        public event Action<ShopItemData> ItemPurchased;
 
         public bool IsOpen => isOpen;
         public bool IsBuyerInside => isBuyerInside;
@@ -168,6 +180,7 @@ namespace GI351.KitchenGame
         {
             if (index < 0 || index >= ItemCount) return false;
             ShopItemData it = items[index];
+            if (it.locked) return false;
             if (it.stock > 0 && it.sold >= it.stock) return false;
             return CurrentMoney >= it.price;
         }
@@ -179,6 +192,7 @@ namespace GI351.KitchenGame
             if (MoneyManager.Instance == null) return false;
 
             ShopItemData it = items[index];
+            if (it.locked) return false;
             if (it.stock > 0 && it.sold >= it.stock) return false;
             if (MoneyManager.Instance.CurrentMoney < it.price) return false;
             if (!MoneyManager.Instance.SpendMoney(it.price)) return false;
@@ -186,6 +200,7 @@ namespace GI351.KitchenGame
             it.sold++;
             Debug.Log("[ShopStall] Bought " + it.itemName + " ($" + it.price + ")");
             it.onPurchased?.Invoke();
+            ItemPurchased?.Invoke(it);
             if (isOpen) Refresh();
             return true;
         }
@@ -385,6 +400,18 @@ namespace GI351.KitchenGame
                 RowView v = rows[i];
                 bool soldOut = it.stock > 0 && it.sold >= it.stock;
                 bool afford = money >= it.price;
+
+                if (it.locked)
+                {
+                    // ยังไม่เปิดขาย: ปุ่มเทา กดไม่ได้
+                    v.buyButton.interactable = false;
+                    v.buyImage.color = new Color(0.3f, 0.3f, 0.35f, 1f);
+                    v.buyText.text = string.IsNullOrEmpty(it.lockedText) ? "SOON" : it.lockedText;
+                    v.buyText.fontSize = 30;
+                    v.price.text = "$" + it.price;
+                    v.price.color = new Color(0.6f, 0.6f, 0.68f, 1f);
+                    continue;
+                }
 
                 v.buyButton.interactable = !soldOut && afford;
                 v.buyImage.color = soldOut ? new Color(0.3f, 0.3f, 0.35f, 1f) : (afford ? new Color(0.2f, 0.7f, 1f, 1f) : new Color(0.25f, 0.3f, 0.45f, 1f));
