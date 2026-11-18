@@ -254,6 +254,8 @@ namespace GI351.KitchenGame
         private void CheckAttackInput()
         {
             if (playerHealth != null && playerHealth.IsDead) return;
+            // กดปุ่ม/หน้าจออัปเกรดอยู่ ห้ามฟันกระบอง
+            if (UpgradeTreeUI.IsBlockingGameInput) return;
             bool attackPressed = false;
 
 #if ENABLE_INPUT_SYSTEM
