@@ -7,7 +7,19 @@ namespace GI351.KitchenGame
     [RequireComponent(typeof(Rigidbody2D))]
     public class PigEnemy : MonoBehaviour
     {
-        [Header("Contact Damage (ดาเมจจากการชน Player)")]
+        public enum HitReaction
+        {
+            /// <summary>วิ่งหนีผู้เล่น (ใช้ fleeSpeed / fleeDuration ของ EnemyWander) ไม่ทำดาเมจชน</summary>
+            Flee,
+            /// <summary>โกรธแล้วพุ่งชนผู้เล่นแบบเดิม (ใช้ค่า Aggro / Contact Damage ด้านล่าง)</summary>
+            Charge
+        }
+
+        [Header("Hit Reaction (ปฏิกิริยาเมื่อโดนตี)")]
+        [Tooltip("Flee = โดนตีแล้ววิ่งหนีผู้เล่น (ความเร็ว/เวลาหนีตั้งที่ EnemyWander) / Charge = โกรธแล้วพุ่งชนผู้เล่นแบบเดิม")]
+        [SerializeField] private HitReaction onHitReaction = HitReaction.Flee;
+
+        [Header("Contact Damage (ดาเมจจากการชน Player) - ใช้เมื่อ Charge")]
         [Tooltip("ความเสียหายที่ทำใส่ Player เมื่อวิ่งชน")]
         [SerializeField] private int collisionDamage = 15;
 
@@ -17,7 +29,7 @@ namespace GI351.KitchenGame
         [Tooltip("คูลดาวน์การชนทำดาเมจซ้ำ (วินาที)")]
         [SerializeField] private float attackCooldown = 0.8f;
 
-        [Header("Aggro Settings (การวิ่งไล่ล่าเมื่อโดนโจมตี)")]
+        [Header("Aggro Settings (การวิ่งไล่ล่าเมื่อโดนโจมตี) - ใช้เมื่อ Charge")]
         [Tooltip("ความเร็วในการวิ่งไล่ Player เมื่อโกรธ")]
         [SerializeField] private float chaseSpeed = 3.5f;
 
@@ -47,6 +59,7 @@ namespace GI351.KitchenGame
         public EnemyHealth Health => health;
         public EnemyWander Wander => wander;
         public bool IsEnraged => isEnraged;
+        public HitReaction OnHitReaction => onHitReaction;
 
         private void Awake()
         {
@@ -54,6 +67,12 @@ namespace GI351.KitchenGame
             wander = GetComponent<EnemyWander>();
             rb = GetComponent<Rigidbody2D>();
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+
+            // PigEnemy เป็นตัวกำหนดว่าโดนตีแล้วหนีหรือพุ่งชน (EnemyWander แค่ทำหน้าที่วิ่งหนีให้)
+            if (wander != null)
+            {
+                wander.FleeWhenHit = onHitReaction == HitReaction.Flee;
+            }
 
             if (spriteRenderer != null)
             {
@@ -68,8 +87,8 @@ namespace GI351.KitchenGame
 
         private void Start()
         {
-            // ฟัง Event เมื่อหมูโดนโจมตี จะทำให้หมูโกรธและเริ่มวิ่งไล่ล่า Player
-            if (health != null)
+            // ฟัง Event เมื่อหมูโดนโจมตี จะทำให้หมูโกรธและเริ่มวิ่งไล่ล่า Player (เฉพาะโหมด Charge)
+            if (health != null && onHitReaction == HitReaction.Charge)
             {
                 health.onDamaged.AddListener(Enrage);
             }

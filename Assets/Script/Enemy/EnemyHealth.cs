@@ -5,8 +5,9 @@ namespace GI351.KitchenGame
 {
     public class EnemyHealth : MonoBehaviour, IDamageable
     {
-        [Header("Enemy Health Stats (ปรับได้ใน Inspector)")]
-        [Tooltip("เลือดสูงสุดของศัตรู")]
+        [Header("HP เลือด (ตั้งที่ Prefab ของสัตว์แต่ละตัว: Chicken / Pig)")]
+        [Tooltip("เลือดสูงสุดของสัตว์ตัวนี้ อ่านตอนเกิดเท่านั้น ไม่มีสคริปต์อื่น (EnemySpawner / HuntArea) แก้ทับ")]
+        [Min(1)]
         [SerializeField] private int maxHealth = 30;
 
         [Header("Loot Drop (ไอเทมที่จะดรอปเมื่อตาย)")]
@@ -38,6 +39,7 @@ namespace GI351.KitchenGame
 
         public int MaxHealth => maxHealth;
         public int CurrentHealth => currentHealth;
+        public bool IsDead => isDead;
         public bool IsKnockedBack => knockbackTimer > 0f;
 
         private void Awake()

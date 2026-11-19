@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 3371194762773527358}
   - component: {fileID: 9072661670649840246}
   - component: {fileID: 566831982555815265}
-  - component: {fileID: 7984287827905277351}
+  - component: {fileID: 6842596359950928211}
   m_Layer: 3
   m_Name: Pig
   m_TagString: Untagged
@@ -191,6 +191,7 @@ MonoBehaviour:
   meatDropPrefab: {fileID: 2869220307959938083, guid: 846ce6b3559f66541a3fa89c83ce55e1, type: 3}
   dropCount: 1
   hurtColor: {r: 1, g: 0, b: 0, a: 1}
+  knockbackDuration: 0.2
   onHealthChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -215,6 +216,10 @@ MonoBehaviour:
   moveSpeed: 2
   minIdleDuration: 1.5
   maxIdleDuration: 3.5
+  fleeWhenHit: 1
+  fleeSpeed: 3
+  fleeDuration: 2
+  fleeEdgeMargin: 0.35
   zoneShape: 1
   useSpawnPositionAsCenter: 1
   customCenter: {x: 0, y: 0}
@@ -233,6 +238,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 486c645bccdc2964ead3b7414b0e7386, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.PigEnemy
+  onHitReaction: 0
   collisionDamage: 15
   ramKnockbackForce: 6
   attackCooldown: 0.8
@@ -241,7 +247,7 @@ MonoBehaviour:
   angryColor: {r: 1, g: 0.45, b: 0.45, a: 1}
   oinkSound: {fileID: 0}
   angryIndicator: {fileID: 0}
---- !u!114 &7984287827905277351
+--- !u!114 &6842596359950928211
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -250,19 +256,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 811237516661137993}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fd129205955b594083cc294f1b2e0a1, type: 3}
+  m_Script: {fileID: 11500000, guid: b67800f8c0b75bf45bd68dc2cfc15966, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.EnemyHealth
-  maxHealth: 30
-  meatDropPrefab: {fileID: 0}
-  dropCount: 1
-  hurtColor: {r: 1, g: 0, b: 0, a: 1}
-  onHealthChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  onDamaged:
-    m_PersistentCalls:
-      m_Calls: []
-  onDied:
-    m_PersistentCalls:
-      m_Calls: []
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.EnemyHpBar
+  heightOffset: 0.85
+  barSize: {x: 0.9, y: 0.14}
+  borderThickness: 0.03
+  backColor: {r: 0.08, g: 0.08, b: 0.08, a: 0.85}
+  fillColor: {r: 0.35, g: 0.85, b: 0.3, a: 1}
+  lowHealthColor: {r: 0.9, g: 0.25, b: 0.2, a: 1}
+  lowHealthThreshold: 0.35
+  sortingOrder: 50
+  hideWhenFull: 1

@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 2200357858133910509}
   - component: {fileID: 8508098472464983447}
   - component: {fileID: 5359684126019186234}
-  - component: {fileID: 4030118834139610573}
+  - component: {fileID: 8370949968597705460}
   m_Layer: 3
   m_Name: Chicken
   m_TagString: Untagged
@@ -191,6 +191,7 @@ MonoBehaviour:
   meatDropPrefab: {fileID: 3754125921781682485, guid: f6bb761db65b57b4d92cbac9b0d38945, type: 3}
   dropCount: 1
   hurtColor: {r: 1, g: 0, b: 0, a: 1}
+  knockbackDuration: 0.2
   onHealthChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -215,6 +216,10 @@ MonoBehaviour:
   moveSpeed: 2
   minIdleDuration: 1.5
   maxIdleDuration: 3.5
+  fleeWhenHit: 1
+  fleeSpeed: 3.5
+  fleeDuration: 2
+  fleeEdgeMargin: 0.35
   zoneShape: 1
   useSpawnPositionAsCenter: 1
   customCenter: {x: 0, y: 0}
@@ -234,7 +239,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.ChickenEnemy
   cluckSound: {fileID: 0}
---- !u!114 &4030118834139610573
+--- !u!114 &8370949968597705460
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -243,19 +248,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 8703162885063433997}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fd129205955b594083cc294f1b2e0a1, type: 3}
+  m_Script: {fileID: 11500000, guid: b67800f8c0b75bf45bd68dc2cfc15966, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.EnemyHealth
-  maxHealth: 30
-  meatDropPrefab: {fileID: 0}
-  dropCount: 1
-  hurtColor: {r: 1, g: 0, b: 0, a: 1}
-  onHealthChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  onDamaged:
-    m_PersistentCalls:
-      m_Calls: []
-  onDied:
-    m_PersistentCalls:
-      m_Calls: []
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.EnemyHpBar
+  heightOffset: 0.85
+  barSize: {x: 0.9, y: 0.14}
+  borderThickness: 0.03
+  backColor: {r: 0.08, g: 0.08, b: 0.08, a: 0.85}
+  fillColor: {r: 0.35, g: 0.85, b: 0.3, a: 1}
+  lowHealthColor: {r: 0.9, g: 0.25, b: 0.2, a: 1}
+  lowHealthThreshold: 0.35
+  sortingOrder: 50
+  hideWhenFull: 1
