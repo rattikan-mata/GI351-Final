@@ -1,0 +1,13 @@
+Assets - From: Sprout Lands - By: Cup Nooble (non-commercial license, credit required)
+
+Pack used: Sprout Lands - Sprites - Basic pack
+Author:    Cup Nooble  (https://cupnooble.carrd.co)
+
+License summary (full text in read_me.txt next to this file):
+- Modifying the assets is allowed.
+- Non-commercial projects only. No NFTs, no AI training.
+- The pack itself must not be redistributed or resold, even modified.
+- Credit is required (Cup Nooble).
+
+Do not remove this file. If the project is published or shared, keep this credit
+visible (for example on the itch.io page, in the game's credits screen, or in the README).
