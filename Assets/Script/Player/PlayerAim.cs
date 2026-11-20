@@ -93,7 +93,15 @@ namespace GI351.KitchenGame
         private void Update()
         {
             if (playerHealth != null && playerHealth.IsDead) return;
+            RefreshFacing();
+        }
 
+        /// <summary>
+        /// อ่านเมาส์แล้วอัปเดตทิศเดี๋ยวนี้ (ถ้าไม่ได้ล็อกอยู่) อาวุธเรียกตอนเริ่มตี
+        /// เพื่อให้ตีรัวๆ แล้วสลับฝั่งเมาส์ได้ทันที ไม่ต้องรอ Update เฟรมหน้า
+        /// </summary>
+        public void RefreshFacing()
+        {
             if (TryGetMouseWorld(out Vector2 mouseWorld))
             {
                 Vector2 toMouse = mouseWorld - (Vector2)transform.position;

@@ -304,16 +304,17 @@ MonoBehaviour:
   weaponPrefab: {fileID: 1264822325981503142, guid: b473436e01580074a83c50b64fd647e3, type: 3}
   weaponVisualObject: {fileID: 0}
   spriteRotationOffset: 0
+  weaponScale: 0.7
   weaponSortingOrderOffset: 10
   pixelsPerUnit: 16
   snapToPixel: 1
-  holdOffset: {x: 0.45, y: -0.1}
+  holdOffset: {x: 0.72, y: 0}
   holdAngle: 60
   holdBobHeight: 0.0625
   holdBobPeriod: 0.8
   holdFollowSmoothTime: 0.06
   sideSlideTime: 0.08
-  swingPivotOffset: {x: 0.1, y: 0.15}
+  swingPivotOffset: {x: 0.25, y: 0.1}
   swingRadius: 0.55
   windupTime: 0.3
   windupAngle: 110

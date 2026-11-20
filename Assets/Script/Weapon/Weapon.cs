@@ -43,6 +43,9 @@ namespace GI351.KitchenGame
         [Tooltip("ปรับองศาชดเชยของรูปกระบอง (ถ้าภาพวาดเฉียง ให้ใส่ -45 หรือ 45) รูปต้องวาดให้ปลายกระบองชี้ไปทางแกน X")]
         [SerializeField] private float spriteRotationOffset = 0f;
 
+        [Tooltip("ขนาดกระบอง คูณจากขนาดใน Prefab กระบอง (1 = เท่าเดิม, 0.7 = เล็กลง 30%)")]
+        [SerializeField] private float weaponScale = 0.7f;
+
         [Tooltip("ลำดับการวาดของกระบอง = ลำดับของตัวละคร + ค่านี้ (บวก = อยู่หน้าตัวละคร)")]
         [SerializeField] private int weaponSortingOrderOffset = 10;
 
@@ -54,7 +57,7 @@ namespace GI351.KitchenGame
 
         [Header("Hold Pose (ท่าถือ: ลอยข้างตัวด้านหน้า)")]
         [Tooltip("ตำแหน่งกลางกระบองจากกลางตัว (x = ไปข้างหน้า ตอนหันซ้ายสะท้อนให้เอง, y = สูงขึ้น)")]
-        [SerializeField] private Vector2 holdOffset = new Vector2(0.45f, -0.1f);
+        [SerializeField] private Vector2 holdOffset = new Vector2(0.72f, 0f);
 
         [Tooltip("มุมกระบองตอนถือ (องศา) 90 = ตั้งตรง, 60 = เอียงไปข้างหน้า 30° หัวกระบองชี้ขึ้น")]
         [SerializeField] private float holdAngle = 60f;
@@ -73,7 +76,7 @@ namespace GI351.KitchenGame
 
         [Header("Swing (ท่าตี 3 จังหวะ)")]
         [Tooltip("จุดหมุนของท่าเหวี่ยงจากกลางตัว (x = ไปข้างหน้า, y = สูงขึ้น) ครึ่งวงกลมของ hitbox ก็ใช้จุดนี้เป็นศูนย์กลาง")]
-        [SerializeField] private Vector2 swingPivotOffset = new Vector2(0.1f, 0.15f);
+        [SerializeField] private Vector2 swingPivotOffset = new Vector2(0.25f, 0.1f);
 
         [Tooltip("ระยะจากจุดหมุนถึงกลางกระบองตอนเหวี่ยง")]
         [SerializeField] private float swingRadius = 0.55f;
@@ -304,6 +307,7 @@ namespace GI351.KitchenGame
             }
 
             weaponVisualObject.SetActive(true);
+            weaponVisualObject.transform.localScale *= weaponScale;
             weaponSpriteRenderer = weaponVisualObject.GetComponentInChildren<SpriteRenderer>(true);
             weaponRenderers = weaponVisualObject.GetComponentsInChildren<SpriteRenderer>(true);
 
@@ -455,6 +459,9 @@ namespace GI351.KitchenGame
 
         private void BeginSwing()
         {
+            // ท่าก่อนหน้าเพิ่งปลดล็อกในเฟรมนี้ (PlayerAim อ่านเมาส์ไปก่อนแล้วตอนยังล็อก) ให้อ่านเมาส์ใหม่ ไม่งั้นตีรัวๆ จะติดฝั่งเดิม
+            UnlockFacing();
+            if (playerAim != null) playerAim.RefreshFacing();
             swingSide = CurrentFacingSign();
             phase = SwingPhase.Windup;
             phaseTimer = 0f;
