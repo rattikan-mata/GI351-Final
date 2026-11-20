@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -37,15 +38,58 @@ namespace GI351.KitchenGame
         [Tooltip("ข้อความบนปุ่มตอนล็อก")]
         public string lockedText = "SOON";
 
+        [Header("Levels (สินค้าแบบอัปเลเวล: ใส่ตั้งแต่ 2 เลเวลขึ้นไป = กดซื้อซ้ำเพื่ออัปจนถึง MAX)")]
+        [Tooltip("ชื่อค่าที่เปลี่ยนตามเลเวล แสดงใต้ชื่อสินค้า เช่น Damage / Capacity / Speed")]
+        public string valueLabel = "";
+
+        [Tooltip("รายการเลเวล ตัวที่ 1 = Lv1 (มีตั้งแต่เริ่ม ไม่ใช้ราคา) ตัวถัดไป = ค่าที่ได้ และราคาที่ต้องจ่ายเพื่ออัปไปเลเวลนั้น ถ้าใส่ 2 ตัวขึ้นไป ช่อง Price / Stock ด้านบนจะไม่ถูกใช้")]
+        public List<ShopItemLevel> levels = new List<ShopItemLevel>();
+
         [Tooltip("ยิงเมื่อซื้อสำเร็จ 1 ครั้ง ลากสคริปต์ที่จะให้ของ/ผลมาผูกที่นี่")]
         public UnityEvent onPurchased;
 
         [NonSerialized] public int sold;
+        [NonSerialized] private int currentLevel = 1;
+
+        /// <summary>เป็นสินค้าแบบอัปเลเวลหรือไม่ (มี 2 เลเวลขึ้นไป)</summary>
+        public bool IsLeveled => levels != null && levels.Count >= 2;
+
+        public int MaxLevel => IsLeveled ? levels.Count : 1;
+
+        /// <summary>เลเวลปัจจุบัน (เริ่มที่ 1)</summary>
+        public int Level
+        {
+            get => Mathf.Clamp(currentLevel, 1, MaxLevel);
+            set => currentLevel = Mathf.Clamp(value, 1, MaxLevel);
+        }
+
+        public bool IsMaxLevel => IsLeveled && Level >= levels.Count;
+
+        /// <summary>ค่าของเลเวลปัจจุบัน</summary>
+        public float CurrentValue => IsLeveled ? levels[Level - 1].value : 0f;
+
+        /// <summary>ค่าของเลเวลถัดไป (ถ้า MAX แล้วคืนค่าปัจจุบัน)</summary>
+        public float NextValue => IsLeveled && !IsMaxLevel ? levels[Level].value : CurrentValue;
+
+        /// <summary>ราคาที่ต้องจ่ายตอนนี้ (แบบอัปเลเวล = ราคาไปเลเวลถัดไป, MAX = 0)</summary>
+        public int NextPrice => IsLeveled ? (IsMaxLevel ? 0 : levels[Level].price) : price;
+    }
+
+    /// <summary>หนึ่งเลเวลของสินค้าแบบอัปเลเวล</summary>
+    [Serializable]
+    public class ShopItemLevel
+    {
+        [Tooltip("ค่าที่ได้เมื่ออยู่เลเวลนี้ (เช่น ดาเมจ 30)")]
+        public float value;
+
+        [Tooltip("ราคาที่ต้องจ่ายเพื่ออัปมาเลเวลนี้ (Lv1 ไม่ใช้)")]
+        public int price;
     }
 
     /// <summary>
     /// ร้านค้าในฉาก: ผู้เล่นเดินเข้าวงแหวนทองหน้าร้าน -> เปิดหน้าซื้อของ (รายการสินค้า + ราคา + ปุ่ม BUY)
-    /// ออกจากวง / กด Exit / กด Esc -> ปิดหน้าซื้อ รายการสินค้าอยู่ในลิสต์ Items (ตอนนี้ว่าง ใส่เองใน Inspector)
+    /// ออกจากวง / กด Exit / กด Esc -> ปิดหน้าซื้อ รายการสินค้าอยู่ในลิสต์ Items (ใส่เองใน Inspector)
+    /// สินค้าธรรมดา = ซื้อครั้งเดียว/มีสต็อก ส่วนสินค้าที่ใส่ Levels 2 เลเวลขึ้นไป = กดซื้อซ้ำเพื่ออัปเลเวลจนถึง MAX
     /// หน้าซื้อถูกสร้างตอนเล่น (ไม่ต้องลาก Canvas)
     /// </summary>
     public class ShopStall : MonoBehaviour
@@ -83,6 +127,8 @@ namespace GI351.KitchenGame
 
         private struct RowView
         {
+            public Text name;
+            public Text desc;
             public Text price;
             public Text buyText;
             public Image buyImage;
@@ -97,6 +143,8 @@ namespace GI351.KitchenGame
         private bool isOpen;
         private bool builtUI;
         private int lastMoney = int.MinValue;
+
+        private string arrowText = "->";
 
         private GameObject canvasObject;
         private GameObject panel;
@@ -181,8 +229,26 @@ namespace GI351.KitchenGame
             if (index < 0 || index >= ItemCount) return false;
             ShopItemData it = items[index];
             if (it.locked) return false;
+            if (it.IsLeveled) return !it.IsMaxLevel && CurrentMoney >= it.NextPrice;
             if (it.stock > 0 && it.sold >= it.stock) return false;
             return CurrentMoney >= it.price;
+        }
+
+        /// <summary>ข้อมูลสินค้าลำดับที่ index (null ถ้าไม่มี)</summary>
+        public ShopItemData GetItem(int index)
+        {
+            return index >= 0 && index < ItemCount ? items[index] : null;
+        }
+
+        /// <summary>หาสินค้าจาก id (null ถ้าไม่เจอ)</summary>
+        public ShopItemData FindItem(string id)
+        {
+            if (string.IsNullOrEmpty(id) || items == null) return null;
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] != null && items[i].id == id) return items[i];
+            }
+            return null;
         }
 
         /// <summary>ซื้อสินค้า index (เช็คสต็อก + เงิน) คืน true ถ้าสำเร็จ</summary>
@@ -193,12 +259,32 @@ namespace GI351.KitchenGame
 
             ShopItemData it = items[index];
             if (it.locked) return false;
-            if (it.stock > 0 && it.sold >= it.stock) return false;
-            if (MoneyManager.Instance.CurrentMoney < it.price) return false;
-            if (!MoneyManager.Instance.SpendMoney(it.price)) return false;
+
+            bool leveled = it.IsLeveled;
+            if (leveled)
+            {
+                if (it.IsMaxLevel) return false;
+            }
+            else if (it.stock > 0 && it.sold >= it.stock)
+            {
+                return false;
+            }
+
+            // เช็คเงินก่อน ถ้าไม่พอจะไม่หักเงิน
+            int cost = leveled ? it.NextPrice : it.price;
+            if (MoneyManager.Instance.CurrentMoney < cost) return false;
+            if (!MoneyManager.Instance.SpendMoney(cost)) return false;
 
             it.sold++;
-            Debug.Log("[ShopStall] Bought " + it.itemName + " ($" + it.price + ")");
+            if (leveled)
+            {
+                it.Level = it.Level + 1;
+                Debug.Log("[ShopStall] Upgraded " + it.itemName + " to Lv" + it.Level + " ($" + cost + ")");
+            }
+            else
+            {
+                Debug.Log("[ShopStall] Bought " + it.itemName + " ($" + it.price + ")");
+            }
             it.onPurchased?.Invoke();
             ItemPurchased?.Invoke(it);
             if (isOpen) Refresh();
@@ -265,6 +351,7 @@ namespace GI351.KitchenGame
             builtUI = true;
             EnsureEventSystem();
             if (uiFont == null) uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            arrowText = uiFont != null && uiFont.HasCharacter('\u2192') ? "\u2192" : ">";
 
             canvasObject = new GameObject("ShopCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasObject.transform.SetParent(transform, false);
@@ -359,13 +446,15 @@ namespace GI351.KitchenGame
                 row.GetComponent<Image>().color = new Color(0.12f, 0.14f, 0.22f, 1f);
                 row.GetComponent<LayoutElement>().preferredHeight = 84f;
 
+                bool hasDesc = it.IsLeveled || !string.IsNullOrEmpty(it.description);
                 Text name = CreateText(rowRect, "Name", it.itemName, 30, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft);
-                Place(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(18f, it.description.Length > 0 ? 14f : 0f), new Vector2(380f, 40f), new Vector2(0f, 0.5f));
+                Place(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(18f, hasDesc ? 14f : 0f), new Vector2(400f, 40f), new Vector2(0f, 0.5f));
 
-                if (!string.IsNullOrEmpty(it.description))
+                Text desc = null;
+                if (hasDesc)
                 {
-                    Text desc = CreateText(rowRect, "Desc", it.description, 20, FontStyle.Normal, new Color(0.7f, 0.76f, 0.9f, 1f), TextAnchor.MiddleLeft);
-                    Place(desc.rectTransform, new Vector2(0f, 0.5f), new Vector2(18f, -18f), new Vector2(380f, 28f), new Vector2(0f, 0.5f));
+                    desc = CreateText(rowRect, "Desc", it.description ?? "", 20, FontStyle.Normal, new Color(0.7f, 0.76f, 0.9f, 1f), TextAnchor.MiddleLeft);
+                    Place(desc.rectTransform, new Vector2(0f, 0.5f), new Vector2(18f, -18f), new Vector2(400f, 28f), new Vector2(0f, 0.5f));
                 }
 
                 Text price = CreateText(rowRect, "Price", "$" + it.price, 32, FontStyle.Bold, new Color(1f, 0.92f, 0.3f, 1f), TextAnchor.MiddleRight);
@@ -378,6 +467,8 @@ namespace GI351.KitchenGame
 
                 rows.Add(new RowView
                 {
+                    name = name,
+                    desc = desc,
                     price = price,
                     buyText = buy.GetComponentInChildren<Text>(),
                     buyImage = buy.GetComponent<Image>(),
@@ -413,6 +504,12 @@ namespace GI351.KitchenGame
                     continue;
                 }
 
+                if (it.IsLeveled)
+                {
+                    RefreshLeveledRow(it, v, money);
+                    continue;
+                }
+
                 v.buyButton.interactable = !soldOut && afford;
                 v.buyImage.color = soldOut ? new Color(0.3f, 0.3f, 0.35f, 1f) : (afford ? new Color(0.2f, 0.7f, 1f, 1f) : new Color(0.25f, 0.3f, 0.45f, 1f));
                 v.buyText.text = soldOut ? "SOLD OUT" : "BUY";
@@ -420,6 +517,40 @@ namespace GI351.KitchenGame
                 v.price.text = it.stock > 0 && !soldOut ? "$" + it.price + "  x" + (it.stock - it.sold) : "$" + it.price;
                 v.price.color = afford || soldOut ? new Color(1f, 0.92f, 0.3f, 1f) : new Color(1f, 0.45f, 0.45f, 1f);
             }
+        }
+
+        /// <summary>แถวสินค้าแบบอัปเลเวล: "ชื่อ Lv2 → Lv3" / "Damage 30 → 40" / ราคา / ปุ่ม UPGRADE (MAX = ปุ่มเทา กดไม่ได้)</summary>
+        private void RefreshLeveledRow(ShopItemData it, RowView v, int money)
+        {
+            string label = string.IsNullOrEmpty(it.valueLabel) ? "" : it.valueLabel + " ";
+
+            if (it.IsMaxLevel)
+            {
+                v.name.text = it.itemName + "  Lv" + it.Level + " MAX";
+                if (v.desc != null) v.desc.text = label + FormatValue(it.CurrentValue);
+                v.price.text = "";
+                v.buyButton.interactable = false;
+                v.buyImage.color = new Color(0.22f, 0.22f, 0.26f, 1f);
+                v.buyText.text = "MAX";
+                v.buyText.fontSize = 32;
+                return;
+            }
+
+            int cost = it.NextPrice;
+            bool afford = money >= cost;
+            v.name.text = it.itemName + "  Lv" + it.Level + " " + arrowText + " Lv" + (it.Level + 1);
+            if (v.desc != null) v.desc.text = label + FormatValue(it.CurrentValue) + " " + arrowText + " " + FormatValue(it.NextValue);
+            v.price.text = "$" + cost;
+            v.price.color = afford ? new Color(1f, 0.92f, 0.3f, 1f) : new Color(1f, 0.45f, 0.45f, 1f);
+            v.buyButton.interactable = afford;
+            v.buyImage.color = afford ? new Color(0.2f, 0.7f, 1f, 1f) : new Color(0.3f, 0.3f, 0.35f, 1f);
+            v.buyText.text = "UPGRADE";
+            v.buyText.fontSize = 24;
+        }
+
+        private static string FormatValue(float value)
+        {
+            return value.ToString("0.##", CultureInfo.InvariantCulture);
         }
 
         // ---------------- UI helpers ----------------

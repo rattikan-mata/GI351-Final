@@ -24,6 +24,7 @@ namespace GI351.KitchenGame
 
         public Vector2 MovementInput => movementInput;
         public Vector2 LastFacingDirection => lastFacingDirection;
+        public float MoveSpeed => moveSpeed;
 
         private void Awake()
         {

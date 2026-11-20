@@ -311,7 +311,7 @@ MonoBehaviour:
   damage: 25
   attackRange: 0.5
   attackOffsetDistance: 0.8
-  attackCooldown: 0.35
+  attackCooldown: 0.8
   knockbackForce: 3
   targetLayer:
     serializedVersion: 2

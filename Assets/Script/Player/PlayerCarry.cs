@@ -48,6 +48,15 @@ namespace GI351.KitchenGame
         public IReadOnlyList<Item> CarriedItems => carriedItems;
 
         /// <summary>
+        /// เปลี่ยนความจุที่แบกได้ (เช่น ซื้อกระเป๋าอัปเกรด) แล้วแจ้ง UI ที่ผูก onCarryCountChanged ให้อัปเดตเป็น จำนวนที่แบก/ความจุใหม่
+        /// </summary>
+        public void SetMaxCarryCapacity(int newCapacity)
+        {
+            maxCarryCapacity = Mathf.Max(1, newCapacity);
+            onCarryCountChanged?.Invoke(carriedItems.Count, maxCarryCapacity);
+        }
+
+        /// <summary>
         /// ระยะซ้อนของกองในพิกัดโลก (ให้หม้อ/โต๊ะกองของด้วยระยะเดียวกับที่แบก)
         /// </summary>
         public Vector3 WorldStackOffset => carryPoint != null ? carryPoint.TransformVector(stackOffset) : stackOffset;

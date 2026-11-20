@@ -1,0 +1,82 @@
+using UnityEngine;
+
+namespace GI351.KitchenGame
+{
+    /// <summary>
+    /// ทางเข้าเดียวของ juice ตอนตี/ฆ่าสัตว์: hit stop และ camera shake (ตัวที่ต้องอยู่รอดแม้สัตว์ถูก destroy)
+    /// สร้างตัวถือ (JuiceRunner) กับ CameraShake บนกล้องหลักให้อัตโนมัติ ไม่ต้องวางอะไรในซีน
+    /// </summary>
+    public static class JuiceDirector
+    {
+        private static JuiceRunner runner;
+        private static JuiceConfig defaultConfig;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            runner = null;
+            defaultConfig = null;
+        }
+
+        /// <summary>ค่าเริ่มต้น (ตามค่าในโค้ดของ JuiceConfig) ใช้เมื่อสัตว์ไม่ได้ผูก asset ไว้</summary>
+        public static JuiceConfig DefaultConfig
+        {
+            get
+            {
+                if (defaultConfig == null)
+                {
+                    defaultConfig = ScriptableObject.CreateInstance<JuiceConfig>();
+                    defaultConfig.name = "JuiceConfig (default)";
+                }
+                return defaultConfig;
+            }
+        }
+
+        public static JuiceConfig Resolve(JuiceConfig assigned)
+        {
+            return assigned != null ? assigned : DefaultConfig;
+        }
+
+        /// <summary>กำลังหยุดเกมจาก hit stop อยู่หรือไม่</summary>
+        public static bool IsHitStopActive => runner != null && runner.IsHolding;
+
+        /// <summary>หยุดเกม seconds วินาทีตามเวลาจริง (ซ้อนกันใช้ค่าที่นานกว่า ไม่บวกสะสม)</summary>
+        public static void HitStop(float seconds)
+        {
+            if (!Application.isPlaying || seconds <= 0f) return;
+            JuiceRunner r = GetRunner();
+            if (r != null) r.RequestHitStop(seconds);
+        }
+
+        /// <summary>สั่นกล้องหลัก pixels พิกเซล (ตามขนาดพิกเซลของเกม) นาน seconds วินาที (เวลาจริง)</summary>
+        public static void Shake(float pixels, float seconds, float pixelsPerUnit)
+        {
+            if (!Application.isPlaying || pixels <= 0f || seconds <= 0f) return;
+
+            Camera cam = Camera.main;
+            if (cam == null) return;
+
+            if (!cam.TryGetComponent(out CameraShake shake))
+            {
+                shake = cam.gameObject.AddComponent<CameraShake>();
+            }
+            shake.Shake(pixels, seconds, pixelsPerUnit);
+        }
+
+        internal static void ForgetRunner(JuiceRunner r)
+        {
+            if (runner == r) runner = null;
+        }
+
+        private static JuiceRunner GetRunner()
+        {
+            if (runner != null) return runner;
+
+            GameObject go = new GameObject("JuiceRunner");
+            go.hideFlags = HideFlags.HideInHierarchy;
+            Object.DontDestroyOnLoad(go);
+            runner = go.AddComponent<JuiceRunner>();
+            return runner;
+        }
+    }
+}

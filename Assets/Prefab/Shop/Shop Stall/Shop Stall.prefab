@@ -207,6 +207,7 @@ GameObject:
   - component: {fileID: 7373532925016644152}
   - component: {fileID: 1188983409740115280}
   - component: {fileID: 5989593789037977040}
+  - component: {fileID: 3683803792171021409}
   m_Layer: 0
   m_Name: Shop Stall
   m_TagString: Untagged
@@ -291,7 +292,73 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.ShopStall
   shopTitle: SHOP
-  items: []
+  items:
+  - itemName: Club
+    description: 
+    price: 0
+    stock: 0
+    id: club
+    locked: 0
+    lockedText: 
+    valueLabel: Damage
+    levels:
+    - value: 25
+      price: 0
+    - value: 30
+      price: 40
+    - value: 40
+      price: 80
+    - value: 50
+      price: 150
+    - value: 60
+      price: 250
+    onPurchased:
+      m_PersistentCalls:
+        m_Calls: []
+  - itemName: Bag
+    description: 
+    price: 0
+    stock: 0
+    id: bag
+    locked: 0
+    lockedText: 
+    valueLabel: Capacity
+    levels:
+    - value: 3
+      price: 0
+    - value: 5
+      price: 40
+    - value: 8
+      price: 80
+    - value: 12
+      price: 150
+    - value: 16
+      price: 250
+    onPurchased:
+      m_PersistentCalls:
+        m_Calls: []
+  - itemName: Boots
+    description: 
+    price: 0
+    stock: 0
+    id: boots
+    locked: 0
+    lockedText: 
+    valueLabel: Speed
+    levels:
+    - value: 5
+      price: 0
+    - value: 5.5
+      price: 40
+    - value: 6
+      price: 80
+    - value: 6.5
+      price: 150
+    - value: 7
+      price: 250
+    onPurchased:
+      m_PersistentCalls:
+        m_Calls: []
   zoneCenter: {fileID: 3278608873617845483}
   zoneRadius: 0.5
   openOnEnter: 1
@@ -305,6 +372,25 @@ MonoBehaviour:
   onClosed:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &3683803792171021409
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4636435379294269516}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 240430990f447b245a2525cc56eb8905, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.HuntUpgrades
+  bindings:
+  - itemId: club
+    stat: 0
+  - itemId: bag
+    stat: 1
+  - itemId: boots
+    stat: 2
 --- !u!1 &6295968039141360220
 GameObject:
   m_ObjectHideFlags: 0

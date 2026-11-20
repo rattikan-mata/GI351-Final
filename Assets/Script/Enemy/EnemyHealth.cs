@@ -25,6 +25,10 @@ namespace GI351.KitchenGame
         [Tooltip("ระยะเวลาที่กระเด็น (วินาที) ระหว่างนี้ระบบเดิน/ไล่ล่าจะหยุดควบคุมความเร็ว")]
         [SerializeField] private float knockbackDuration = 0.2f;
 
+        [Header("Juice (เอฟเฟกต์ตอนตี/ตาย: hit stop, squash, death pop, เนื้อบินโค้ง, กล้องสั่น)")]
+        [Tooltip("ตัวเลขทั้งหมดของเอฟเฟกต์อยู่ใน JuiceConfig (Assets/Settings/JuiceConfig.asset) ว่าง = ใช้ค่าเริ่มต้นในโค้ด")]
+        [SerializeField] private JuiceConfig juice;
+
         [Header("Events")]
         public UnityEvent<int, int> onHealthChanged;
         public UnityEvent onDamaged;
@@ -36,6 +40,7 @@ namespace GI351.KitchenGame
         private Color defaultColor = Color.white;
         private Rigidbody2D rb;
         private float knockbackTimer;
+        private EnemyJuice enemyJuice;
 
         public int MaxHealth => maxHealth;
         public int CurrentHealth => currentHealth;
@@ -51,6 +56,13 @@ namespace GI351.KitchenGame
             {
                 defaultColor = spriteRenderer.color;
             }
+
+            // squash / death pop อยู่ที่ EnemyJuice (ถ้า prefab ยังไม่มีให้เพิ่มให้อัตโนมัติ)
+            if (!TryGetComponent(out enemyJuice))
+            {
+                enemyJuice = gameObject.AddComponent<EnemyJuice>();
+            }
+            enemyJuice.Setup(juice);
         }
 
         private void FixedUpdate()
@@ -91,9 +103,44 @@ namespace GI351.KitchenGame
                 Invoke(nameof(ResetColor), 0.12f);
             }
 
-            if (currentHealth <= 0)
+            bool lethal = currentHealth <= 0;
+            PlayHitJuice(lethal);
+
+            if (lethal)
             {
                 Die();
+            }
+        }
+
+        /// <summary>
+        /// hit stop + กล้องสั่น + squash ตอนโดนตี (ตอนตายใช้ค่าที่แรง/นานกว่า และข้าม squash เพราะ death pop มาแทน)
+        /// </summary>
+        private void PlayHitJuice(bool lethal)
+        {
+            JuiceConfig cfg = JuiceDirector.Resolve(juice);
+
+            if (cfg.hitStopEnabled)
+            {
+                JuiceDirector.HitStop(lethal ? cfg.hitStopOnKill : cfg.hitStopOnHit);
+            }
+
+            if (cfg.shakeEnabled)
+            {
+                if (lethal)
+                {
+                    float px = Random.Range(Mathf.Min(cfg.shakeOnKillPixels.x, cfg.shakeOnKillPixels.y),
+                        Mathf.Max(cfg.shakeOnKillPixels.x, cfg.shakeOnKillPixels.y));
+                    JuiceDirector.Shake(px, cfg.shakeOnKillTime, cfg.pixelsPerUnit);
+                }
+                else
+                {
+                    JuiceDirector.Shake(cfg.shakeOnHitPixels, cfg.shakeOnHitTime, cfg.pixelsPerUnit);
+                }
+            }
+
+            if (!lethal && enemyJuice != null)
+            {
+                enemyJuice.PlayHit();
             }
         }
 
@@ -119,18 +166,72 @@ namespace GI351.KitchenGame
             if (isDead) return;
             isDead = true;
 
-            // ดรอปเนื้อตามจำนวนที่กำหนด
-            if (meatDropPrefab != null)
+            // ปิด collider / AI ทันที ไม่ให้โดนตีซ้ำหรือวิ่งต่อระหว่างเล่น death pop
+            DisableForDeath();
+
+            DropMeat();
+
+            // onDied ยิงตอนตายเหมือนเดิม (หลอด HP หายทันทีจาก EnemyHpBar)
+            onDied?.Invoke();
+
+            if (enemyJuice != null)
             {
-                for (int i = 0; i < dropCount; i++)
-                {
-                    Vector2 randomOffset = Random.insideUnitCircle * 0.4f;
-                    Instantiate(meatDropPrefab, transform.position + (Vector3)randomOffset, Quaternion.identity);
-                }
+                enemyJuice.PlayDeath(() => Destroy(gameObject));
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+        }
+
+        private void DisableForDeath()
+        {
+            foreach (Collider2D c in GetComponentsInChildren<Collider2D>())
+            {
+                c.enabled = false;
             }
 
-            onDied?.Invoke();
-            Destroy(gameObject);
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector2.zero;
+                rb.simulated = false;
+            }
+            knockbackTimer = 0f;
+
+            // หยุดสคริปต์เดินสุ่ม / หนี / พุ่งชน (ChickenEnemy, PigEnemy, EnemyWander) เหลือแค่ตัวที่ทำเอฟเฟกต์ตอนตาย
+            foreach (MonoBehaviour mb in GetComponents<MonoBehaviour>())
+            {
+                if (mb == this || mb is EnemyJuice || mb is EnemyHpBar) continue;
+                mb.enabled = false;
+            }
+        }
+
+        /// <summary>
+        /// ดรอปเนื้อตามจำนวนที่กำหนด แต่ละชิ้นบินไปคนละทิศ (ทิศแบ่งเท่าๆ กันรอบตัว เริ่มจากมุมสุ่ม) ตกในกรอบที่สัตว์ถูกขังไว้
+        /// </summary>
+        private void DropMeat()
+        {
+            if (meatDropPrefab == null || dropCount <= 0) return;
+
+            JuiceConfig cfg = JuiceDirector.Resolve(juice);
+
+            bool hasBounds = false;
+            Vector2 boundsMin = Vector2.zero;
+            Vector2 boundsMax = Vector2.zero;
+            if (TryGetComponent(out EnemyWander wander))
+            {
+                hasBounds = wander.TryGetBoundary(out boundsMin, out boundsMax);
+            }
+
+            float step = 360f / dropCount;
+            float baseAngle = Random.value * 360f;
+            float jitter = Mathf.Min(cfg.meatDirectionJitter, step * 0.25f);
+
+            for (int i = 0; i < dropCount; i++)
+            {
+                float angle = baseAngle + step * i + (dropCount > 1 ? Random.Range(-jitter, jitter) : 0f);
+                MeatDropFx.Spawn(meatDropPrefab, transform.position, angle, cfg, hasBounds, boundsMin, boundsMax);
+            }
         }
     }
 }

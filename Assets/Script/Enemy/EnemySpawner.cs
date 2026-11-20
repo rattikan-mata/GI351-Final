@@ -135,7 +135,8 @@ namespace GI351.KitchenGame
         /// </summary>
         private int GetActiveCount()
         {
-            activeSpawns.RemoveAll(item => item == null);
+            // ตัวที่ตายแล้วแต่ยังเล่น death pop อยู่ (ยังไม่ถูก Destroy) ไม่นับว่ายังมีชีวิต
+            activeSpawns.RemoveAll(item => item == null || (item.TryGetComponent(out EnemyHealth h) && h.IsDead));
             return activeSpawns.Count;
         }
 

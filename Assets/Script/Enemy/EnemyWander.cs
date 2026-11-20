@@ -97,6 +97,14 @@ namespace GI351.KitchenGame
 
         public Vector2 CenterPoint => centerPoint;
 
+        /// <summary>กรอบที่สัตว์ถูกขังไว้ (ตั้งจาก EnemySpawner) คืน false ถ้าไม่มีกรอบ</summary>
+        public bool TryGetBoundary(out Vector2 min, out Vector2 max)
+        {
+            min = boundaryMin;
+            max = boundaryMax;
+            return hasBoundary;
+        }
+
         private void Awake()
         {
             rb = GetComponent<Rigidbody2D>();

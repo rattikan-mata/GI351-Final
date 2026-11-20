@@ -94,6 +94,12 @@ namespace GI351.KitchenGame
         // ถ้าลืมตั้ง Target Layer (เป็น Nothing) ให้ชนทุก Layer แทน เพื่อไม่ให้ฟันแล้วไม่โดนอะไรเลย
         private LayerMask EffectiveTargetLayer => targetLayer.value == 0 ? (LayerMask)(~0) : targetLayer;
 
+        private void OnEnable()
+        {
+            // อาวุธใหม่ / สลับอาวุธ ให้รับดาเมจตามเลเวลอัปเกรดที่ซื้อไว้ (ถ้ามีร้านอัปเกรดในฉาก)
+            HuntUpgrades.ApplyToWeapon(this);
+        }
+
         private void Awake()
         {
             playerMovement = GetComponentInParent<PlayerMovement>();
@@ -551,6 +557,14 @@ namespace GI351.KitchenGame
             }
 
             return GetPivotOrigin() + (Vector3)(direction.normalized * attackOffsetDistance);
+        }
+
+        /// <summary>
+        /// ตั้งค่าดาเมจโดยตรง (ใช้โดยร้านอัปเกรดการล่า HuntUpgrades)
+        /// </summary>
+        public void SetDamage(int newDamage)
+        {
+            damage = Mathf.Max(0, newDamage);
         }
 
         /// <summary>

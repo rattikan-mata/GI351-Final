@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2369c5feb00810241ab2073a6e0bd4f0, type: 3}
+  m_Name: JuiceConfig
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.JuiceConfig
+  pixelsPerUnit: 16
+  hitStopEnabled: 1
+  hitStopOnHit: 0.05
+  hitStopOnKill: 0.09
+  squashEnabled: 1
+  squashScale: {x: 1.25, y: 0.8}
+  squashPeakTime: 0.05
+  squashEndTime: 0.1
+  squashUnscaledTime: 1
+  squashKeepFeetPlanted: 1
+  deathPopEnabled: 1
+  deathPunchScale: 1.15
+  deathPunchTime: 0.12
+  deathPunchEase: 2
+  deathShrinkTime: 0.25
+  deathShrinkEase: 8
+  meatFlightEnabled: 1
+  meatSpawnScaleTime: 0.3
+  meatSpawnScaleEase: 6
+  meatFlightTime: 0.45
+  meatGroundDistance: {x: 0.5, y: 1}
+  meatArcHeight: {x: 1, y: 1.5}
+  meatDirectionJitter: 25
+  meatBounceHeightPercent: 0.3
+  meatBounceTime: 0.15
+  meatLandSquashScale: {x: 1.2, y: 0.8}
+  meatLandSquashTime: 0.1
+  meatShadowSize: {x: 0.6, y: 0.22}
+  meatShadowColor: {r: 0, g: 0, b: 0, a: 0.35}
+  meatShadowYOffset: 0
+  meatShadowMinScale: 0.55
+  meatPickupOnlyAfterLanding: 1
+  shakeEnabled: 1
+  shakeOnHitPixels: 1
+  shakeOnHitTime: 0.1
+  shakeOnKillPixels: {x: 2, y: 3}
+  shakeOnKillTime: 0.15
