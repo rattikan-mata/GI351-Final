@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -8,91 +7,198 @@ using UnityEngine.InputSystem;
 
 namespace GI351.KitchenGame
 {
+    /// <summary>
+    /// กระบองของผู้เล่น: หันแค่ซ้าย/ขวา (ทิศจาก PlayerAim) ท่าถือลอยข้างตัวด้านหน้า และท่าตี 3 จังหวะ
+    ///   1) ง้าง (Windup)        หมุนกระบองขึ้นเหนือหัวเยื้องไปด้านหลัง ยังไม่ทำดาเมจ
+    ///   2) ฟาด (Strike)          กวาดลงด้านหน้าเร็วๆ ดาเมจ + knockback + juice เกิดเฉพาะช่วงนี้ ศัตรูโดนได้ครั้งเดียวต่อการฟาด
+    ///   3) ตามแรง (FollowThrough) ค่อยๆ กลับเข้าท่าถือ (กดตีระหว่างช่วงนี้ = จำไว้ตีต่อทันทีที่จบ)
+    /// ความช้าของการตีมาจากท่าเหวี่ยง ไม่ใช่คูลดาวน์ (attackCooldown ตั้งเป็น 0)
+    /// มุมทั้งหมดในหน้านี้วัดแบบ "หันขวา": 0° = ชี้ไปข้างหน้า, + = ชี้ขึ้น, - = ชี้ลง (ตอนหันซ้ายสะท้อนให้เอง)
+    /// ระยะเป็นหน่วยโลก (world units) วัดจากกลางตัวผู้เล่น
+    /// </summary>
     public class Weapon : MonoBehaviour
     {
-        [Header("Aiming Settings (การเล็งทิศทาง: ใช้ทิศจาก PlayerAim)")]
-        [Tooltip("หมุนภาพเอฟเฟกต์ให้ชี้ไปตามทิศที่หัน")]
-        [SerializeField] private bool rotateVisualTowardsTarget = true;
+        public enum SwingPhase
+        {
+            Idle,
+            Windup,
+            Strike,
+            FollowThrough
+        }
 
-        [Header("Sword Swing Settings (การฟันดาบแบบกวาดโค้ง)")]
-        [Tooltip("เปิดใช้งานแอนิเมชันการฟันดาบกวาดโค้งจากบนลงล่าง")]
-        [SerializeField] private bool enableArcSwing = true;
+        [Header("Facing (หันซ้าย/ขวา ทิศจาก PlayerAim)")]
+        [Tooltip("ล็อกทิศไม่ให้พลิกซ้าย/ขวาระหว่างง้างและฟาด")]
+        [SerializeField] private bool lockFacingDuringSwing = true;
 
-        [Tooltip("Prefab ของอาวุธที่จะโชว์ตอนฟัน (ลาก Prefab ดาบมาใส่)")]
+        [Tooltip("ล็อกทิศต่อไปจนจบช่วงตามแรงด้วย (ปิด = หันกลับได้ตั้งแต่ฟาดเสร็จ)")]
+        [SerializeField] private bool lockFacingDuringFollowThrough = true;
+
+        [Header("Weapon Visual (ภาพกระบอง)")]
+        [Tooltip("Prefab ของอาวุธที่จะโชว์ (ลาก Prefab กระบองมาใส่)")]
         [SerializeField] private GameObject weaponPrefab;
 
         [Tooltip("GameObject แสดงตัวอาวุธในฉาก (ถ้าว่างจะดึงจาก weaponPrefab หรือค้นหาให้อัตโนมัติ)")]
         [SerializeField] private GameObject weaponVisualObject;
 
-        [Tooltip("ซ่อนอาวุธเวลาไม่ได้ฟัน (จะแสดงขึ้นมาเฉพาะตอนกดฟัน)")]
-        [SerializeField] private bool hideWeaponWhenIdle = true;
-
-        [Tooltip("มุมกว้างของการฟัน (องศา) เช่น 140 องศา")]
-        [SerializeField] private float swingArcAngle = 140f;
-
-        [Tooltip("ความเร็วในการฟันแต่ละครั้ง (วินาที) ยิ่งน้อยยิ่งฟันไว")]
-        [SerializeField] private float swingDuration = 0.22f;
-
-        [Tooltip("ระยะห่างของตัวดาบจากจุดหมุนตัวผู้เล่น")]
-        [SerializeField] private float swordDistance = 0.7f;
-
-        [Tooltip("ปรับองศาชดเชยของรูปดาบ (ถ้าภาพ Sprite วาดเฉียงแนวทแยง 45 องศา ให้ใส่ -45 หรือ 45)")]
+        [Tooltip("ปรับองศาชดเชยของรูปกระบอง (ถ้าภาพวาดเฉียง ให้ใส่ -45 หรือ 45) รูปต้องวาดให้ปลายกระบองชี้ไปทางแกน X")]
         [SerializeField] private float spriteRotationOffset = 0f;
 
-        [Header("Hold In Front (ถืออาวุธไว้ด้านหน้าตลอด)")]
-        [Tooltip("ถืออาวุธไว้ด้านหน้าตามทิศที่ผู้เล่นหัน (ทับค่า Hide Weapon When Idle)")]
-        [SerializeField] private bool holdWeaponInFront = true;
+        [Tooltip("ลำดับการวาดของกระบอง = ลำดับของตัวละคร + ค่านี้ (บวก = อยู่หน้าตัวละคร)")]
+        [SerializeField] private int weaponSortingOrderOffset = 10;
 
-        [Tooltip("ระยะจากกลางตัวผู้เล่นถึงอาวุธตอนถือ (เมตร)")]
-        [SerializeField] private float holdDistance = 0.55f;
+        [Tooltip("Pixels Per Unit ของเกม (pixel art ใช้ 16) ใช้ปัดตำแหน่งกระบองให้ลงตารางพิกเซล")]
+        [SerializeField] private float pixelsPerUnit = 16f;
+
+        [Tooltip("ปัดตำแหน่งกระบองลงตารางพิกเซล")]
+        [SerializeField] private bool snapToPixel = true;
+
+        [Header("Hold Pose (ท่าถือ: ลอยข้างตัวด้านหน้า)")]
+        [Tooltip("ตำแหน่งกลางกระบองจากกลางตัว (x = ไปข้างหน้า ตอนหันซ้ายสะท้อนให้เอง, y = สูงขึ้น)")]
+        [SerializeField] private Vector2 holdOffset = new Vector2(0.45f, -0.1f);
+
+        [Tooltip("มุมกระบองตอนถือ (องศา) 90 = ตั้งตรง, 60 = เอียงไปข้างหน้า 30° หัวกระบองชี้ขึ้น")]
+        [SerializeField] private float holdAngle = 60f;
+
+        [Tooltip("ระยะที่ลอยขึ้นลง (idle bob) 0.0625 = 1 พิกเซล")]
+        [SerializeField] private float holdBobHeight = 0.0625f;
+
+        [Tooltip("เวลาที่ลอยขึ้นลงครบ 1 รอบ (วินาที)")]
+        [SerializeField] private float holdBobPeriod = 0.8f;
+
+        [Tooltip("ความหน่วงตอนตามตัวผู้เล่นที่กำลังเดิน (วินาที) ยิ่งมากยิ่งช้า 0 = ติดตัวเป๊ะ")]
+        [SerializeField] private float holdFollowSmoothTime = 0.06f;
+
+        [Tooltip("เวลาที่กระบองเลื่อนข้ามไปอีกฝั่งตอนหันกลับ (วินาที)")]
+        [SerializeField] private float sideSlideTime = 0.08f;
+
+        [Header("Swing (ท่าตี 3 จังหวะ)")]
+        [Tooltip("จุดหมุนของท่าเหวี่ยงจากกลางตัว (x = ไปข้างหน้า, y = สูงขึ้น) ครึ่งวงกลมของ hitbox ก็ใช้จุดนี้เป็นศูนย์กลาง")]
+        [SerializeField] private Vector2 swingPivotOffset = new Vector2(0.1f, 0.15f);
+
+        [Tooltip("ระยะจากจุดหมุนถึงกลางกระบองตอนเหวี่ยง")]
+        [SerializeField] private float swingRadius = 0.55f;
+
+        [Tooltip("1) ง้าง: เวลา (วินาที)")]
+        [SerializeField] private float windupTime = 0.30f;
+
+        [Tooltip("1) ง้าง: มุมปลายกระบอง (องศา) 110 = เหนือหัวเยื้องไปด้านหลังนิดหน่อย")]
+        [SerializeField] private float windupAngle = 110f;
+
+        [SerializeField] private Ease windupEase = Ease.OutQuad;
+
+        [Tooltip("2) ฟาด: เวลา (วินาที)")]
+        [SerializeField] private float strikeTime = 0.10f;
+
+        [Tooltip("2) ฟาด: มุมสุดท้าย (องศา) -60 = กวาดลงด้านหน้าต่ำกว่าแนวนอน")]
+        [SerializeField] private float strikeEndAngle = -60f;
+
+        [SerializeField] private Ease strikeEase = Ease.InCubic;
+
+        [Tooltip("3) ตามแรง: เวลา (วินาที) ที่ค่อยๆ กลับเข้าท่าถือ")]
+        [SerializeField] private float followThroughTime = 0.40f;
+
+        [SerializeField] private Ease followThroughEase = Ease.InOutSine;
+
+        [Header("Input Buffer (จำปุ่มตี)")]
+        [Tooltip("กดตีระหว่างท่ากำลังจะจบ จะจำไว้ตีต่อทันทีที่จบ ค่านี้ = กี่วินาทีสุดท้ายของท่าที่รับปุ่ม (0.4 = ตลอดช่วงตามแรง, 0.15 = แค่ 0.15 วินาทีสุดท้าย)")]
+        [SerializeField] private float inputBufferTime = 0.4f;
 
         [Header("Weapon Stats (ปรับได้ใน Inspector)")]
         [Tooltip("ความเสียหายต่อการโจมตี 1 ครั้ง")]
         [SerializeField] private int damage = 25;
 
-        [Tooltip("ระยะการโจมตี (รัศมีวงกลม Hitbox)")]
+        [Tooltip("รัศมีของ hitbox ครึ่งวงกลมฝั่งที่หัน (หน่วยโลก) วัดจากจุดหมุน")]
         [SerializeField] private float attackRange = 1.0f;
 
-        [Tooltip("ระยะห่างระหว่างจุดโจมตีกับตัวผู้เล่น")]
-        [SerializeField] private float attackOffsetDistance = 0.8f;
-
-        [Tooltip("คูลดาวน์การโจมตี (วินาที)")]
-        [SerializeField] private float attackCooldown = 0.35f;
+        [Tooltip("คูลดาวน์ก่อนตีครั้งถัดไป (วินาที นับจากเริ่มตี) ตั้ง 0 เพราะความช้าอยู่ในท่าเหวี่ยงแล้ว")]
+        [SerializeField] private float attackCooldown = 0f;
 
         [Tooltip("แรงผลักเมื่อศัตรูโดนโจมตี")]
         [SerializeField] private float knockbackForce = 3f;
 
+        [Tooltip("ศัตรูที่ล้ำไปด้านหลังเส้นกลางตัวเกินระยะนี้จะไม่โดน (เผื่อตัวใหญ่ที่ทับตัวผู้เล่นอยู่)")]
+        [SerializeField] private float hitBackTolerance = 0.05f;
+
+        [Tooltip("กระบองกวาดผ่านศัตรูแล้วถึงจะโดน: โดนเมื่อมุมกระบองลงมาถึงมุมของศัตรู + ค่านี้ (องศา) ตั้งสูงๆ = โดนเร็วขึ้น")]
+        [SerializeField] private float hitSweepLeadAngle = 10f;
+
         [Header("Targeting Settings")]
-        [Tooltip("เลเยอร์ของเป้าหมายที่จะโดนโจมตี (เช่น Enemy)")]
+        [Tooltip("เลเยอร์ของเป้าหมายที่จะโดนโจมตี (เช่น Enemy) ว่าง = ทุก Layer")]
         [SerializeField] private LayerMask targetLayer;
 
-        [Tooltip("จุดศูนย์กลางการฟันแบบกำหนดเอง (ถ้าว่างจะใช้ทิศทางเมาส์หรือการเดิน)")]
-        [SerializeField] private Transform customAttackPoint;
+        [Header("Swoosh (แสงกวาด)")]
+        [SerializeField] private bool swooshEnabled = true;
 
-        [Header("Weapon Visual & FX")]
-        [Tooltip("GameObject เอฟเฟกต์การฟันเพิ่มเติม (เปิดชั่วคราวตอนฟัน)")]
-        [SerializeField] private GameObject attackVisualEffect;
+        [Tooltip("สีและความทึบของแสงกวาด (ขาวจางๆ)")]
+        [SerializeField] private Color swooshColor = new Color(1f, 1f, 1f, 0.55f);
+
+        [Tooltip("ความกว้างของแสงที่ลากตามหลังกระบอง (องศา)")]
+        [SerializeField] private float swooshArcAngle = 70f;
+
+        [Tooltip("รัศมีด้านในของแสงกวาด (หน่วยโลก)")]
+        [SerializeField] private float swooshInnerRadius = 0.55f;
+
+        [Tooltip("รัศมีด้านนอกของแสงกวาด (หน่วยโลก)")]
+        [SerializeField] private float swooshOuterRadius = 1.1f;
+
+        [Tooltip("เวลาที่แสงจางหายหลังฟาดเสร็จ (วินาที)")]
+        [SerializeField] private float swooshFadeTime = 0.1f;
 
         [Header("Events")]
         public UnityEvent onAttack;
 
-        private float nextAttackTime;
+        private Transform owner;
         private PlayerMovement playerMovement;
+        private PlayerHealth playerHealth;
+        private PlayerAim playerAim;
         private SpriteRenderer playerSpriteRenderer;
         private Transform weaponPivot;
         private SpriteRenderer weaponSpriteRenderer;
-        private bool isSwinging;
-        private PlayerHealth playerHealth;
-        private PlayerAim playerAim;
         private SpriteRenderer[] weaponRenderers;
+
+        private SwingPhase phase = SwingPhase.Idle;
+        private float phaseTimer;
+        private float swingSide = 1f;
+        private readonly HashSet<IDamageable> swingHits = new HashSet<IDamageable>();
+        private bool facingLockedByMe;
+        private bool bufferedAttack;
+        private float bufferedUntil;
+        private float nextAttackTime;
+
+        // ท่าถือ / ท่าปัจจุบัน
+        private float sideBlend = 1f;
+        private Vector3 smoothedAnchor;
+        private bool anchorInit;
+        private float bobTime;
+        private Vector2 lastPoseOffset;
+        private float lastPoseAngle;
+        private bool poseInit;
+        private Vector2 windupStartOffset;
+        private float windupStartAngle;
+        private Vector2 strikeEndOffset;
+        private float strikeEndWorldAngle;
+
+        // แสงกวาด
+        private GameObject swooshObject;
+        private SpriteRenderer swooshRenderer;
+        private float swooshAlpha;
+        private bool swooshFading;
+        private float swooshFacingAngle;
+        private float swooshSide = 1f;
+        private static Sprite swooshSprite;
+        private static string swooshSpriteKey;
 
         public int Damage => damage;
         public float AttackRange => attackRange;
         public float AttackCooldown => attackCooldown;
-        public bool IsSwinging => isSwinging;
+        public bool IsSwinging => phase != SwingPhase.Idle;
+        public SwingPhase Phase => phase;
+        public float SwingSide => swingSide;
 
         // ถ้าลืมตั้ง Target Layer (เป็น Nothing) ให้ชนทุก Layer แทน เพื่อไม่ให้ฟันแล้วไม่โดนอะไรเลย
         private LayerMask EffectiveTargetLayer => targetLayer.value == 0 ? (LayerMask)(~0) : targetLayer;
+
+        private Vector3 OwnerPosition => owner != null ? owner.position : transform.position;
 
         private void OnEnable()
         {
@@ -114,6 +220,8 @@ namespace GI351.KitchenGame
                 playerHealth = GetComponent<PlayerHealth>();
             }
 
+            owner = playerMovement != null ? playerMovement.transform : (transform.parent != null ? transform.parent : transform);
+
             if (playerMovement != null)
             {
                 playerSpriteRenderer = playerMovement.GetComponentInChildren<SpriteRenderer>();
@@ -122,16 +230,24 @@ namespace GI351.KitchenGame
             playerAim = GetComponentInParent<PlayerAim>();
 
             SetupWeaponVisual();
-
-            if (attackVisualEffect != null)
-            {
-                attackVisualEffect.SetActive(false);
-            }
+            sideBlend = CurrentFacingSign();
         }
+
+        private void OnDisable()
+        {
+            CancelSwing();
+        }
+
+        private void OnDestroy()
+        {
+            if (swooshObject != null) Destroy(swooshObject);
+        }
+
+        #region Setup
 
         private void SetupWeaponVisual()
         {
-            // สร้างจุดหมุน (Weapon Pivot) ที่ศูนย์กลางของตัวผู้เล่น/อาวุธ
+            // จุดอ้างอิง (WeaponPivot) ไว้เป็นพ่อของตัวกระบอง
             Transform existingPivot = transform.Find("WeaponPivot");
             if (existingPivot != null)
             {
@@ -146,21 +262,13 @@ namespace GI351.KitchenGame
                 weaponPivot = pivotObj.transform;
             }
 
-            // ถ้าไม่ได้ใส่ Weapon Prefab แต่ไปใส่ Prefab ดาบไว้ในช่อง Attack Visual Effect ให้ใช้อันนั้นเป็นตัวดาบแทน
-            if (weaponVisualObject == null && weaponPrefab == null && attackVisualEffect != null)
-            {
-                weaponPrefab = attackVisualEffect;
-                attackVisualEffect = null;
-                Debug.Log("[Weapon] ใช้ Prefab ในช่อง Attack Visual Effect เป็นตัวดาบแทน (แนะนำให้ไปใส่ที่ช่อง Weapon Prefab)", this);
-            }
-
             // ถ้ามี weaponPrefab (ไฟล์ใน Project) ให้ Instantiate ออกมา
             if (weaponVisualObject == null && weaponPrefab != null)
             {
                 weaponVisualObject = Instantiate(weaponPrefab, weaponPivot);
                 weaponVisualObject.name = weaponPrefab.name + "_Visual";
 
-                // ถ้าเป็นวัตถุในฉาก ให้ปิดต้นฉบับทิ้ง ไม่ให้ค้างอยู่ทางขวา
+                // ถ้าเป็นวัตถุในฉาก ให้ปิดต้นฉบับทิ้ง ไม่ให้ค้างอยู่
                 if (weaponPrefab.scene.IsValid())
                 {
                     weaponPrefab.SetActive(false);
@@ -188,32 +296,23 @@ namespace GI351.KitchenGame
                 }
             }
 
-            // ถ้ายังไม่มีอาวุธเลย สร้างดาบสำรอง (placeholder) ให้เห็นตอนฟันแน่ๆ
+            // ถ้ายังไม่มีอาวุธเลย สร้างกระบองสำรอง (placeholder) ให้เห็นแน่ๆ
             if (weaponVisualObject == null)
             {
                 weaponVisualObject = CreatePlaceholderSword();
-                Debug.LogWarning("[Weapon] ยังไม่ได้ใส่ Weapon Prefab จึงใช้ดาบสำรองสีเทาแทน ลาก Prefab ดาบมาใส่ช่อง Weapon Prefab ได้เลย", this);
+                Debug.LogWarning("[Weapon] ยังไม่ได้ใส่ Weapon Prefab จึงใช้กระบองสำรองสีเทาแทน ลาก Prefab มาใส่ช่อง Weapon Prefab ได้เลย", this);
             }
 
             weaponVisualObject.SetActive(true);
             weaponSpriteRenderer = weaponVisualObject.GetComponentInChildren<SpriteRenderer>(true);
             weaponRenderers = weaponVisualObject.GetComponentsInChildren<SpriteRenderer>(true);
 
-            // วาดดาบให้อยู่เหนือตัวผู้เล่น (ตอนหันหลังจะสลับไปอยู่หลังตัวใน UpdateWeaponSorting)
+            // วาดกระบองให้อยู่หน้าตัวละคร (ซ้าย/ขวาอย่างเดียว ไม่มีท่าหันหลังแล้ว)
             int baseOrder = playerSpriteRenderer != null ? playerSpriteRenderer.sortingOrder : 0;
             foreach (var sr in weaponRenderers)
             {
                 if (playerSpriteRenderer != null) sr.sortingLayerID = playerSpriteRenderer.sortingLayerID;
-                sr.sortingOrder = baseOrder + 10;
-            }
-
-            // จัดตำแหน่งดาบให้ยื่นออกจากจุดหมุน
-            weaponVisualObject.transform.localPosition = new Vector3(swordDistance, 0f, 0f);
-            weaponVisualObject.transform.localRotation = Quaternion.Euler(0f, 0f, spriteRotationOffset);
-
-            if (hideWeaponWhenIdle && !holdWeaponInFront)
-            {
-                weaponVisualObject.SetActive(false);
+                sr.sortingOrder = baseOrder + weaponSortingOrderOffset;
             }
         }
 
@@ -224,7 +323,7 @@ namespace GI351.KitchenGame
             tex.Apply();
             tex.filterMode = FilterMode.Point;
 
-            // 1 pixel = 1 unit แล้วใช้ scale กำหนดขนาดดาบ (ยาว 1.0 x กว้าง 0.18)
+            // 1 pixel = 1 unit แล้วใช้ scale กำหนดขนาด (ยาว 1.0 x กว้าง 0.18)
             var sprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
 
             var go = new GameObject("PlaceholderSword");
@@ -235,31 +334,34 @@ namespace GI351.KitchenGame
             return go;
         }
 
+        #endregion
+
+        #region Input / state machine
+
         private void Update()
         {
-            CheckAttackInput();
-        }
+            if (playerHealth != null && playerHealth.IsDead)
+            {
+                if (phase != SwingPhase.Idle) CancelSwing();
+                bufferedAttack = false;
+                return;
+            }
 
-        private void LateUpdate()
-        {
-            if (isSwinging)
+            CheckAttackInput();
+
+            if (phase != SwingPhase.Idle)
             {
-                UpdateSwing();
+                AdvanceSwing(Time.deltaTime);
             }
-            else if (holdWeaponInFront)
+
+            if (phase == SwingPhase.Idle && bufferedAttack)
             {
-                UpdateHoldPose();
-            }
-            else if (hideWeaponWhenIdle && weaponVisualObject != null && weaponVisualObject.activeSelf)
-            {
-                // ไม่ได้กำลังฟัน ให้ซ่อนดาบเสมอ
-                weaponVisualObject.SetActive(false);
+                TryStartBuffered();
             }
         }
 
         private void CheckAttackInput()
         {
-            if (playerHealth != null && playerHealth.IsDead) return;
             // กดปุ่ม/หน้าจออัปเกรดอยู่ ห้ามฟันกระบอง
             if (UpgradeTreeUI.IsBlockingGameInput) return;
             bool attackPressed = false;
@@ -282,229 +384,225 @@ namespace GI351.KitchenGame
             }
 #endif
 
-            if (attackPressed && Time.time >= nextAttackTime && !isSwinging)
+            if (attackPressed)
             {
                 PerformAttack();
             }
         }
 
+        /// <summary>
+        /// สั่งตี: ว่างอยู่ = เริ่มท่าเหวี่ยง / กำลังเหวี่ยงอยู่แต่ท่ากำลังจะจบ (ดู Input Buffer Time) = จำไว้ตีต่อทันทีที่จบ
+        /// </summary>
         public void PerformAttack()
         {
-            nextAttackTime = Time.time + attackCooldown;
-            onAttack?.Invoke();
+            if (playerHealth != null && playerHealth.IsDead) return;
 
-            Vector2 aimDirection = GetAimDirection();
-
-            if (enableArcSwing && weaponPivot != null && weaponVisualObject != null)
+            if (phase == SwingPhase.Idle)
             {
-                BeginSwing(aimDirection);
+                if (Time.time >= nextAttackTime)
+                {
+                    BeginSwing();
+                }
+                else
+                {
+                    bufferedAttack = true;
+                    bufferedUntil = Time.time + Mathf.Max(0f, inputBufferTime);
+                }
+                return;
+            }
+
+            if (phase == SwingPhase.FollowThrough)
+            {
+                float remaining = Mathf.Max(0f, followThroughTime - phaseTimer);
+                if (remaining <= inputBufferTime)
+                {
+                    bufferedAttack = true;
+                    bufferedUntil = float.PositiveInfinity;
+                }
+            }
+        }
+
+        private void TryStartBuffered()
+        {
+            if (Time.time > bufferedUntil)
+            {
+                bufferedAttack = false;
+                return;
+            }
+
+            if (Time.time >= nextAttackTime)
+            {
+                BeginSwing();
+            }
+        }
+
+        private float PhaseDuration(SwingPhase p)
+        {
+            switch (p)
+            {
+                case SwingPhase.Windup: return Mathf.Max(0.0001f, windupTime);
+                case SwingPhase.Strike: return Mathf.Max(0.0001f, strikeTime);
+                case SwingPhase.FollowThrough: return Mathf.Max(0.0001f, followThroughTime);
+                default: return 0f;
+            }
+        }
+
+        private float PhaseProgress()
+        {
+            float d = PhaseDuration(phase);
+            return d > 0f ? Mathf.Clamp01(phaseTimer / d) : 0f;
+        }
+
+        private void BeginSwing()
+        {
+            swingSide = CurrentFacingSign();
+            phase = SwingPhase.Windup;
+            phaseTimer = 0f;
+            swingHits.Clear();
+            bufferedAttack = false;
+            nextAttackTime = Time.time + Mathf.Max(0f, attackCooldown);
+
+            // เริ่มง้างจากท่าที่เห็นอยู่ตอนนี้ (ไม่กระโดด)
+            if (poseInit)
+            {
+                windupStartOffset = lastPoseOffset;
+                windupStartAngle = lastPoseAngle;
             }
             else
             {
-                // Fallback: โจมตีแบบเฟรมเดียวปกติถ้าไม่ได้เปิดใช้ Arc Swing
-                InstantAttack(aimDirection);
+                GetHoldPose(out windupStartOffset, out windupStartAngle);
+            }
+
+            sideBlend = swingSide;
+            if (lockFacingDuringSwing) LockFacing();
+            StopSwoosh();
+
+            onAttack?.Invoke();
+        }
+
+        private void AdvanceSwing(float dt)
+        {
+            float remaining = dt;
+            int guard = 0;
+            while (phase != SwingPhase.Idle && guard++ < 8)
+            {
+                float duration = PhaseDuration(phase);
+                float step = Mathf.Min(remaining, duration - phaseTimer);
+                phaseTimer += step;
+                remaining -= step;
+
+                bool finished = phaseTimer >= duration - 0.000001f;
+                if (phase == SwingPhase.Strike) ProcessStrikeHits(finished);
+                if (!finished) break;
+
+                AdvancePhase();
             }
         }
 
-        private float swingTimer;
-        private float swingSign = 1f;
-        private HashSet<IDamageable> swingHits;
-
-        /// <summary>
-        /// เริ่มการกวาดดาบจากบนลงล่าง (อัปเดตทุกเฟรมใน UpdateSwing)
-        /// </summary>
-        private void BeginSwing(Vector2 aimDirection)
+        private void AdvancePhase()
         {
-            isSwinging = true;
-            swingTimer = 0f;
-            swingHits = new HashSet<IDamageable>();
-
-            // กำหนดด้านที่ฟัน (ซ้าย/ขวา) ตอนกด แล้วล็อกไว้จนจบการฟัน
-            swingSign = aimDirection.x >= 0f ? 1f : -1f;
-
-            weaponVisualObject.SetActive(true);
-            if (weaponSpriteRenderer != null)
+            phaseTimer = 0f;
+            switch (phase)
             {
-                weaponSpriteRenderer.flipY = swingSign < 0f;
-            }
+                case SwingPhase.Windup:
+                    phase = SwingPhase.Strike;
+                    swingHits.Clear();
+                    StartSwoosh();
+                    break;
 
-            if (attackVisualEffect != null)
-            {
-                attackVisualEffect.transform.position = GetPivotOrigin() + (Vector3)(aimDirection * attackOffsetDistance);
-                if (rotateVisualTowardsTarget)
-                {
-                    float baseAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
-                    attackVisualEffect.transform.rotation = Quaternion.Euler(0f, 0f, baseAngle);
-                }
-                attackVisualEffect.SetActive(true);
-            }
+                case SwingPhase.Strike:
+                    phase = SwingPhase.FollowThrough;
+                    GetSwingPose(strikeEndAngle, out strikeEndOffset, out strikeEndWorldAngle);
+                    if (!lockFacingDuringFollowThrough) UnlockFacing();
+                    if (swooshObject != null && swooshObject.activeSelf) swooshFading = true;
+                    break;
 
-            UpdateSwing(0f);
-        }
-
-        private void UpdateSwing()
-        {
-            UpdateSwing(Time.deltaTime);
-        }
-
-        private void UpdateSwing(float deltaTime)
-        {
-            swingTimer += deltaTime;
-            float duration = Mathf.Max(0.01f, swingDuration);
-            float t = Mathf.Clamp01(swingTimer / duration);
-
-            // ใช้ SmoothStep ให้ดาบเร่งความเร็วตอนฟัน
-            float easedT = Mathf.SmoothStep(0f, 1f, t);
-
-            // อ่านทิศเมาส์ทุกเฟรม ดาบจะชี้ไปทางเมาส์เสมอ
-            Vector2 liveAim = GetAimDirection();
-            float liveBaseAngle = Mathf.Atan2(liveAim.y, liveAim.x) * Mathf.Rad2Deg;
-
-            float halfArc = swingArcAngle * 0.5f;
-            float arcOffset = Mathf.Lerp(halfArc, -halfArc, easedT) * swingSign;
-            float currentAngle = liveBaseAngle + arcOffset;
-            Quaternion swingRotation = Quaternion.Euler(0f, 0f, currentAngle);
-            weaponPivot.rotation = swingRotation;
-
-            // วางดาบด้วยตำแหน่งโลกโดยตรง (ศูนย์กลาง + ทิศที่หมุน * ระยะ) ไม่พึ่งลำดับชั้นของ Pivot
-            Vector3 origin = GetPivotOrigin();
-            UpdateWeaponSorting(liveAim);
-            Vector3 bladeDirection = swingRotation * Vector3.right;
-            weaponVisualObject.transform.SetPositionAndRotation(
-                origin + bladeDirection * swordDistance,
-                Quaternion.Euler(0f, 0f, currentAngle + spriteRotationOffset));
-
-            // ตรวจจับศัตรูตลอดแนวดาบ (จากตัวผู้เล่นไปถึงปลายดาบ)
-            Vector3 pivotPos = origin;
-            Vector3 bladeDir = bladeDirection;
-            float reach = swordDistance + attackRange;
-            for (int i = 1; i <= 3; i++)
-            {
-                CheckHitsAtPosition(pivotPos + bladeDir * (reach * i / 3f), swingHits);
-            }
-
-            if (t >= 1f)
-            {
-                EndSwing();
+                case SwingPhase.FollowThrough:
+                    EndSwing();
+                    break;
             }
         }
 
         private void EndSwing()
         {
-            isSwinging = false;
-
-            if (!holdWeaponInFront && hideWeaponWhenIdle && weaponVisualObject != null)
-            {
-                weaponVisualObject.SetActive(false);
-            }
-
-            if (attackVisualEffect != null)
-            {
-                attackVisualEffect.SetActive(false);
-            }
+            phase = SwingPhase.Idle;
+            phaseTimer = 0f;
+            UnlockFacing();
         }
 
-        private void CheckHitsAtPosition(Vector3 position, HashSet<IDamageable> hitTargets)
+        /// <summary>ยกเลิกท่าเหวี่ยงทันที (ตาย / ปิดสคริปต์) ปลดล็อกทิศและซ่อนแสงกวาด</summary>
+        private void CancelSwing()
         {
-            Collider2D[] hitColliders = Physics2D.OverlapCircleAll(position, attackRange, EffectiveTargetLayer);
+            phase = SwingPhase.Idle;
+            phaseTimer = 0f;
+            swingHits.Clear();
+            UnlockFacing();
+            StopSwoosh();
+        }
 
+        private void LockFacing()
+        {
+            if (playerAim == null || facingLockedByMe) return;
+            playerAim.LockFacing();
+            facingLockedByMe = true;
+        }
+
+        private void UnlockFacing()
+        {
+            if (!facingLockedByMe) return;
+            facingLockedByMe = false;
+            if (playerAim != null) playerAim.UnlockFacing();
+        }
+
+        #endregion
+
+        #region Hit detection (เฉพาะช่วงฟาด)
+
+        private Vector2 PivotWorld(float side)
+        {
+            Vector3 p = OwnerPosition;
+            return new Vector2(p.x + swingPivotOffset.x * side, p.y + swingPivotOffset.y);
+        }
+
+        /// <summary>
+        /// ครึ่งวงกลมฝั่งที่หัน รัศมี attackRange รอบจุดหมุน ศัตรูโดนเมื่อกระบองกวาดลงมาถึงมุมของมัน (ช่วงท้ายฟาดเก็บที่เหลือทั้งหมด)
+        /// ศัตรูแต่ละตัวโดนได้ครั้งเดียวต่อการฟาด ศัตรูด้านหลังไม่โดน
+        /// </summary>
+        private void ProcessStrikeHits(bool final)
+        {
+            Vector2 pivot = PivotWorld(swingSide);
+            float clubAngle = Mathf.Lerp(windupAngle, strikeEndAngle, Tween.Evaluate(strikeEase, PhaseProgress()));
+
+            Collider2D[] hitColliders = Physics2D.OverlapCircleAll(pivot, attackRange, EffectiveTargetLayer);
             foreach (var col in hitColliders)
             {
-                if (col.TryGetComponent<IDamageable>(out var damageable))
-                {
-                    // โจมตีศัตรูตัวละ 1 ครั้งต่อการกวาดดาบ 1 รอบ
-                    if (hitTargets.Add(damageable))
-                    {
-                        damageable.TakeDamage(damage);
-                        ApplyKnockbackTo(col);
-                    }
-                }
-            }
-        }
+                if (col == null) continue;
+                if (col.GetComponentInParent<PlayerMovement>() != null) continue;
+                if (!col.TryGetComponent<IDamageable>(out var damageable)) continue;
+                if (swingHits.Contains(damageable)) continue;
 
-        private void InstantAttack(Vector2 aimDirection)
-        {
-            Vector3 attackOrigin = GetAttackOrigin(aimDirection);
-            Collider2D[] hitColliders = Physics2D.OverlapCircleAll(attackOrigin, attackRange, EffectiveTargetLayer);
+                Vector2 rel = col.ClosestPoint(pivot) - pivot;
+                float forward = rel.x * swingSide;
+                if (forward < -hitBackTolerance) continue;
 
-            foreach (var col in hitColliders)
-            {
-                if (col.TryGetComponent<IDamageable>(out var damageable))
-                {
-                    damageable.TakeDamage(damage);
-                    ApplyKnockbackTo(col);
-                }
-            }
+                // มุมของศัตรูจากจุดหมุน (หันขวา: 0 = ตรงหน้า, + = สูงกว่า, - = ต่ำกว่า)
+                float bearing = Mathf.Atan2(rel.y, Mathf.Max(forward, 0f)) * Mathf.Rad2Deg;
+                if (!final && clubAngle > bearing + hitSweepLeadAngle) continue;
 
-            if (attackVisualEffect != null)
-            {
-                attackVisualEffect.transform.position = attackOrigin;
-                if (rotateVisualTowardsTarget)
-                {
-                    float angle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
-                    attackVisualEffect.transform.rotation = Quaternion.Euler(0f, 0f, angle);
-                }
-                attackVisualEffect.SetActive(true);
-                CancelInvoke(nameof(HideVisualEffect));
-                Invoke(nameof(HideVisualEffect), 0.15f);
-            }
-        }
-
-        /// <summary>
-        /// จุดหมุนของอาวุธ = กลางตัวผู้เล่น (ตัว Weapon อาจถูกวางเยื้องไว้ใน Prefab)
-        /// </summary>
-        private Vector3 GetPivotOrigin()
-        {
-            return playerMovement != null ? playerMovement.transform.position : transform.position;
-        }
-
-        /// <summary>
-        /// ท่าถืออาวุธ: ยื่นไปด้านหน้าตามทิศที่ผู้เล่นหัน
-        /// </summary>
-        private void UpdateHoldPose()
-        {
-            if (weaponVisualObject == null) return;
-            if (!weaponVisualObject.activeSelf) weaponVisualObject.SetActive(true);
-
-            Vector2 dir = GetAimDirection();
-            float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-
-            weaponPivot.rotation = Quaternion.Euler(0f, 0f, angle);
-            weaponVisualObject.transform.SetPositionAndRotation(
-                GetPivotOrigin() + (Vector3)(dir * holdDistance),
-                Quaternion.Euler(0f, 0f, angle + spriteRotationOffset));
-
-            // หันซ้ายแล้วกลับภาพดาบ ไม่ให้ดาบกลับหัว
-            if (weaponSpriteRenderer != null)
-            {
-                weaponSpriteRenderer.flipY = dir.x < -0.01f;
-            }
-
-            UpdateWeaponSorting(dir);
-        }
-
-        /// <summary>
-        /// หันขึ้นบน (หันหลังให้กล้อง) อาวุธจะอยู่หลังตัว ทิศอื่นอาวุธอยู่หน้าตัว
-        /// </summary>
-        private void UpdateWeaponSorting(Vector2 dir)
-        {
-            if (weaponRenderers == null || playerSpriteRenderer == null) return;
-
-            int order = dir.y > 0.1f ? playerSpriteRenderer.sortingOrder - 1 : playerSpriteRenderer.sortingOrder + 10;
-            foreach (var sr in weaponRenderers)
-            {
-                if (sr != null) sr.sortingOrder = order;
+                swingHits.Add(damageable);
+                damageable.TakeDamage(damage);
+                ApplyKnockbackTo(col, pivot);
             }
         }
 
         /// <summary>
         /// แรงผลัก (Knockback) พุ่งออกจากตัวผู้เล่น
         /// </summary>
-        private void ApplyKnockbackTo(Collider2D col)
+        private void ApplyKnockbackTo(Collider2D col, Vector2 origin)
         {
             if (knockbackForce <= 0f || col == null) return;
 
-            Vector2 pushDir = (col.transform.position - GetPivotOrigin()).normalized;
+            Vector2 pushDir = ((Vector2)col.transform.position - origin).normalized;
 
             // ศัตรูตั้ง linearVelocity เองทุกเฟรม ต้องผ่าน EnemyHealth เพื่อพักระบบเดินระหว่างกระเด็น
             if (col.TryGetComponent<EnemyHealth>(out var enemyHealth))
@@ -517,16 +615,18 @@ namespace GI351.KitchenGame
             }
         }
 
-        private void HideVisualEffect()
+        #endregion
+
+        #region Pose (ท่าถือ + ท่าเหวี่ยง)
+
+        private float CurrentFacingSign()
         {
-            if (attackVisualEffect != null)
-            {
-                attackVisualEffect.SetActive(false);
-            }
+            if (playerAim != null) return playerAim.FacingSign;
+            return GetAimDirection().x >= 0f ? 1f : -1f;
         }
 
         /// <summary>
-        /// ทิศที่ฟัน/ถืออาวุธ = ทิศที่ผู้เล่นหัน (ล็อก 8 ทิศจาก PlayerAim) ให้ตรงกับภาพตัวละคร
+        /// ทิศที่หัน: โหมดซ้าย/ขวาจะเป็น (1,0) หรือ (-1,0) เสมอ (ไม่มี PlayerAim ใช้ทิศเดินล่าสุด)
         /// </summary>
         public Vector2 GetAimDirection()
         {
@@ -535,29 +635,268 @@ namespace GI351.KitchenGame
                 return playerAim.FacingDirection;
             }
 
-            // ไม่มี PlayerAim: ใช้ทิศทางการเดินล่าสุดของผู้เล่น
             if (playerMovement != null)
             {
                 return playerMovement.LastFacingDirection;
             }
 
-            return Vector2.down;
+            return Vector2.right;
         }
 
-        public Vector3 GetAttackOrigin()
+        private float BobOffset()
         {
-            return GetAttackOrigin(GetAimDirection());
+            if (holdBobHeight <= 0f || holdBobPeriod <= 0f) return 0f;
+            float wave = 0.5f * (1f + Mathf.Sin(bobTime / holdBobPeriod * Mathf.PI * 2f));
+            return Snap(holdBobHeight * wave);
         }
 
-        public Vector3 GetAttackOrigin(Vector2 direction)
+        private float Snap(float v)
         {
-            if (customAttackPoint != null)
+            return snapToPixel ? Tween.Snap(v, pixelsPerUnit) : v;
+        }
+
+        /// <summary>ท่าถือ: ตำแหน่งกลางกระบองสัมพัทธ์กับกลางตัว + มุมโลก (ตอนเลื่อนข้ามฝั่งมุมจะค่อยๆ กลับด้าน)</summary>
+        private void GetHoldPose(out Vector2 offset, out float worldAngle)
+        {
+            Vector3 center = smoothedAnchor + new Vector3(holdOffset.x * sideBlend, holdOffset.y + BobOffset(), 0f);
+            Vector3 ownerPos = OwnerPosition;
+            if (!anchorInit) center = ownerPos + new Vector3(holdOffset.x * sideBlend, holdOffset.y, 0f);
+            offset = new Vector2(center.x - ownerPos.x, center.y - ownerPos.y);
+            worldAngle = Mathf.Lerp(holdAngle, 180f - holdAngle, (1f - sideBlend) * 0.5f);
+        }
+
+        /// <summary>ท่าเหวี่ยงที่มุม a (องศาแบบหันขวา) ของฝั่ง swingSide: กระบองวนรอบจุดหมุนที่รัศมี swingRadius</summary>
+        private void GetSwingPose(float a, out Vector2 offset, out float worldAngle)
+        {
+            float rad = a * Mathf.Deg2Rad;
+            offset = new Vector2(
+                swingPivotOffset.x * swingSide + Mathf.Cos(rad) * swingSide * swingRadius,
+                swingPivotOffset.y + Mathf.Sin(rad) * swingRadius);
+            worldAngle = swingSide > 0f ? a : 180f - a;
+        }
+
+        private void LateUpdate()
+        {
+            if (weaponVisualObject == null) return;
+
+            float dt = Time.deltaTime;
+            Vector3 ownerPos = OwnerPosition;
+
+            // ฝั่งที่กระบองอยู่: เลื่อนข้ามตามเวลา sideSlideTime ไม่วาร์ป
+            float targetSide = phase != SwingPhase.Idle ? swingSide : CurrentFacingSign();
+            sideBlend = Mathf.MoveTowards(sideBlend, targetSide, dt * 2f / Mathf.Max(0.001f, sideSlideTime));
+
+            // จุดยึดของท่าถือตามตัวผู้เล่นแบบหน่วงนิดหน่อย (ช่วงเหวี่ยงติดตัวเป๊ะ)
+            if (phase == SwingPhase.Idle)
             {
-                return customAttackPoint.position;
+                if (!anchorInit || (smoothedAnchor - ownerPos).sqrMagnitude > 9f)
+                {
+                    smoothedAnchor = ownerPos;
+                }
+                else
+                {
+                    float k = holdFollowSmoothTime <= 0.0001f ? 1f : 1f - Mathf.Exp(-dt / holdFollowSmoothTime);
+                    smoothedAnchor = Vector3.Lerp(smoothedAnchor, ownerPos, k);
+                }
+                bobTime += dt;
+            }
+            else
+            {
+                smoothedAnchor = ownerPos;
+            }
+            anchorInit = true;
+
+            Vector2 offset;
+            float angle;
+            float side = sideBlend;
+
+            switch (phase)
+            {
+                case SwingPhase.Windup:
+                {
+                    float t = Tween.Evaluate(windupEase, PhaseProgress());
+                    GetSwingPose(windupAngle, out Vector2 target, out float targetAngle);
+                    offset = Vector2.Lerp(windupStartOffset, target, t);
+                    angle = Mathf.LerpAngle(windupStartAngle, targetAngle, t);
+                    side = swingSide;
+                    break;
+                }
+
+                case SwingPhase.Strike:
+                {
+                    float t = Tween.Evaluate(strikeEase, PhaseProgress());
+                    float a = Mathf.Lerp(windupAngle, strikeEndAngle, t);
+                    GetSwingPose(a, out offset, out angle);
+                    side = swingSide;
+                    swooshFacingAngle = a;
+                    break;
+                }
+
+                case SwingPhase.FollowThrough:
+                {
+                    float t = Tween.Evaluate(followThroughEase, PhaseProgress());
+                    GetHoldPose(out Vector2 holdOff, out float holdAng);
+                    offset = Vector2.Lerp(strikeEndOffset, holdOff, t);
+                    angle = Mathf.LerpAngle(strikeEndWorldAngle, holdAng, t);
+                    side = swingSide;
+                    break;
+                }
+
+                default:
+                    GetHoldPose(out offset, out angle);
+                    break;
             }
 
-            return GetPivotOrigin() + (Vector3)(direction.normalized * attackOffsetDistance);
+            lastPoseOffset = offset;
+            lastPoseAngle = angle;
+            poseInit = true;
+
+            float x = Snap(ownerPos.x + offset.x);
+            float y = Snap(ownerPos.y + offset.y);
+            weaponVisualObject.transform.SetPositionAndRotation(
+                new Vector3(x, y, ownerPos.z),
+                Quaternion.Euler(0f, 0f, angle + spriteRotationOffset));
+
+            // กลับด้านภาพกระบองตามฝั่ง (ไม่ให้กลับหัว)
+            if (weaponSpriteRenderer != null)
+            {
+                weaponSpriteRenderer.flipY = side < 0f;
+            }
+
+            UpdateSwoosh(dt, ownerPos);
         }
+
+        #endregion
+
+        #region Swoosh (แสงกวาด)
+
+        private void StartSwoosh()
+        {
+            if (!swooshEnabled) return;
+
+            EnsureSwooshObject();
+            if (swooshObject == null) return;
+
+            swooshSide = swingSide;
+            swooshFading = false;
+            swooshAlpha = 0f;
+            swooshFacingAngle = windupAngle;
+            swooshObject.SetActive(true);
+        }
+
+        private void StopSwoosh()
+        {
+            swooshFading = false;
+            swooshAlpha = 0f;
+            if (swooshObject != null) swooshObject.SetActive(false);
+        }
+
+        private void UpdateSwoosh(float dt, Vector3 ownerPos)
+        {
+            if (swooshObject == null || !swooshObject.activeSelf) return;
+
+            if (phase == SwingPhase.Strike)
+            {
+                // โผล่เร็วตอนเริ่มฟาด
+                swooshAlpha = swooshColor.a * Mathf.Clamp01(PhaseProgress() * 6f);
+            }
+            else if (swooshFading)
+            {
+                swooshAlpha -= dt * swooshColor.a / Mathf.Max(0.001f, swooshFadeTime);
+                if (swooshAlpha <= 0f)
+                {
+                    StopSwoosh();
+                    return;
+                }
+            }
+            else if (phase != SwingPhase.FollowThrough)
+            {
+                StopSwoosh();
+                return;
+            }
+
+            Vector2 pivot = PivotWorld(swooshSide);
+            swooshObject.transform.SetPositionAndRotation(
+                new Vector3(pivot.x, pivot.y, ownerPos.z),
+                Quaternion.Euler(0f, 0f, swooshSide > 0f ? swooshFacingAngle : 180f - swooshFacingAngle));
+
+            swooshRenderer.flipY = swooshSide < 0f;
+            Color c = swooshColor;
+            c.a = Mathf.Max(0f, swooshAlpha);
+            swooshRenderer.color = c;
+        }
+
+        private void EnsureSwooshObject()
+        {
+            Sprite sprite = GetSwooshSprite();
+            if (swooshObject == null)
+            {
+                swooshObject = new GameObject("Weapon Swoosh");
+                swooshRenderer = swooshObject.AddComponent<SpriteRenderer>();
+                swooshObject.SetActive(false);
+            }
+
+            swooshRenderer.sprite = sprite;
+            if (playerSpriteRenderer != null) swooshRenderer.sortingLayerID = playerSpriteRenderer.sortingLayerID;
+            int baseOrder = playerSpriteRenderer != null ? playerSpriteRenderer.sortingOrder : 0;
+            // อยู่หน้าตัวละคร หลังตัวกระบอง
+            swooshRenderer.sortingOrder = baseOrder + weaponSortingOrderOffset - 1;
+        }
+
+        /// <summary>
+        /// สร้าง sprite แสงกวาดเอง (ไม่ใช้ asset ภายนอก): วงแหวนบางๆ ช่วง 0..swooshArcAngle องศา ขอบนำ (มุม 0) ทึบสุด จางลงด้านหลัง
+        /// จุดกึ่งกลางรูป = จุดหมุน หมุนตามมุมกระบองได้เลย
+        /// </summary>
+        private Sprite GetSwooshSprite()
+        {
+            float ppu = Mathf.Max(1f, pixelsPerUnit);
+            string key = swooshInnerRadius + "|" + swooshOuterRadius + "|" + swooshArcAngle + "|" + ppu;
+            if (swooshSprite != null && swooshSpriteKey == key) return swooshSprite;
+
+            int half = Mathf.CeilToInt(swooshOuterRadius * ppu) + 1;
+            int size = half * 2;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.name = "Weapon Swoosh";
+            tex.filterMode = FilterMode.Point;
+            tex.wrapMode = TextureWrapMode.Clamp;
+
+            Color32[] pixels = new Color32[size * size];
+            float arc = Mathf.Max(1f, swooshArcAngle);
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = (x + 0.5f - half) / ppu;
+                    float dy = (y + 0.5f - half) / ppu;
+                    float r = Mathf.Sqrt(dx * dx + dy * dy);
+                    float alpha = 0f;
+
+                    if (r >= swooshInnerRadius && r <= swooshOuterRadius)
+                    {
+                        float deg = Mathf.Atan2(dy, dx) * Mathf.Rad2Deg;
+                        if (deg >= 0f && deg <= arc)
+                        {
+                            float along = Mathf.Pow(1f - deg / arc, 1.5f);
+                            float radial = (r - swooshInnerRadius) / Mathf.Max(0.0001f, swooshOuterRadius - swooshInnerRadius);
+                            float body = 1f - Mathf.Pow(Mathf.Abs(radial * 2f - 1f), 3f);
+                            alpha = Mathf.Round(along * body * 4f) / 4f;
+                        }
+                    }
+
+                    pixels[y * size + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(Mathf.Clamp01(alpha) * 255f));
+                }
+            }
+
+            tex.SetPixels32(pixels);
+            tex.Apply();
+
+            swooshSprite = Sprite.Create(tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), ppu);
+            swooshSprite.name = "Weapon Swoosh";
+            swooshSpriteKey = key;
+            return swooshSprite;
+        }
+
+        #endregion
 
         /// <summary>
         /// ตั้งค่าดาเมจโดยตรง (ใช้โดยร้านอัปเกรดการล่า HuntUpgrades)
@@ -579,25 +918,44 @@ namespace GI351.KitchenGame
 
         private void OnDrawGizmosSelected()
         {
-            Gizmos.color = new Color(1f, 0.2f, 0.2f, 0.5f);
-            Vector3 origin = Application.isPlaying ? GetAttackOrigin() : (transform.position + Vector3.right * attackOffsetDistance);
-            Gizmos.DrawWireSphere(origin, attackRange);
+            Transform o = owner != null ? owner : (transform.parent != null ? transform.parent : transform);
+            float s = Application.isPlaying ? (phase != SwingPhase.Idle ? swingSide : CurrentFacingSign()) : 1f;
+            Vector3 center = o.position;
+            Vector3 pivot = center + new Vector3(swingPivotOffset.x * s, swingPivotOffset.y, 0f);
 
-            // วาดตัวอย่างแนวรัศมีการกวาดดาบ (Arc Swing)
-            if (enableArcSwing)
+            // hitbox ครึ่งวงกลมฝั่งที่หัน
+            Gizmos.color = new Color(1f, 0.2f, 0.2f, 0.9f);
+            const int steps = 24;
+            Vector3 prev = pivot + new Vector3(0f, -attackRange, 0f);
+            Gizmos.DrawLine(pivot, prev);
+            for (int i = 1; i <= steps; i++)
             {
-                Vector3 center = transform.position;
-                Vector2 aimDir = Application.isPlaying ? GetAimDirection() : Vector2.right;
-                float baseAngle = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
-                float halfArc = swingArcAngle * 0.5f;
-
-                Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.4f);
-                Vector3 p1 = center + (Quaternion.Euler(0, 0, baseAngle + halfArc) * Vector3.right) * (swordDistance + attackRange);
-                Vector3 p2 = center + (Quaternion.Euler(0, 0, baseAngle - halfArc) * Vector3.right) * (swordDistance + attackRange);
-
-                Gizmos.DrawLine(center, p1);
-                Gizmos.DrawLine(center, p2);
+                float a = Mathf.Lerp(-90f, 90f, i / (float)steps) * Mathf.Deg2Rad;
+                Vector3 p = pivot + new Vector3(Mathf.Cos(a) * s * attackRange, Mathf.Sin(a) * attackRange, 0f);
+                Gizmos.DrawLine(prev, p);
+                prev = p;
             }
+            Gizmos.DrawLine(prev, pivot);
+
+            // ท่าง้าง / ท่าฟาดสุดทาง (เส้นฟ้า = แกนกระบอง จากจุดหมุนไปปลาย)
+            Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.9f);
+            DrawClubLine(pivot, windupAngle, s);
+            DrawClubLine(pivot, strikeEndAngle, s);
+
+            // ท่าถือ (เหลือง)
+            Gizmos.color = new Color(1f, 0.9f, 0.2f, 0.9f);
+            Vector3 hold = center + new Vector3(holdOffset.x * s, holdOffset.y, 0f);
+            Gizmos.DrawWireSphere(hold, 0.06f);
+            float ha = holdAngle * Mathf.Deg2Rad;
+            Vector3 hd = new Vector3(Mathf.Cos(ha) * s, Mathf.Sin(ha), 0f) * 0.5f;
+            Gizmos.DrawLine(hold - hd, hold + hd);
+        }
+
+        private void DrawClubLine(Vector3 pivot, float angle, float s)
+        {
+            float a = angle * Mathf.Deg2Rad;
+            Vector3 dir = new Vector3(Mathf.Cos(a) * s, Mathf.Sin(a), 0f);
+            Gizmos.DrawLine(pivot, pivot + dir * (swingRadius + 0.56f));
         }
     }
 }

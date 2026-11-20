@@ -6,14 +6,29 @@ using UnityEngine.InputSystem;
 namespace GI351.KitchenGame
 {
     /// <summary>
-    /// ทิศที่ผู้เล่นหัน: หันตามเมาส์ แล้วล็อกเป็น 8 ทิศ (ทุก 45 องศา)
+    /// ทิศที่ผู้เล่นหัน: หันตามเมาส์ ค่าเริ่มต้นคือหันแค่ซ้าย/ขวา (เมาส์อยู่ฝั่งไหนของตัวก็หันฝั่งนั้น เดินขึ้นลงก็ใช้ท่าข้างเหมือนกัน)
+    /// ถ้าอยากได้แบบเดิม (ล็อก 8 ทิศ) เปลี่ยน Aim Mode เป็น EightDirections
     /// อาวุธ, กองของบนหลัง และการทิ้งของ อ่านทิศจากที่นี่ที่เดียว
     /// </summary>
     [DefaultExecutionOrder(-50)]
     public class PlayerAim : MonoBehaviour
     {
-        [Header("Aim Settings (หันตามเมาส์ 8 ทิศ)")]
-        [Tooltip("ถ้าเมาส์อยู่ใกล้ตัวผู้เล่นกว่าระยะนี้ จะคงทิศเดิมไว้ (กันตัวละครหมุนไปมา)")]
+        public enum AimMode
+        {
+            /// <summary>หันแค่ซ้าย/ขวาตามฝั่งของเมาส์ (FacingDirection เป็น (1,0) หรือ (-1,0) เสมอ)</summary>
+            LeftRight,
+            /// <summary>หันตามเมาส์แล้วล็อกเป็น 8 ทิศ (ทุก 45 องศา) แบบเดิม</summary>
+            EightDirections
+        }
+
+        [Header("Aim Settings (หันตามเมาส์)")]
+        [Tooltip("LeftRight = หันแค่ซ้าย/ขวา (ค่าเริ่มต้น) / EightDirections = ล็อก 8 ทิศแบบเดิม")]
+        [SerializeField] private AimMode aimMode = AimMode.LeftRight;
+
+        [Tooltip("โหมด LeftRight: เมาส์ต้องห่างจากกลางตัวในแนวนอนอย่างน้อยเท่านี้ถึงจะสลับฝั่ง (กันตัวละครพลิกไปมาตอนเมาส์อยู่เหนือหัวพอดี)")]
+        [SerializeField] private float sideDeadZone = 0.15f;
+
+        [Tooltip("โหมด EightDirections: ถ้าเมาส์อยู่ใกล้ตัวผู้เล่นกว่าระยะนี้ จะคงทิศเดิมไว้ (กันตัวละครหมุนไปมา)")]
         [SerializeField] private float deadZone = 0.3f;
 
         [Tooltip("กลับภาพตัวละครซ้าย-ขวาตามทิศที่หัน")]
@@ -25,21 +40,34 @@ namespace GI351.KitchenGame
         [Tooltip("กล้องที่ใช้แปลงตำแหน่งเมาส์ (ปล่อยว่างจะใช้ Camera.main)")]
         [SerializeField] private Camera aimCamera;
 
-        private Vector2 facingDirection = Vector2.down;
-        private int facingIndex = 6;
+        private Vector2 facingDirection = Vector2.right;
+        private int facingIndex;
+        private Vector2 mouseDirection = Vector2.right;
+        private int lockCount;
         private PlayerHealth playerHealth;
 
-        /// <summary>ทิศที่หัน (ล็อก 8 ทิศ ความยาว 1)</summary>
+        public AimMode Mode => aimMode;
+
+        /// <summary>ทิศที่หัน (โหมด LeftRight = (±1, 0) / โหมด EightDirections = ล็อก 8 ทิศ ความยาว 1)</summary>
         public Vector2 FacingDirection => facingDirection;
 
-        /// <summary>0 = ขวา, 1 = ขวาบน, 2 = บน, 3 = ซ้ายบน, 4 = ซ้าย, 5 = ซ้ายล่าง, 6 = ล่าง, 7 = ขวาล่าง</summary>
+        /// <summary>+1 = หันขวา, -1 = หันซ้าย</summary>
+        public float FacingSign => facingDirection.x < -0.01f ? -1f : 1f;
+
+        /// <summary>0 = ขวา, 1 = ขวาบน, 2 = บน, 3 = ซ้ายบน, 4 = ซ้าย, 5 = ซ้ายล่าง, 6 = ล่าง, 7 = ขวาล่าง (โหมด LeftRight มีแค่ 0 กับ 4)</summary>
         public int FacingIndex => facingIndex;
 
         /// <summary>มุมของทิศที่หัน (องศา)</summary>
         public float FacingAngle => facingIndex * 45f;
 
-        /// <summary>หันขึ้นบน (หันหลังให้กล้อง) เช่น บน, ซ้ายบน, ขวาบน</summary>
-        public bool IsFacingAway => facingDirection.y > 0.1f;
+        /// <summary>หันขึ้นบน (หันหลังให้กล้อง) เช่น บน, ซ้ายบน, ขวาบน (โหมด LeftRight เป็น false เสมอ)</summary>
+        public bool IsFacingAway => aimMode == AimMode.EightDirections && facingDirection.y > 0.1f;
+
+        /// <summary>ทิศจากตัวไปยังเมาส์ล่าสุด (ไม่ล็อกทิศ ความยาว 1)</summary>
+        public Vector2 MouseDirection => mouseDirection;
+
+        /// <summary>กำลังล็อกทิศอยู่ (เช่น ระหว่างเหวี่ยงอาวุธ) ทิศจะไม่เปลี่ยนตามเมาส์</summary>
+        public bool IsFacingLocked => lockCount > 0;
 
         private void Awake()
         {
@@ -48,6 +76,18 @@ namespace GI351.KitchenGame
             {
                 spriteRenderer = GetComponentInChildren<SpriteRenderer>();
             }
+
+            if (aimMode == AimMode.EightDirections)
+            {
+                // โหมดเดิมเริ่มหันลง
+                facingIndex = 6;
+                facingDirection = Vector2.down;
+            }
+        }
+
+        private void OnDisable()
+        {
+            lockCount = 0;
         }
 
         private void Update()
@@ -57,9 +97,18 @@ namespace GI351.KitchenGame
             if (TryGetMouseWorld(out Vector2 mouseWorld))
             {
                 Vector2 toMouse = mouseWorld - (Vector2)transform.position;
-                if (toMouse.magnitude >= deadZone)
+                if (toMouse.sqrMagnitude > 0.0001f) mouseDirection = toMouse.normalized;
+
+                if (!IsFacingLocked)
                 {
-                    SetFacingFromVector(toMouse);
+                    if (aimMode == AimMode.LeftRight)
+                    {
+                        if (Mathf.Abs(toMouse.x) >= sideDeadZone) SetFacingFromVector(toMouse);
+                    }
+                    else if (toMouse.magnitude >= deadZone)
+                    {
+                        SetFacingFromVector(toMouse);
+                    }
                 }
             }
 
@@ -70,12 +119,32 @@ namespace GI351.KitchenGame
             }
         }
 
+        /// <summary>ล็อกทิศที่หัน (ซ้อนกันได้ ต้อง UnlockFacing ให้ครบจำนวน)</summary>
+        public void LockFacing()
+        {
+            lockCount++;
+        }
+
+        public void UnlockFacing()
+        {
+            lockCount = Mathf.Max(0, lockCount - 1);
+        }
+
         /// <summary>
-        /// ตั้งทิศจากเวกเตอร์ใดก็ได้ แล้วปัดเป็น 8 ทิศที่ใกล้ที่สุด
+        /// ตั้งทิศจากเวกเตอร์ใดก็ได้ โหมด LeftRight ใช้แค่ฝั่งซ้าย/ขวา โหมด EightDirections ปัดเป็น 8 ทิศที่ใกล้ที่สุด
         /// </summary>
         public void SetFacingFromVector(Vector2 direction)
         {
             if (direction.sqrMagnitude < 0.0001f) return;
+
+            if (aimMode == AimMode.LeftRight)
+            {
+                if (Mathf.Abs(direction.x) < 0.0001f) return;
+                bool right = direction.x > 0f;
+                facingIndex = right ? 0 : 4;
+                facingDirection = right ? Vector2.right : Vector2.left;
+                return;
+            }
 
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             facingIndex = ((Mathf.RoundToInt(angle / 45f) % 8) + 8) % 8;
@@ -110,7 +179,7 @@ namespace GI351.KitchenGame
         {
             Gizmos.color = Color.cyan;
             Gizmos.DrawLine(transform.position, transform.position + (Vector3)(facingDirection * 1.2f));
-            Gizmos.DrawWireSphere(transform.position, deadZone);
+            Gizmos.DrawWireSphere(transform.position, aimMode == AimMode.LeftRight ? sideDeadZone : deadZone);
         }
     }
 }

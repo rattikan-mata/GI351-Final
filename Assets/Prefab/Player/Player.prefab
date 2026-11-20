@@ -249,6 +249,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d18704af307bf1446997ca1e065cbaea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.PlayerAim
+  aimMode: 0
+  sideDeadZone: 0.15
   deadZone: 0.3
   flipSpriteToAim: 1
   spriteRenderer: {fileID: 0}
@@ -297,27 +299,46 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 365cfa1f986245c488d5dee44138f063, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.Weapon
-  rotateVisualTowardsTarget: 1
-  enableArcSwing: 1
+  lockFacingDuringSwing: 1
+  lockFacingDuringFollowThrough: 1
   weaponPrefab: {fileID: 1264822325981503142, guid: b473436e01580074a83c50b64fd647e3, type: 3}
   weaponVisualObject: {fileID: 0}
-  hideWeaponWhenIdle: 1
-  swingArcAngle: 140
-  swingDuration: 0.22
-  swordDistance: 1
   spriteRotationOffset: 0
-  holdWeaponInFront: 1
-  holdDistance: 0.55
+  weaponSortingOrderOffset: 10
+  pixelsPerUnit: 16
+  snapToPixel: 1
+  holdOffset: {x: 0.45, y: -0.1}
+  holdAngle: 60
+  holdBobHeight: 0.0625
+  holdBobPeriod: 0.8
+  holdFollowSmoothTime: 0.06
+  sideSlideTime: 0.08
+  swingPivotOffset: {x: 0.1, y: 0.15}
+  swingRadius: 0.55
+  windupTime: 0.3
+  windupAngle: 110
+  windupEase: 2
+  strikeTime: 0.1
+  strikeEndAngle: -60
+  strikeEase: 10
+  followThroughTime: 0.4
+  followThroughEase: 7
+  inputBufferTime: 0.4
   damage: 25
-  attackRange: 0.5
-  attackOffsetDistance: 0.8
-  attackCooldown: 0.8
+  attackRange: 1
+  attackCooldown: 0
   knockbackForce: 3
+  hitBackTolerance: 0.05
+  hitSweepLeadAngle: 10
   targetLayer:
     serializedVersion: 2
     m_Bits: 0
-  customAttackPoint: {fileID: 0}
-  attackVisualEffect: {fileID: 0}
+  swooshEnabled: 1
+  swooshColor: {r: 1, g: 1, b: 1, a: 0.55}
+  swooshArcAngle: 70
+  swooshInnerRadius: 0.55
+  swooshOuterRadius: 1.1
+  swooshFadeTime: 0.1
   onAttack:
     m_PersistentCalls:
       m_Calls: []

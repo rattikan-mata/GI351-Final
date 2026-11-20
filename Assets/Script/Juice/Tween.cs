@@ -15,7 +15,8 @@ namespace GI351.KitchenGame
         OutSine,
         InOutSine,
         InBack,
-        OutBack
+        OutBack,
+        InCubic
     }
 
     /// <summary>
@@ -37,6 +38,7 @@ namespace GI351.KitchenGame
                 case Ease.InQuad: return t * t;
                 case Ease.OutQuad: return 1f - (1f - t) * (1f - t);
                 case Ease.InOutQuad: return t < 0.5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) * 0.5f;
+                case Ease.InCubic: return t * t * t;
                 case Ease.OutCubic: return 1f - Mathf.Pow(1f - t, 3f);
                 case Ease.InSine: return 1f - Mathf.Cos(t * Mathf.PI * 0.5f);
                 case Ease.OutSine: return Mathf.Sin(t * Mathf.PI * 0.5f);
