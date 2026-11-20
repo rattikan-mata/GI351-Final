@@ -38,15 +38,21 @@ namespace GI351.KitchenGame
             if (prefab == null) return null;
 
             cfg = JuiceDirector.Resolve(cfg);
+            GameObject go;
             if (!cfg.meatFlightEnabled)
             {
                 Vector2 randomOffset = Random.insideUnitCircle * 0.4f;
-                return Instantiate(prefab, origin + (Vector3)randomOffset, Quaternion.identity);
+                go = Instantiate(prefab, origin + (Vector3)randomOffset, Quaternion.identity);
+            }
+            else
+            {
+                go = Instantiate(prefab, origin, Quaternion.identity);
+                MeatDropFx fx = go.AddComponent<MeatDropFx>();
+                fx.Begin(cfg, angleDegrees, hasBounds, boundsMin, boundsMax);
             }
 
-            GameObject go = Instantiate(prefab, origin, Quaternion.identity);
-            MeatDropFx fx = go.AddComponent<MeatDropFx>();
-            fx.Begin(cfg, angleDegrees, hasBounds, boundsMin, boundsMax);
+            // ดูดเข้าตัวผู้เล่นเมื่อเข้าใกล้ (รอจนตกพื้นเสร็จเอง)
+            if (cfg.magnetEnabled && go.TryGetComponent(out Item _)) go.AddComponent<ItemMagnet>().Init(cfg);
             return go;
         }
 
@@ -141,13 +147,15 @@ namespace GI351.KitchenGame
             float ppu = cfg.pixelsPerUnit;
             float z = transform.position.z;
 
-            // 1) บินโค้ง: root เลื่อนบนพื้นเป็นเส้นตรง, sprite ยกขึ้นเป็นพาราโบลา, scale 0 -> 1 พร้อมกัน
-            float flight = Mathf.Max(0.05f, cfg.meatFlightTime);
+            // 1) กระเด็น: root พุ่งบนพื้น (ease ตาม meatGroundEase), sprite ยกขึ้นเป็นพาราโบลา, หมุนกลางอากาศ, scale 0 -> 1 พร้อมกัน
+            float flight = Mathf.Max(0.05f, cfg.meatFlightTime + Random.Range(-cfg.meatFlightTimeJitter, cfg.meatFlightTimeJitter));
+            float spin = cfg.meatSpinTurns * 360f * (Random.value < 0.5f ? -1f : 1f);
             float elapsed = 0f;
             while (true)
             {
                 float t = Mathf.Clamp01(elapsed / flight);
-                Vector2 ground = Vector2.Lerp(origin, target, t);
+                Vector2 ground = Vector2.LerpUnclamped(origin, target, Tween.Evaluate(cfg.meatGroundEase, t));
+                SetVisualRotation(spin * Tween.Evaluate(Ease.OutQuad, t));
                 Vector2 snapped = Tween.Snap(ground, ppu);
                 transform.position = new Vector3(snapped.x, snapped.y, z);
 
@@ -165,6 +173,7 @@ namespace GI351.KitchenGame
             }
 
             transform.position = new Vector3(target.x, target.y, z);
+            SetVisualRotation(0f);
             SetVisualLift(0f);
             SetShadow(0f);
 
@@ -206,6 +215,12 @@ namespace GI351.KitchenGame
         {
             if (visual == null) return;
             visual.localPosition = new Vector3(0f, lift, 0f);
+        }
+
+        private void SetVisualRotation(float degrees)
+        {
+            if (visual == null) return;
+            visual.localRotation = Quaternion.Euler(0f, 0f, degrees);
         }
 
         private void SetVisualScale(float sx, float sy)

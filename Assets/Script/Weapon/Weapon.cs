@@ -116,6 +116,9 @@ namespace GI351.KitchenGame
         [Tooltip("คูลดาวน์ก่อนตีครั้งถัดไป (วินาที นับจากเริ่มตี) ตั้ง 0 เพราะความช้าอยู่ในท่าเหวี่ยงแล้ว")]
         [SerializeField] private float attackCooldown = 0f;
 
+        [Tooltip("ความเร็วโจมตี (ตัวคูณ) 1 = ท่าเหวี่ยงตามเวลาที่ตั้งไว้, 1.5 = เร็วขึ้น 1.5 เท่า (ทุกจังหวะสั้นลง) ร้าน Gloves ตั้งค่านี้ตอนเล่น")]
+        [SerializeField] private float attackSpeed = 1f;
+
         [Tooltip("แรงผลักเมื่อศัตรูโดนโจมตี")]
         [SerializeField] private float knockbackForce = 3f;
 
@@ -417,7 +420,7 @@ namespace GI351.KitchenGame
 
             if (phase == SwingPhase.FollowThrough)
             {
-                float remaining = Mathf.Max(0f, followThroughTime - phaseTimer);
+                float remaining = Mathf.Max(0f, PhaseDuration(SwingPhase.FollowThrough) - phaseTimer);
                 if (remaining <= inputBufferTime)
                 {
                     bufferedAttack = true;
@@ -444,9 +447,9 @@ namespace GI351.KitchenGame
         {
             switch (p)
             {
-                case SwingPhase.Windup: return Mathf.Max(0.0001f, windupTime);
-                case SwingPhase.Strike: return Mathf.Max(0.0001f, strikeTime);
-                case SwingPhase.FollowThrough: return Mathf.Max(0.0001f, followThroughTime);
+                case SwingPhase.Windup: return Mathf.Max(0.0001f, windupTime / SpeedMul);
+                case SwingPhase.Strike: return Mathf.Max(0.0001f, strikeTime / SpeedMul);
+                case SwingPhase.FollowThrough: return Mathf.Max(0.0001f, followThroughTime / SpeedMul);
                 default: return 0f;
             }
         }
@@ -911,6 +914,22 @@ namespace GI351.KitchenGame
         public void SetDamage(int newDamage)
         {
             damage = Mathf.Max(0, newDamage);
+        }
+
+        private float SpeedMul => Mathf.Max(0.1f, attackSpeed);
+
+        /// <summary>ความเร็วโจมตีปัจจุบัน (ตัวคูณ)</summary>
+        public float AttackSpeed => attackSpeed;
+
+        /// <summary>
+        /// ตั้งความเร็วโจมตี (ตัวคูณ) ใช้โดยร้านอัปเกรดการล่า HuntUpgrades: ท่าง้าง/ฟาด/ตามแรงสั้นลงตามตัวคูณ
+        /// ถ้ากำลังเหวี่ยงอยู่ ท่านั้นจะเร็วขึ้นต่อจากจุดเดิม (ไม่กระตุก)
+        /// </summary>
+        public void SetAttackSpeed(float multiplier)
+        {
+            float newSpeed = Mathf.Max(0.1f, multiplier);
+            if (phase != SwingPhase.Idle) phaseTimer *= SpeedMul / newSpeed;
+            attackSpeed = newSpeed;
         }
 
         /// <summary>

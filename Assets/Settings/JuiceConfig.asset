@@ -32,6 +32,9 @@ MonoBehaviour:
   meatSpawnScaleTime: 0.3
   meatSpawnScaleEase: 6
   meatFlightTime: 0.45
+  meatFlightTimeJitter: 0.1
+  meatGroundEase: 2
+  meatSpinTurns: 1
   meatGroundDistance: {x: 0.5, y: 1}
   meatArcHeight: {x: 1, y: 1.5}
   meatDirectionJitter: 25
@@ -44,6 +47,17 @@ MonoBehaviour:
   meatShadowYOffset: 0
   meatShadowMinScale: 0.55
   meatPickupOnlyAfterLanding: 1
+  magnetEnabled: 1
+  magnetRadius: 2
+  magnetDelayAfterLanding: 0.15
+  magnetAnticipationScale: 1.2
+  magnetAnticipationTime: 0.08
+  magnetFlyTime: 0.28
+  magnetFlyEase: 1
+  magnetArcHeight: 0.5
+  magnetEndScale: 0.7
+  magnetStackPunchScale: 1.15
+  magnetStackPunchTime: 0.12
   shakeEnabled: 1
   shakeOnHitPixels: 1
   shakeOnHitTime: 0.1

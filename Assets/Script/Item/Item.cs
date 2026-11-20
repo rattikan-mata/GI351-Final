@@ -224,6 +224,12 @@ namespace GI351.KitchenGame
             pickupBlockedFor = playerCarry;
         }
 
+        /// <summary>ผู้เล่นคนนี้ยังเก็บไม่ได้ (เพิ่งทิ้งไป ยังไม่ได้เดินออก)</summary>
+        public bool IsPickupBlockedFor(PlayerCarry playerCarry)
+        {
+            return playerCarry != null && pickupBlockedFor == playerCarry;
+        }
+
         private void TryBePickedUpBy(Collider2D other)
         {
             if (isCarried || other == null) return;

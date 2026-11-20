@@ -69,6 +69,15 @@ namespace GI351.KitchenGame
         [Tooltip("เวลาบินโค้งจนตกพื้น (วินาที)")]
         [Min(0.05f)] public float meatFlightTime = 0.45f;
 
+        [Tooltip("สุ่มเวลาบินเพิ่ม/ลดได้อีก ± กี่วินาที ให้แต่ละชิ้นตกไม่พร้อมกัน (Juice King: 0.4–1.1s)")]
+        [Min(0f)] public float meatFlightTimeJitter = 0.1f;
+
+        [Tooltip("การเลื่อนบนพื้นตอนกระเด็น OutQuad = พุ่งออกเร็วแล้วค่อยๆ ช้าลง (Linear = ความเร็วเท่ากันแบบเดิม)")]
+        public Ease meatGroundEase = Ease.OutQuad;
+
+        [Tooltip("เนื้อหมุนกี่รอบระหว่างบิน (สุ่มทิศหมุน ตกพื้นแล้วตั้งตรงพอดี) 0 = ไม่หมุน")]
+        [Range(0f, 3f)] public float meatSpinTurns = 1f;
+
         [Tooltip("ระยะที่ root เลื่อนบนพื้น (หน่วย) สุ่มระหว่าง x ถึง y")]
         public Vector2 meatGroundDistance = new Vector2(0.5f, 1f);
 
@@ -104,6 +113,40 @@ namespace GI351.KitchenGame
 
         [Tooltip("ให้เก็บเนื้อได้หลังตกพื้นเท่านั้น (ปิด collider ตอนบิน) ปิดช่องนี้ = เก็บได้ระหว่างบิน")]
         public bool meatPickupOnlyAfterLanding = true;
+
+        [Header("4) Magnet Pickup (เนื้อดูดเข้าตัวแบบ Juice King)")]
+        [Tooltip("เนื้อที่ตกจากสัตว์จะลอยเข้าหาผู้เล่นเองเมื่อเข้าใกล้ (ใช้กับเนื้อที่ดรอปจากสัตว์เท่านั้น ของที่กด Q ทิ้งไม่ดูด)")]
+        public bool magnetEnabled = true;
+
+        [Tooltip("ระยะที่เริ่มดูด (หน่วย จากกลางตัวผู้เล่น)")]
+        [Min(0f)] public float magnetRadius = 2f;
+
+        [Tooltip("ตกพื้นแล้วรอกี่วินาทีก่อนดูดได้ (ให้เห็นจังหวะกระเด็นก่อน)")]
+        [Min(0f)] public float magnetDelayAfterLanding = 0.15f;
+
+        [Tooltip("ก่อนพุ่ง: ป๊อปขยายเป็นกี่เท่า (ท่าเตรียมตัว)")]
+        [Min(1f)] public float magnetAnticipationScale = 1.2f;
+
+        [Tooltip("ก่อนพุ่ง: เวลาป๊อป (วินาที)")]
+        [Min(0f)] public float magnetAnticipationTime = 0.08f;
+
+        [Tooltip("เวลาพุ่งเข้าตัว (วินาที) Juice King ใช้ 0.5")]
+        [Min(0.05f)] public float magnetFlyTime = 0.28f;
+
+        [Tooltip("InQuad / InCubic = เริ่มช้าแล้วเร่งเข้าตัว (รู้สึกเหมือนถูกดูด)")]
+        public Ease magnetFlyEase = Ease.InQuad;
+
+        [Tooltip("ความโค้งตอนพุ่ง (หน่วย) 0 = เส้นตรง")]
+        [Min(0f)] public float magnetArcHeight = 0.5f;
+
+        [Tooltip("ระหว่างพุ่งหดเหลือกี่เท่าตอนถึงตัว")]
+        [Range(0.1f, 1f)] public float magnetEndScale = 0.7f;
+
+        [Tooltip("ถึงตัวแล้ว กองของบนหลังเด้งขยายเป็นกี่เท่า (Juice King: punch 1.15)")]
+        [Min(1f)] public float magnetStackPunchScale = 1.15f;
+
+        [Tooltip("เวลาเด้งของกองบนหลัง (วินาที) (Juice King: 0.12)")]
+        [Min(0f)] public float magnetStackPunchTime = 0.12f;
 
         [Header("3) Camera Shake (กล้องสั่น หน่วยเป็นพิกเซลของเกม)")]
         public bool shakeEnabled = true;

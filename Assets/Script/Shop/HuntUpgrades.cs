@@ -6,7 +6,7 @@ namespace GI351.KitchenGame
 {
     /// <summary>
     /// ร้านอัปเกรดการล่าแบบเลเวล: อยู่คู่กับ ShopStall (สินค้าแบบอัปเลเวล) ถือเลเวลปัจจุบันจากสินค้าแต่ละชิ้นแล้ว apply ค่าไปที่
-    /// กระบอง (Weapon.damage) / กระเป๋า (PlayerCarry.maxCarryCapacity) / รองเท้า (PlayerMovement.moveSpeed)
+    /// กระบอง (Weapon.damage) / กระเป๋า (PlayerCarry.maxCarryCapacity) / รองเท้า (PlayerMovement.moveSpeed) / ถุงมือ (Weapon.attackSpeed)
     /// ค่าของแต่ละเลเวลและราคาตั้งที่ ShopStall > Items > Levels ส่วนสคริปต์นี้ผูกแค่ id สินค้า -> ค่าที่จะเปลี่ยน
     /// ตอนเริ่มเกมจะ apply ค่า Lv1 ให้ด้วย (ค่าในตารางเป็นหลัก) และอาวุธที่เพิ่งเปิดใช้งาน/สลับมาจะได้ดาเมจตามเลเวลทันที
     /// </summary>
@@ -17,7 +17,8 @@ namespace GI351.KitchenGame
         {
             WeaponDamage,
             CarryCapacity,
-            MoveSpeed
+            MoveSpeed,
+            AttackSpeed
         }
 
         [Serializable]
@@ -35,7 +36,8 @@ namespace GI351.KitchenGame
         {
             new Binding { itemId = "club", stat = Stat.WeaponDamage },
             new Binding { itemId = "bag", stat = Stat.CarryCapacity },
-            new Binding { itemId = "boots", stat = Stat.MoveSpeed }
+            new Binding { itemId = "boots", stat = Stat.MoveSpeed },
+            new Binding { itemId = "gloves", stat = Stat.AttackSpeed }
         };
 
         private ShopStall stall;
@@ -117,6 +119,13 @@ namespace GI351.KitchenGame
                         m.SetMoveSpeed(value);
                     }
                     break;
+
+                case Stat.AttackSpeed:
+                    foreach (Weapon w in FindObjectsByType<Weapon>(FindObjectsInactive.Include))
+                    {
+                        w.SetAttackSpeed(value);
+                    }
+                    break;
             }
         }
 
@@ -128,9 +137,11 @@ namespace GI351.KitchenGame
             for (int i = 0; i < active.bindings.Count; i++)
             {
                 Binding b = active.bindings[i];
-                if (b.stat != Stat.WeaponDamage) continue;
+                if (b.stat != Stat.WeaponDamage && b.stat != Stat.AttackSpeed) continue;
                 ShopItemData item = active.stall.FindItem(b.itemId);
-                if (item != null && item.IsLeveled) weapon.SetDamage(Mathf.RoundToInt(item.CurrentValue));
+                if (item == null || !item.IsLeveled) continue;
+                if (b.stat == Stat.WeaponDamage) weapon.SetDamage(Mathf.RoundToInt(item.CurrentValue));
+                else weapon.SetAttackSpeed(item.CurrentValue);
             }
         }
     }
