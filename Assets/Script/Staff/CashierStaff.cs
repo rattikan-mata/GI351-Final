@@ -3,13 +3,17 @@ using UnityEngine;
 namespace GI351.KitchenGame
 {
     /// <summary>
-    /// พนักงานแคชเชียร์: ยืนในวงขาวของโต๊ะจ่ายเงิน แล้วเก็บเหรียญบนโต๊ะให้อัตโนมัติ (ผู้เล่นไม่ต้องเดินมาเก็บเอง)
-    /// อ่อนกว่าผู้เล่น: เก็บได้ทีละเหรียญตามช่วงเวลา (ผู้เล่นเข้าวงดูดหมดทีเดียว) ไม่เดิน และสู้โจรไม่ได้
+    /// พนักงานแคชเชียร์ (แบบ Juice King): ยืนประจำโต๊ะจ่ายเงิน แล้ว "คิดเงินลูกค้าแทนผู้เล่น" ผู้เล่นไม่ต้องยืนในวงเอง
+    /// อ่อนกว่าผู้เล่น: คิดเงินช้ากว่า (ตั้งที่ CashierCounter > Staff Pay Duration) ไม่เดิน และสู้โจรไม่ได้
+    /// เงินยังกองอยู่บนโต๊ะ ผู้เล่นต้องเดินมาเก็บเอง (เปิด Collect Coins ถ้าอยากให้พนักงานเก็บให้ด้วย)
     /// </summary>
     public class CashierStaff : MonoBehaviour
     {
         [Header("Work (การทำงาน)")]
-        [Tooltip("เก็บเหรียญ 1 เหรียญทุกกี่วินาที (ยิ่งมากยิ่งช้า)")]
+        [Tooltip("ให้พนักงานเก็บเหรียญในกองให้ด้วย (ปิด = ผู้เล่นเดินมาเก็บเงินเอง)")]
+        [SerializeField] private bool collectCoins = false;
+
+        [Tooltip("เก็บเหรียญ 1 เหรียญทุกกี่วินาที (ใช้เมื่อเปิด Collect Coins)")]
         [SerializeField] private float collectInterval = 0.6f;
 
         [Tooltip("ยืนเยื้องจากกลางวงขาวเล็กน้อย ไม่บังผู้เล่นตอนเดินเข้าวง (เมตร)")]
@@ -43,10 +47,18 @@ namespace GI351.KitchenGame
         public void Init(CashierCounter cashier)
         {
             counter = cashier;
-            if (counter != null && counter.PlayerRing != null)
+            if (counter == null) return;
+
+            counter.SetStaff(this);
+            if (counter.PlayerRing != null)
             {
                 transform.position = counter.PlayerRing.position + (Vector3)standOffset;
             }
+        }
+
+        private void OnDisable()
+        {
+            if (counter != null && counter.HasStaff) counter.SetStaff(null);
         }
 
         private void Awake()
@@ -60,7 +72,7 @@ namespace GI351.KitchenGame
             UpdatePopIn();
             UpdateAnimation();
 
-            if (counter == null) return;
+            if (counter == null || !collectCoins) return;
 
             collectTimer += Time.deltaTime;
             if (collectTimer >= collectInterval)

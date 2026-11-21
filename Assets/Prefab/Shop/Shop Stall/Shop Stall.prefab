@@ -209,6 +209,7 @@ GameObject:
   - component: {fileID: 5989593789037977040}
   - component: {fileID: 3683803792171021409}
   - component: {fileID: 850800840462032608}
+  - component: {fileID: 1865791447962721318}
   m_Layer: 0
   m_Name: Shop Stall
   m_TagString: Untagged
@@ -330,16 +331,20 @@ MonoBehaviour:
     soldOutText: SOLD OUT
     valueLabel: Capacity
     levels:
-    - value: 5
-      price: 0
-    - value: 8
-      price: 40
     - value: 12
-      price: 80
+      price: 0
+    - value: 14
+      price: 20
     - value: 16
-      price: 150
+      price: 35
+    - value: 18
+      price: 55
     - value: 20
-      price: 250
+      price: 80
+    - value: 22
+      price: 120
+    - value: 24
+      price: 170
     levelCap: 0
     onPurchased:
       m_PersistentCalls:
@@ -357,12 +362,18 @@ MonoBehaviour:
     levels:
     - value: 5
       price: 0
+    - value: 5.25
+      price: 20
     - value: 5.5
-      price: 40
+      price: 35
+    - value: 5.75
+      price: 55
     - value: 6
       price: 80
-    - value: 6.5
-      price: 150
+    - value: 6.3
+      price: 120
+    - value: 6.6
+      price: 170
     - value: 7
       price: 250
     levelCap: 0
@@ -382,12 +393,18 @@ MonoBehaviour:
     levels:
     - value: 1
       price: 0
-    - value: 1.15
-      price: 40
+    - value: 1.1
+      price: 20
+    - value: 1.2
+      price: 35
     - value: 1.3
+      price: 55
+    - value: 1.4
       price: 80
     - value: 1.5
-      price: 150
+      price: 120
+    - value: 1.6
+      price: 170
     - value: 1.75
       price: 250
     levelCap: 0
@@ -405,6 +422,77 @@ MonoBehaviour:
     soldOutText: OWNED
     valueLabel: 
     levels: []
+    levelCap: 0
+    onPurchased:
+      m_PersistentCalls:
+        m_Calls: []
+  - itemName: Shelf Size
+    description: 
+    price: 0
+    stock: 0
+    id: shelf_size
+    tab: Cook
+    locked: 0
+    lockedText: SOON
+    soldOutText: SOLD OUT
+    valueLabel: Capacity
+    levels:
+    - value: 20
+      price: 0
+    - value: 30
+      price: 60
+    - value: 40
+      price: 150
+    - value: 60
+      price: 300
+    levelCap: 0
+    onPurchased:
+      m_PersistentCalls:
+        m_Calls: []
+  - itemName: Customers
+    description: 
+    price: 0
+    stock: 0
+    id: customers
+    tab: Store
+    locked: 0
+    lockedText: SOON
+    soldOutText: SOLD OUT
+    valueLabel: Per min
+    levels:
+    - value: 12
+      price: 0
+    - value: 16
+      price: 40
+    - value: 22
+      price: 80
+    - value: 30
+      price: 150
+    - value: 40
+      price: 250
+    levelCap: 0
+    onPurchased:
+      m_PersistentCalls:
+        m_Calls: []
+  - itemName: Big Orders
+    description: 
+    price: 0
+    stock: 0
+    id: big_orders
+    tab: Store
+    locked: 0
+    lockedText: SOON
+    soldOutText: SOLD OUT
+    valueLabel: Max buy
+    levels:
+    - value: 1
+      price: 0
+    - value: 2
+      price: 60
+    - value: 3
+      price: 150
+    - value: 4
+      price: 300
     levelCap: 0
     onPurchased:
       m_PersistentCalls:
@@ -463,6 +551,25 @@ MonoBehaviour:
   bindings:
   - itemId: pork_pot
     potIngredient: 1
+--- !u!114 &1865791447962721318
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4636435379294269516}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f578b596e17599846b5baeb14036dd8f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.StoreUpgrades
+  bindings:
+  - itemId: customers
+    stat: 0
+  - itemId: big_orders
+    stat: 1
+  - itemId: shelf_size
+    stat: 2
 --- !u!1 &6295968039141360220
 GameObject:
   m_ObjectHideFlags: 0

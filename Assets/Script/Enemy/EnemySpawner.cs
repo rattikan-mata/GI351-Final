@@ -9,7 +9,7 @@ namespace GI351.KitchenGame
         [Tooltip("Prefab ที่ต้องการให้เกิด (เช่น ไก่ หรือ หมู)")]
         [SerializeField] private GameObject prefabToSpawn;
 
-        [Tooltip("จำนวนตัวที่ให้เกิดทันทีตอนเริ่มเกม")]
+        [Tooltip("จำนวนตัวที่ให้เกิดทันทีตอนเริ่มเกม\nถ้าจุดเกิดนี้อยู่ในโซนล่า (HuntArea) ค่าจำนวน/เวลาเกิดจะถูกทับด้วยค่าของโซนตอนเริ่มเกม ให้ไปแก้ที่ HuntArea แทน")]
         [SerializeField] private int initialSpawnCount = 2;
 
         [Tooltip("จำนวนสูงสุดที่อยู่ในแมพพร้อมกันจากจุดนี้ (ป้องกันไม่ให้เกิดล้น)")]

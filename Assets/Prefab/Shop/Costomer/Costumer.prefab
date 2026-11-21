@@ -134,11 +134,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CustomerAI
   moveSpeed: 3
-  patienceDuration: 100000000
+  patienceDuration: 20
+  normalCustomerLeavesWhenImpatient: 1
   wantSpecificFood: 1
   preferredDish: 2
+  dishesToBuy: {x: 1, y: 1}
+  angryStartRatio: 0.4
+  angryColor: {r: 1, g: 0.47, b: 0.38, a: 1}
+  avoidanceRadius: 0.4
+  avoidanceMargin: 0.15
+  isThief: 0
+  thiefHealth: 20
+  thiefFleeSpeedMultiplier: 2.2
   targetCounter: {fileID: 8507393914842812104, guid: 7c826388d620c024e8e792ab45d5684e, type: 3}
   exitPoint: {fileID: 0}
+  cashier: {fileID: 0}
+  heldDishScale: 0.6
   happyIcon: {fileID: 0}
   angryIcon: {fileID: 0}
   spriteRenderer: {fileID: 0}
+  hurtColor: {r: 1, g: 0.25, b: 0.25, a: 1}
+  hurtFlashDuration: 0.18

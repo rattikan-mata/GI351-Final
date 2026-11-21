@@ -523,10 +523,21 @@ MonoBehaviour:
   foodDisplayPoint: {fileID: 0}
   foodDisplayOffset: {x: 0, y: 0}
   foodDisplaySpacing: 0.45
-  unlimitedFood: 1
-  maxPlates: 6
-  foodStackHeight: 6
-  foodColumnSpacing: 0.5
+  unlimitedFood: 0
+  maxPlates: 20
+  depositInterval: 0.15
+  depositFlyTime: 0.15
+  displayColumns: 5
+  displaySpacing: {x: 0.44, y: 0.16}
+  displayDishWidth: 0.38
+  maxVisibleDishes: 20
+  showStockBadge: 1
+  stockBadgeOffset: {x: 0, y: -0.5}
+  stockBadgeSize: {x: 0.9, y: 0.44}
+  stockIcon: {fileID: 0}
+  stockBadgeColor: {r: 1, g: 0.8, b: 0.28, a: 1}
+  stockBadgeOutlineColor: {r: 0.42, g: 0.26, b: 0.12, a: 1}
+  stockTextColor: {r: 0.25, g: 0.15, b: 0.08, a: 1}
   foodDisplaySortingOrder: 4
   foodDepositPoint: {fileID: 1697021705898018168}
   depositZoneOffset: {x: -1.2, y: 0}

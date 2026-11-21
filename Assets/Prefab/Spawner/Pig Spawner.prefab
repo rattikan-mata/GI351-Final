@@ -106,9 +106,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.EnemySpawner
   prefabToSpawn: {fileID: 811237516661137993, guid: 77bb103adde065b44ad6d9627790e778, type: 3}
-  initialSpawnCount: 3
-  maxConcurrentCount: 4
-  spawnInterval: 2
+  initialSpawnCount: 10
+  maxConcurrentCount: 12
+  spawnInterval: 1.5
   autoRespawn: 1
   spawnRadius: 2.68
   confineToBoundary: 1

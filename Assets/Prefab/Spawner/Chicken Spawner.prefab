@@ -106,9 +106,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.EnemySpawner
   prefabToSpawn: {fileID: 8703162885063433997, guid: d39b37a48c272324abe71fff24226c09, type: 3}
-  initialSpawnCount: 2
-  maxConcurrentCount: 4
-  spawnInterval: 8
+  initialSpawnCount: 10
+  maxConcurrentCount: 12
+  spawnInterval: 1.5
   autoRespawn: 1
   spawnRadius: 2.5
+  confineToBoundary: 1
+  boundarySize: {x: 8, y: 6}
+  boundaryOffset: {x: 0, y: 0}
+  boundaryGizmoColor: {r: 1, g: 0.35, b: 0.2, a: 0.9}
   gizmoColor: {r: 0.9, g: 0.7, b: 0.1, a: 0.35}

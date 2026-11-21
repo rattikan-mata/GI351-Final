@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 2653794092187496457}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.8843601, z: 0}
+  m_LocalPosition: {x: 0, y: -0.88, z: 0}
   m_LocalScale: {x: 1.10545, y: 1.10545, z: 2.2109}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -57,7 +57,7 @@ Transform:
   m_GameObject: {fileID: 4137638974115050263}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.8843601, z: 0}
+  m_LocalPosition: {x: 0, y: -0.88, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -149,7 +149,7 @@ Transform:
   m_GameObject: {fileID: 4796041473981476159}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.88, y: 0, z: 0}
+  m_LocalPosition: {x: -1.1, y: 0.1, z: 0}
   m_LocalScale: {x: 0.45230448, y: 0.45230448, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -337,6 +337,21 @@ MonoBehaviour:
   lockedAlpha: 0.35
   idleSprite: {fileID: 21300000, guid: cf2e65876493a544ab8ba0a99685614e, type: 3}
   cookingSprite: {fileID: 21300000, guid: e5f3104846268b346bf2d374f8335316, type: 3}
+  showIngredientsOnPot: 0
+  ingredientIcon: {fileID: 21300000, guid: fa8e5c41413052648bfe4bc0530e2f68, type: 3}
+  dishIcon: {fileID: 0}
+  showCountBadge: 1
+  countBadgeOffset: {x: -1.05, y: 0.85}
+  countBadgeSize: {x: 0.95, y: 0.5}
+  countBadgeColor: {r: 1, g: 0.8, b: 0.28, a: 1}
+  countBadgeOutlineColor: {r: 0.42, g: 0.26, b: 0.12, a: 1}
+  countTextColor: {r: 0.25, g: 0.15, b: 0.08, a: 1}
+  showRecipeSign: 1
+  recipeSignOffset: {x: 0, y: 1.55}
+  recipeSignSize: {x: 1.5, y: 0.6}
+  recipeSignColor: {r: 0.98, g: 0.9, b: 0.72, a: 1}
+  recipeSignOutlineColor: {r: 0.55, g: 0.36, b: 0.2, a: 1}
+  recipeArrowColor: {r: 0.62, g: 0.4, b: 0.55, a: 1}
   requireKeyPressToBuy: 0
   purchaseSuccessSound: {fileID: 0}
   potName: Pork Boiling Pot
@@ -344,9 +359,9 @@ MonoBehaviour:
   cookedDishPrefab: {fileID: 7363532395944061772, guid: 81eebd7f1eeddcd4a89f74e7b0149e5b, type: 3}
   specialDishPrefab: {fileID: 0}
   cookingDuration: 3
-  maxCookingCapacity: 20
+  maxCookingCapacity: 24
   standZonePoint: {fileID: 7424109576803519433}
-  standZoneOffset: {x: -1.2, y: 0}
+  standZoneOffset: {x: -2.2, y: 0.2}
   standZoneRadius: 0.5
   requireKeyPress: 0
   showFloorRing: 1
@@ -355,20 +370,32 @@ MonoBehaviour:
   ringSortingOrder: 0
   customRingSprite: {fileID: 21300000, guid: 12dc0ec2e793ffc48b40e02d50874817, type: 3}
   foodOutputPoint: {fileID: 1979066197960202229}
-  outputOffset: {x: 0, y: -0.9}
+  outputOffset: {x: 0, y: -1.76}
   foodPopForce: 1.5
   showOutputRing: 1
   outputRingColor: {r: 1, g: 0.85, b: 0.2, a: 0.9}
   outputZoneRadius: 0.5
+  useOutputTray: 1
+  outputTrayCapacity: 24
+  trayColumns: 5
+  traySpacing: {x: 0.36, y: 0.16}
+  trayDishWidth: 0.34
+  trayOffset: {x: 0, y: -0.25}
+  trayCollectRadius: 0.9
+  trayCollectInterval: 0.1
+  trayFlyTime: 0.18
+  trayFullBarColor: {r: 1, g: 0.47, b: 0.38, a: 1}
   cookingEffect: {fileID: 0}
   ingredientDropSound: {fileID: 0}
   foodDoneSound: {fileID: 0}
   ingredientFlyDuration: 0.35
   ingredientLaunchInterval: 0.12
   ingredientArcHeight: 0.6
-  ingredientStackBase: {x: 0, y: 0}
-  ingredientStackOffset: {x: 0, y: 0.315, z: -0.014}
-  maxVisibleIngredients: 10
+  ingredientStackBase: {x: 0, y: 0.35}
+  ingredientColumns: 4
+  ingredientSpacing: {x: 0.22, y: 0.1}
+  ingredientWidth: 0.4
+  maxVisibleIngredients: 8
   showProgressBar: 1
   progressBarOffset: {x: 0, y: -1.15}
   progressBarSize: {x: 1.6, y: 0.16}
@@ -427,7 +454,7 @@ BoxCollider2D:
   m_Offset: {x: 0, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.5}
+    pivot: {x: 0.6493827, y: 0.5}
     oldSize: {x: 1.3001605, y: 1.0930979}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
@@ -497,7 +524,7 @@ Transform:
   m_GameObject: {fileID: 8817945713539830569}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.88, y: 0, z: 0}
+  m_LocalPosition: {x: -1.1, y: 0.1, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

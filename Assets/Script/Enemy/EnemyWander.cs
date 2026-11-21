@@ -30,6 +30,22 @@ namespace GI351.KitchenGame
         [Tooltip("ระยะที่ถือว่าชิดขอบเขต (เมตร) ถ้าวิ่งหนีมาถึงจะเลี้ยวไปตามขอบ ไม่วิ่งทะลุและไม่ยืนติดขอบ")]
         [SerializeField] private float fleeEdgeMargin = 0.35f;
 
+        [Header("Panic (ตีตัวหนึ่ง ตัวรอบๆ แตกตื่นหนีตาม)")]
+        [Tooltip("เปิด = ตัวนี้โดนตีแล้ว สัตว์ตัวอื่นในรัศมีด้านล่างวิ่งหนีไปด้วย (ตัวที่ปิด Flee When Hit จะไม่หนีตาม)")]
+        [SerializeField] private bool panicNearbyOnHit = true;
+
+        [Tooltip("รัศมีที่สัตว์ตัวอื่นจะตกใจตาม (เมตร)")]
+        [Min(0f)]
+        [SerializeField] private float panicRadius = 3.5f;
+
+        [Tooltip("ตัวที่อยู่ไกลสุดในรัศมีจะเริ่มหนีช้ากว่าตัวที่อยู่ใกล้เท่านี้ (วินาที) ให้ดูเป็นคลื่นตกใจกระจายออก")]
+        [Min(0f)]
+        [SerializeField] private float panicSpreadDelay = 0.25f;
+
+        [Tooltip("ตัวที่ตกใจตามวิ่งหนีนานเท่านี้ของ fleeDuration (1 = นานเท่าตัวที่โดนตี)")]
+        [Range(0.1f, 1f)]
+        [SerializeField] private float panicDurationScale = 0.75f;
+
         [Header("Avoid Others (หลบสัตว์ตัวอื่น กันเดินชนแล้วติดกัน)")]
         [Tooltip("ระยะที่เริ่มเว้นห่างจากสัตว์ตัวอื่น (เมตร)")]
         [SerializeField] private float avoidRadius = 1f;
@@ -97,6 +113,9 @@ namespace GI351.KitchenGame
         private Vector2 slideDir;
         private float slideTimer;
         private const float SlideCommitTime = 0.6f;
+
+        // ตกใจตามตัวอื่น (รอดีเลย์ก่อนเริ่มหนี)
+        private float pendingPanicTimer = -1f;
 
         // ขอบเขตที่ห้ามออก (ตั้งจาก EnemySpawner)
         private bool hasBoundary;
@@ -190,6 +209,12 @@ namespace GI351.KitchenGame
 
         private void Update()
         {
+            if (pendingPanicTimer >= 0f)
+            {
+                pendingPanicTimer -= Time.deltaTime;
+                if (pendingPanicTimer < 0f) StartFlee(fleeDuration * panicDurationScale);
+            }
+
             if (isFleeing)
             {
                 // ให้กระเด็นเสร็จก่อนค่อยเริ่มนับเวลาหนี
@@ -473,14 +498,56 @@ namespace GI351.KitchenGame
 
         private void HandleDamaged()
         {
-            if (!fleeWhenHit || !enabled) return;
-            StartFlee();
+            if (!enabled) return;
+            if (fleeWhenHit) StartFlee();
+            // ตัวที่ตายในทีเดียวก็ยังทำให้ตัวรอบๆ ตกใจ
+            if (panicNearbyOnHit) PanicNearby();
+        }
+
+        /// <summary>สัตว์ตัวอื่นในรัศมี panicRadius วิ่งหนีตาม (ตัวใกล้หนีก่อน ตัวไกลหนีทีหลัง)</summary>
+        public void PanicNearby()
+        {
+            if (panicRadius <= 0f) return;
+            Vector2 pos = transform.position;
+            float r2 = panicRadius * panicRadius;
+
+            for (int i = 0; i < All.Count; i++)
+            {
+                EnemyWander other = All[i];
+                if (other == null || other == this || !other.enabled || !other.fleeWhenHit) continue;
+                if (other.health != null && other.health.IsDead) continue;
+
+                float d2 = ((Vector2)other.transform.position - pos).sqrMagnitude;
+                if (d2 > r2) continue;
+
+                float delay = panicSpreadDelay * Mathf.Sqrt(d2) / panicRadius;
+                other.QueuePanic(delay);
+            }
+        }
+
+        /// <summary>ตกใจตามตัวอื่น: เริ่มหนีหลังดีเลย์ (ถ้ากำลังหนีอยู่แล้วจะต่อเวลาให้)</summary>
+        public void QueuePanic(float delay)
+        {
+            if (isFleeing)
+            {
+                fleeTimer = Mathf.Max(fleeTimer, fleeDuration * panicDurationScale);
+                return;
+            }
+            if (pendingPanicTimer >= 0f) pendingPanicTimer = Mathf.Min(pendingPanicTimer, delay);
+            else pendingPanicTimer = Mathf.Max(0f, delay);
         }
 
         /// <summary>เริ่ม (หรือเริ่มนับใหม่) การวิ่งหนีผู้เล่นตาม fleeSpeed / fleeDuration</summary>
         public void StartFlee()
         {
-            if (fleeDuration <= 0f || fleeSpeed <= 0f) return;
+            StartFlee(fleeDuration);
+        }
+
+        /// <summary>เริ่มวิ่งหนีนาน duration วินาที (ถ้ากำลังหนีอยู่และเหลือเวลานานกว่าจะไม่ลดเวลาลง)</summary>
+        public void StartFlee(float duration)
+        {
+            pendingPanicTimer = -1f;
+            if (duration <= 0f || fleeSpeed <= 0f) return;
             if (health != null && health.IsDead) return;
 
             if (playerTarget == null)
@@ -492,7 +559,7 @@ namespace GI351.KitchenGame
             bool wasFleeing = isFleeing;
             isFleeing = true;
             isIdle = false;
-            fleeTimer = fleeDuration;
+            fleeTimer = wasFleeing ? Mathf.Max(fleeTimer, duration) : duration;
             slideTimer = 0f;
             if (!wasFleeing) RefreshAnimalCollisions();
         }

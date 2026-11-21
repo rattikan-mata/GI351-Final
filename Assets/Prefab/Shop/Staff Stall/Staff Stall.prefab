@@ -189,12 +189,17 @@ MonoBehaviour:
   shopTitle: STAFF
   items:
   - itemName: Cashier
-    description: 
+    description: Checks out customers for you
     price: 100
     stock: 1
     id: cashier
-    locked: 1
+    tab: 
+    locked: 0
     lockedText: SOON
+    soldOutText: HIRED
+    valueLabel: 
+    levels: []
+    levelCap: 0
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
@@ -203,8 +208,13 @@ MonoBehaviour:
     price: 150
     stock: 1
     id: waiter
+    tab: 
     locked: 1
     lockedText: SOON
+    soldOutText: SOLD OUT
+    valueLabel: 
+    levels: []
+    levelCap: 0
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
@@ -213,11 +223,18 @@ MonoBehaviour:
     price: 250
     stock: 1
     id: hunter
+    tab: 
     locked: 1
     lockedText: SOON
+    soldOutText: SOLD OUT
+    valueLabel: 
+    levels: []
+    levelCap: 0
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
+  tabs: []
+  emptyTabText: Coming soon
   zoneCenter: {fileID: 3278608873617845483}
   zoneRadius: 0.5
   openOnEnter: 1

@@ -5,8 +5,10 @@ using UnityEngine.Events;
 namespace GI351.KitchenGame
 {
     /// <summary>
-    /// โต๊ะจ่ายเงิน: ลูกค้าที่หยิบอาหารจากโต๊ะอาหาร (FoodSellCounter) แล้ว จะถืออาหารมาต่อแถวจ่ายเงินที่นี่
-    /// จ่ายเสร็จเหรียญจะหล่นบนโต๊ะนี้ให้ผู้เล่นมาเก็บ
+    /// โต๊ะจ่ายเงิน (แบบ Juice King): ลูกค้าที่หยิบอาหารจากแผง (FoodSellCounter) แล้ว ถืออาหารมาต่อแถวจ่ายเงินที่นี่
+    /// ต้องมี "คนคิดเงิน" ลูกค้าถึงจะจ่ายได้: ผู้เล่นยืนในวงขาวหลังโต๊ะ หรือจ้างพนักงานแคชเชียร์ (CashierStaff) มาคิดแทน
+    /// คิดทีละคน มีหลอดความคืบหน้าเหนือหัวลูกค้า จ่ายเสร็จเหรียญลอยไปกองบนโต๊ะ (1 เหรียญต่อ 1 จาน)
+    /// ผู้เล่นเข้าวงแล้วเหรียญในกองจะลอยเข้าตัว
     /// </summary>
     [RequireComponent(typeof(Collider2D))]
     public class CashierCounter : MonoBehaviour
@@ -43,21 +45,58 @@ namespace GI351.KitchenGame
         /// <summary>เปิดโหมดยืนมุงอยู่หรือไม่</summary>
         public bool CrowdMode => crowdMode;
 
-        [Tooltip("ลูกค้าหัวแถวต้องยืนรอกี่วินาทีก่อนจ่ายเสร็จ")]
-        [SerializeField] private float payDuration = 0.6f;
+        [Header("Checkout (การคิดเงิน)")]
+        [Tooltip("เปิด = ต้องมีคนคิดเงิน (ผู้เล่นยืนในวงขาว หรือพนักงานแคชเชียร์) ลูกค้าถึงจะจ่ายได้ / ปิด = ลูกค้าจ่ายเองอัตโนมัติแบบเดิม")]
+        [SerializeField] private bool requireOperator = true;
+
+        [Tooltip("ผู้เล่นคิดเงินลูกค้า 1 คนใช้กี่วินาที (Juice King เกาะแรก: 0.75)")]
+        [SerializeField] private float payDuration = 0.75f;
+
+        [Tooltip("พนักงานแคชเชียร์คิดเงินลูกค้า 1 คนใช้กี่วินาที (ช้ากว่าผู้เล่น)")]
+        [SerializeField] private float staffPayDuration = 1.2f;
+
+        [Tooltip("ขนาดหลอดความคืบหน้าเหนือหัวลูกค้าที่กำลังจ่าย (กว้าง x สูง เมตร)")]
+        [SerializeField] private Vector2 payBarSize = new Vector2(0.8f, 0.12f);
+
+        [Tooltip("ความสูงของหลอดจากตัวลูกค้า (เมตร)")]
+        [SerializeField] private float payBarHeight = 1.6f;
+
+        [SerializeField] private Color payBarBackColor = new Color(0f, 0f, 0f, 0.6f);
+        [SerializeField] private Color payBarFillColor = new Color(0.35f, 0.95f, 0.45f, 1f);
+
+        [Tooltip("สีหลอดตอนไม่มีคนคิดเงิน (ลูกค้ารออยู่)")]
+        [SerializeField] private Color payBarWaitingColor = new Color(1f, 0.47f, 0.38f, 1f);
 
         [Header("Money (เงินที่ได้)")]
         [Tooltip("Prefab เหรียญ (ปล่อยว่างจะเพิ่มเงินเข้า MoneyManager โดยตรง)")]
         [SerializeField] private GameObject coinPrefab;
 
-        [Tooltip("ระยะเว้นจากขอบโต๊ะตอนสุ่มตำแหน่งเหรียญ (เมตร)")]
-        [SerializeField] private float counterMoneyInset = 0.3f;
+        [Tooltip("จำนวนเหรียญต่อแถวในกองเงินบนโต๊ะ")]
+        [Min(1)] [SerializeField] private int pileColumns = 6;
+
+        [Tooltip("ระยะห่างระหว่างเหรียญในกอง (x = ซ้ายขวา, y = แถวถัดไปขยับขึ้น)")]
+        [SerializeField] private Vector2 pileSpacing = new Vector2(0.24f, 0.11f);
+
+        [Tooltip("ตำแหน่งแถวหน้าของกองเงิน เยื้องจากกลางโต๊ะ (เมตร)")]
+        [SerializeField] private Vector2 pileOffset = new Vector2(0f, -0.05f);
+
+        [Tooltip("โชว์เหรียญในกองสูงสุดกี่เหรียญ (ที่เกินซ้อนอยู่ที่ช่องสุดท้าย)")]
+        [Min(1)] [SerializeField] private int maxPileSlots = 48;
+
+        [Tooltip("เวลาที่เหรียญลอยจากลูกค้ามาลงกอง (วินาที)")]
+        [Min(0.01f)] [SerializeField] private float coinFlyTime = 0.25f;
+
+        [Tooltip("เว้นจังหวะระหว่างเหรียญแต่ละเหรียญของลูกค้าคนเดียวกัน (วินาที)")]
+        [Min(0f)] [SerializeField] private float coinStagger = 0.08f;
+
+        [Tooltip("เหรียญต้องอยู่ในกองอย่างน้อยกี่วินาทีก่อนลอยเข้าตัวผู้เล่น (ให้เห็นว่าเงินเข้ากองก่อน)")]
+        [Min(0f)] [SerializeField] private float collectDelay = 0.3f;
 
         [Tooltip("เสียงตอนลูกค้าจ่ายเงิน (ถ้ามี)")]
         [SerializeField] private AudioClip paySound;
 
-        [Header("Player Ring (วงขาวจุดยืนผู้เล่น เหมือน Sell point)")]
-        [Tooltip("วงขาวบนพื้นที่ให้ผู้เล่นยืน (child ของโต๊ะ) ผู้เล่นเข้าวงแล้วเหรียญบนโต๊ะจะลอยเข้าตัว")]
+        [Header("Player Ring (วงขาวจุดยืนคิดเงิน/เก็บเงิน)")]
+        [Tooltip("วงขาวบนพื้นหลังโต๊ะ ผู้เล่นยืนในวง = คิดเงินลูกค้า + เหรียญในกองลอยเข้าตัว")]
         [SerializeField] private Transform playerRing;
 
         [Tooltip("รัศมีวง (เมตร)")]
@@ -69,45 +108,96 @@ namespace GI351.KitchenGame
         [Tooltip("สีวงตอนผู้เล่นยืนอยู่ในวง")]
         [SerializeField] private Color playerRingActiveColor = new Color(0.3f, 1f, 0.6f, 0.95f);
 
+        [Tooltip("สีวงตอนมีลูกค้ารอจ่ายแต่ไม่มีคนคิดเงิน (กระพริบเรียกผู้เล่น)")]
+        [SerializeField] private Color playerRingNeededColor = new Color(1f, 0.8f, 0.2f, 1f);
+
         [Header("Events")]
         public UnityEvent<int> onPaid; // จำนวนเงินที่ได้
 
+        private class PileCoin
+        {
+            public CoinPickup coin;
+            public Vector3 start;
+            public float startTime;   // เวลาที่เริ่มลอย (รวม stagger)
+            public bool landed;
+            public float landedTime;
+        }
+
         private readonly List<CustomerAI> queue = new List<CustomerAI>();
-        private readonly List<CoinPickup> coinsOnCounter = new List<CoinPickup>();
+        private readonly List<PileCoin> pile = new List<PileCoin>();
         private SpriteRenderer playerRingRenderer;
         private Transform playerTransform;
+        private bool playerInRing;
+        private CashierStaff staff;
+
+        // หลอดความคืบหน้า
+        private GameObject payBarRoot;
+        private Transform payBarFill;
+        private SpriteRenderer payBarFillRenderer;
+        private CustomerAI payingCustomer;
+        private float payProgress;
+        private bool payServing;
+        private int payReportFrame = -1;
 
         public Transform CustomerPayPoint => customerPayPoint != null ? customerPayPoint : transform;
 
-        /// <summary>วงขาวที่ผู้เล่น/พนักงานแคชเชียร์ยืนเก็บเหรียญ</summary>
+        /// <summary>วงขาวที่ผู้เล่น/พนักงานแคชเชียร์ยืน</summary>
         public Transform PlayerRing => playerRing;
 
-        /// <summary>จำนวนเหรียญที่วางรอบนโต๊ะ</summary>
+        /// <summary>ผู้เล่นยืนอยู่ในวงคิดเงินหรือไม่</summary>
+        public bool PlayerInRing => playerInRing;
+
+        /// <summary>มีพนักงานแคชเชียร์ประจำโต๊ะนี้หรือไม่</summary>
+        public bool HasStaff => staff != null;
+
+        /// <summary>ตอนนี้มีคนคิดเงินให้ลูกค้าได้หรือไม่</summary>
+        public bool CanServe => !requireOperator || playerInRing || HasStaff;
+
+        /// <summary>เวลาคิดเงินต่อคน ตามคนที่คิดอยู่ตอนนี้ (ผู้เล่นเร็วกว่าพนักงาน)</summary>
+        public float PayDuration => requireOperator && !playerInRing && HasStaff ? staffPayDuration : payDuration;
+
+        /// <summary>จำนวนลูกค้าที่รอจ่ายเงิน</summary>
+        public int QueueCount
+        {
+            get
+            {
+                queue.RemoveAll(c => c == null);
+                return queue.Count;
+            }
+        }
+
+        /// <summary>จำนวนเหรียญที่วางรอในกองบนโต๊ะ</summary>
         public int CoinsOnCounter
         {
             get
             {
-                coinsOnCounter.RemoveAll(c => c == null);
-                return coinsOnCounter.Count;
+                pile.RemoveAll(c => c.coin == null);
+                return pile.Count;
             }
         }
 
+        /// <summary>พนักงานแคชเชียร์มาประจำ/ออกจากโต๊ะนี้</summary>
+        public void SetStaff(CashierStaff cashierStaff)
+        {
+            staff = cashierStaff;
+        }
+
         /// <summary>
-        /// ส่งเหรียญบนโต๊ะ 1 เหรียญให้ลอยไปหา target (ใช้กับพนักงานแคชเชียร์ ที่เก็บได้ทีละเหรียญ ช้ากว่าผู้เล่น)
-        /// เหรียญถึงตัวแล้วเงินจะเข้า MoneyManager เอง คืน true ถ้ามีเหรียญให้ส่ง
+        /// ส่งเหรียญในกอง 1 เหรียญให้ลอยไปหา target (ใช้กับพนักงานที่ตั้งให้เก็บเงินด้วย) คืน true ถ้ามีเหรียญให้ส่ง
         /// </summary>
         public bool AttractOneCoinTo(Transform target)
         {
             if (target == null) return false;
-            coinsOnCounter.RemoveAll(c => c == null);
-            if (coinsOnCounter.Count == 0) return false;
-
-            CoinPickup coin = coinsOnCounter[0];
-            coinsOnCounter.RemoveAt(0);
-            coin.AttractTo(target);
-            return true;
+            pile.RemoveAll(c => c.coin == null);
+            for (int i = 0; i < pile.Count; i++)
+            {
+                if (!pile[i].landed) continue;
+                pile[i].coin.AttractTo(target);
+                pile.RemoveAt(i);
+                return true;
+            }
+            return false;
         }
-        public float PayDuration => payDuration;
 
         private void Awake()
         {
@@ -141,39 +231,41 @@ namespace GI351.KitchenGame
         private void Update()
         {
             UpdatePlayerRing();
+            UpdatePile();
+            UpdatePayBar();
         }
 
         /// <summary>
-        /// วงขาวกระพริบเบา ๆ และเปลี่ยนเป็นสีเขียวเมื่อผู้เล่นเข้ามายืน (แบบเดียวกับ Sell point)
+        /// วงขาว: เขียวเมื่อผู้เล่นยืนคิดเงิน / กระพริบเหลืองเมื่อมีลูกค้ารอแต่ไม่มีคนคิดเงิน
         /// </summary>
         private void UpdatePlayerRing()
         {
-            if (playerRing == null || playerRingRenderer == null) return;
-
             if (playerTransform == null)
             {
                 var player = FindAnyObjectByType<PlayerCarry>();
                 if (player != null) playerTransform = player.transform;
             }
 
-            bool inRange = playerTransform != null &&
+            playerInRing = playerRing != null && playerTransform != null &&
                            Vector2.Distance(playerRing.position, playerTransform.position) <= playerRingRadius;
-            Color target = inRange ? playerRingActiveColor : playerRingColor;
-            playerRingRenderer.color = Color.Lerp(playerRingRenderer.color, target, Time.deltaTime * 10f);
 
-            // ผู้เล่นเข้าวง -> ดูดเหรียญทั้งหมดบนโต๊ะเข้าตัว
-            if (inRange && coinsOnCounter.Count > 0)
+            if (playerRing == null || playerRingRenderer == null) return;
+
+            bool needOperator = requireOperator && !CanServe && QueueCount > 0;
+            Color target = playerInRing ? playerRingActiveColor : playerRingColor;
+            float pulseSpeed = 2.5f, pulseSize = 0.04f;
+            if (needOperator)
             {
-                foreach (var coin in coinsOnCounter)
-                {
-                    if (coin != null) coin.AttractTo(playerTransform);
-                }
-                coinsOnCounter.Clear();
+                // เรียกผู้เล่น: กระพริบเหลือง-ขาว และเต้นแรงขึ้น
+                target = Color.Lerp(playerRingColor, playerRingNeededColor, 0.5f + 0.5f * Mathf.Sin(Time.time * 8f));
+                pulseSpeed = 8f;
+                pulseSize = 0.1f;
             }
+            playerRingRenderer.color = Color.Lerp(playerRingRenderer.color, target, Time.deltaTime * 10f);
 
             // ชดเชยสเกลของโต๊ะ ให้วงมีขนาดในโลกตาม playerRingRadius
             Vector3 lossy = transform.lossyScale;
-            float pulse = 1f + Mathf.Sin(Time.time * 2.5f) * 0.04f;
+            float pulse = 1f + Mathf.Sin(Time.time * pulseSpeed) * pulseSize;
             float d = playerRingRadius * 2f * pulse;
             playerRing.localScale = new Vector3(
                 d / Mathf.Max(0.0001f, Mathf.Abs(lossy.x)),
@@ -222,31 +314,51 @@ namespace GI351.KitchenGame
 
         // ========================== จ่ายเงิน ==========================
 
-        /// <summary>
-        /// ลูกค้าจ่ายเงินค่าอาหารที่ถืออยู่: เหรียญหล่นบนโต๊ะ แล้วอาหารหายไป (ลูกค้าเอากลับบ้าน)
-        /// </summary>
+        /// <summary>ลูกค้าหัวแถวรายงานความคืบหน้าการจ่ายเงิน (0-1) ทุกเฟรม ใช้วาดหลอดเหนือหัว serving = มีคนคิดเงินอยู่</summary>
+        public void ReportPayProgress(CustomerAI customer, float progress, bool serving)
+        {
+            payingCustomer = customer;
+            payProgress = Mathf.Clamp01(progress);
+            payServing = serving;
+            payReportFrame = Time.frameCount;
+        }
+
+        /// <summary>ลูกค้าจ่ายเงินค่าอาหาร 1 จาน (เก็บไว้ให้โค้ดเดิมเรียกได้)</summary>
         public int ReceivePayment(CustomerAI customer, Item dish)
         {
-            int price = dish != null && dish.SellPrice > 0 ? dish.SellPrice : 10;
+            return ReceivePayment(customer, new List<Item> { dish });
+        }
 
-            if (coinPrefab != null)
+        /// <summary>
+        /// ลูกค้าจ่ายเงินค่าอาหารทั้งหมดที่ถืออยู่: เหรียญ 1 เหรียญต่อ 1 จาน ลอยจากตัวลูกค้าไปลงกองบนโต๊ะทีละเหรียญ
+        /// </summary>
+        public int ReceivePayment(CustomerAI customer, IList<Item> dishes)
+        {
+            int total = 0;
+            Vector3 from = customer != null ? customer.transform.position + new Vector3(0f, 0.6f, 0f) : CustomerPayPoint.position;
+            int n = dishes != null ? dishes.Count : 0;
+
+            for (int i = 0; i < Mathf.Max(1, n); i++)
             {
-                GameObject coin = Instantiate(coinPrefab, GetRandomPointOnCounter(), Quaternion.identity);
-                if (coin.TryGetComponent<CoinPickup>(out var pickup))
-                {
-                    pickup.Value = price;
+                Item dish = n > 0 ? dishes[i] : null;
+                int price = dish != null && dish.SellPrice > 0 ? dish.SellPrice : 10;
+                total += price;
 
-                    // เหรียญวางรอบนโต๊ะ ต้องเข้าวงขาวถึงจะดูดเข้าตัว (ไม่หายตามเวลา)
-                    if (playerRing != null)
+                if (coinPrefab != null)
+                {
+                    GameObject coinObj = Instantiate(coinPrefab, from, Quaternion.identity);
+                    if (coinObj.TryGetComponent<CoinPickup>(out var pickup))
                     {
+                        pickup.Value = price;
+                        // เหรียญอยู่ในกองบนโต๊ะ (ไม่หายตามเวลา) รอผู้เล่นเข้าวงถึงจะลอยเข้าตัว
                         pickup.WaitForCollectZone();
-                        coinsOnCounter.Add(pickup);
+                        pile.Add(new PileCoin { coin = pickup, start = from, startTime = Time.time + i * coinStagger });
                     }
                 }
-            }
-            else if (MoneyManager.Instance != null)
-            {
-                MoneyManager.Instance.AddMoney(price);
+                else if (MoneyManager.Instance != null)
+                {
+                    MoneyManager.Instance.AddMoney(price);
+                }
             }
 
             if (paySound != null)
@@ -255,22 +367,110 @@ namespace GI351.KitchenGame
             }
 
             LeaveQueue(customer);
-            onPaid?.Invoke(price);
-            return price;
+            onPaid?.Invoke(total);
+            return total;
         }
 
-        private Vector3 GetRandomPointOnCounter()
+        /// <summary>ตำแหน่งช่องที่ index ในกองเงิน (เรียงแบนบนโต๊ะ)</summary>
+        private Vector3 GetPileSlotPosition(int index)
         {
+            index = Mathf.Min(index, Mathf.Max(1, maxPileSlots) - 1);
             Collider2D col = GetComponent<Collider2D>();
-            if (col == null) return transform.position;
+            Vector3 center = col != null ? col.bounds.center : transform.position;
+            Vector2 off = FlatPile.Offset(index, pileColumns, pileSpacing);
+            return new Vector3(center.x + pileOffset.x + off.x, center.y + pileOffset.y + off.y, transform.position.z - 0.05f);
+        }
 
-            Bounds b = col.bounds;
-            float halfW = Mathf.Max(0f, b.extents.x - counterMoneyInset);
-            float halfH = Mathf.Max(0f, b.extents.y - counterMoneyInset);
-            return new Vector3(
-                b.center.x + Random.Range(-halfW, halfW),
-                b.center.y + Random.Range(-halfH, halfH),
-                transform.position.z);
+        /// <summary>ขยับเหรียญ: ลอยจากลูกค้ามาลงกอง / เลื่อนเข้าช่องใหม่เมื่อกองขยับ / ผู้เล่นอยู่ในวงแล้วลอยเข้าตัว</summary>
+        private void UpdatePile()
+        {
+            pile.RemoveAll(c => c.coin == null);
+            if (pile.Count == 0) return;
+
+            SpriteRenderer tableRenderer = GetComponent<SpriteRenderer>();
+            int baseOrder = (tableRenderer != null ? tableRenderer.sortingOrder : 0) + 2;
+
+            for (int i = pile.Count - 1; i >= 0; i--)
+            {
+                PileCoin c = pile[i];
+                Transform t = c.coin.transform;
+                Vector3 slot = GetPileSlotPosition(i);
+
+                if (c.coin.TryGetComponent(out SpriteRenderer sr))
+                {
+                    sr.sortingOrder = baseOrder + FlatPile.SortingOffset(Mathf.Min(i, maxPileSlots - 1), pileColumns, maxPileSlots);
+                    sr.enabled = Time.time >= c.startTime;
+                }
+
+                if (!c.landed)
+                {
+                    float k = (Time.time - c.startTime) / coinFlyTime;
+                    if (k < 0f) { t.position = c.start; continue; }
+                    if (k < 1f)
+                    {
+                        Vector3 p = Vector3.Lerp(c.start, slot, Tween.Evaluate(Ease.OutQuad, k));
+                        p.y += Mathf.Sin(k * Mathf.PI) * 0.5f;
+                        t.position = p;
+                        continue;
+                    }
+                    c.landed = true;
+                    c.landedTime = Time.time;
+                    t.position = slot;
+                    continue;
+                }
+
+                t.position = Vector3.Lerp(t.position, slot, Time.deltaTime * 12f);
+
+                // ผู้เล่นยืนในวง: เหรียญที่ลงกองแล้วครู่หนึ่งลอยเข้าตัว
+                if (playerInRing && playerTransform != null && Time.time - c.landedTime >= collectDelay)
+                {
+                    c.coin.AttractTo(playerTransform);
+                    pile.RemoveAt(i);
+                }
+            }
+        }
+
+        // ========================== หลอดความคืบหน้าการคิดเงิน ==========================
+
+        private void UpdatePayBar()
+        {
+            bool show = payingCustomer != null && payReportFrame >= Time.frameCount - 1 && (payServing || payProgress > 0f || requireOperator);
+            if (!show)
+            {
+                if (payBarRoot != null && payBarRoot.activeSelf) payBarRoot.SetActive(false);
+                return;
+            }
+
+            if (payBarRoot == null)
+            {
+                SpriteRenderer tableRenderer = GetComponent<SpriteRenderer>();
+                int layer = tableRenderer != null ? tableRenderer.sortingLayerID : 0;
+                payBarRoot = new GameObject("PayBar");
+                payBarRoot.transform.SetParent(transform, false);
+                WorldUi.MakeShape(payBarRoot.transform, "Back", WorldUi.Pixel, payBarBackColor, payBarSize, Vector3.zero, layer, 70);
+                payBarFillRenderer = WorldUi.MakeShape(payBarRoot.transform, "Fill", WorldUi.PixelLeft, payBarFillColor,
+                    new Vector2(payBarSize.x, payBarSize.y * 0.7f), new Vector3(-payBarSize.x * 0.5f, 0f, 0f), layer, 71);
+                payBarFill = payBarFillRenderer.transform;
+            }
+            if (!payBarRoot.activeSelf) payBarRoot.SetActive(true);
+
+            WorldUi.KeepWorldScale(payBarRoot.transform);
+            payBarRoot.transform.position = payingCustomer.transform.position + new Vector3(0f, payBarHeight, -0.1f);
+            payBarRoot.transform.rotation = Quaternion.identity;
+
+            // ไม่มีคนคิดเงิน: หลอดเต็มสีส้มแดงกระพริบ บอกว่าลูกค้ารออยู่
+            if (!payServing)
+            {
+                Color wait = payBarWaitingColor;
+                wait.a *= 0.55f + 0.45f * Mathf.Sin(Time.time * 8f);
+                payBarFillRenderer.color = wait;
+                payBarFill.localScale = new Vector3(payBarSize.x, payBarSize.y * 0.7f, 1f);
+            }
+            else
+            {
+                payBarFillRenderer.color = payBarFillColor;
+                payBarFill.localScale = new Vector3(payBarSize.x * payProgress, payBarSize.y * 0.7f, 1f);
+            }
         }
 
         private void OnDrawGizmos()

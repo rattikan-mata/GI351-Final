@@ -32,6 +32,16 @@ namespace GI351.KitchenGame
 
         [SerializeField] private ItemType preferredDish = ItemType.CookedChicken;
 
+        [Header("Buying & Patience (จำนวนที่ซื้อ / ความอดทน แบบ Juice King)")]
+        [Tooltip("ลูกค้าซื้อคนละกี่จาน สุ่มระหว่าง x ถึง y (ซื้อเท่าที่แผงมีตอนนั้น อย่างน้อย 1)")]
+        [SerializeField] private Vector2Int dishesToBuy = new Vector2Int(1, 3);
+
+        [Tooltip("ช่วงแรกของเวลารอ (สัดส่วน 0-1) ที่ตัวลูกค้ายังไม่เปลี่ยนสี หลังจากนั้นค่อยๆ แดงจนหมดความอดทน (Juice King: 0.4)")]
+        [Range(0f, 1f)] [SerializeField] private float angryStartRatio = 0.4f;
+
+        [Tooltip("สีตัวลูกค้าตอนใกล้หมดความอดทน (ส้มแดง)")]
+        [SerializeField] private Color angryColor = new Color(1f, 0.47f, 0.38f, 1f);
+
         [Header("Obstacle Avoidance (เดินอ้อมโต๊ะ/หม้อ ไม่เดินทะลุ)")]
         [Tooltip("รัศมีตัวลูกค้าที่ใช้เช็คว่าทางเดินชนสิ่งกีดขวางหรือไม่")]
         [SerializeField] private float avoidanceRadius = 0.4f;
@@ -87,9 +97,28 @@ namespace GI351.KitchenGame
         private Color defaultCustomerColor = Color.white;
         private Coroutine hurtFlashCoroutine;
 
-        // อาหารที่ลูกค้าถือไปจ่ายเงิน
-        private Item carriedDish;
+        // อาหารที่ลูกค้าถือไปจ่ายเงิน (ซื้อได้หลายจาน)
+        private readonly System.Collections.Generic.List<Item> carriedDishes = new System.Collections.Generic.List<Item>();
+        private int wantCount = 1;
         private float payTimer;
+
+        /// <summary>จำนวนจานที่ถืออยู่</summary>
+        public int CarriedDishCount => carriedDishes.Count;
+
+        /// <summary>ตั้งจำนวนจานที่ลูกค้าคนนี้จะซื้อ (สุ่มระหว่าง min ถึง max) เรียกก่อน Start (CustomerSpawner เรียกตอนเกิด)</summary>
+        public void SetDishesToBuy(int min, int max)
+        {
+            dishesToBuy = new Vector2Int(Mathf.Max(1, min), Mathf.Max(1, max));
+        }
+
+        /// <summary>จำนวนลูกค้าปกติที่รอจนหมดความอดทนแล้วเดินหนี (นับตั้งแต่เริ่มเล่น)</summary>
+        public static int LostCustomers { get; private set; }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            LostCustomers = 0;
+        }
 
         // โจรและไอเทมที่ถูกขโมย
         private Item stolenDish;
@@ -171,6 +200,10 @@ namespace GI351.KitchenGame
                 patienceDuration = 15f;
             }
             currentPatienceTimer = patienceDuration;
+
+            int lo = Mathf.Max(1, Mathf.Min(dishesToBuy.x, dishesToBuy.y));
+            int hi = Mathf.Max(lo, Mathf.Max(dishesToBuy.x, dishesToBuy.y));
+            wantCount = Random.Range(lo, hi + 1);
 
             PickDishAndCounter();
 
@@ -277,6 +310,15 @@ namespace GI351.KitchenGame
         {
             if (currentState == CustomerState.Unconscious) return;
 
+            if (carryBadge != null)
+            {
+                // ในแถวจ่ายเงิน โชว์ป้ายเฉพาะคนหัวแถว (คนข้างหลังยืนชิดกัน ป้ายจะบังกัน)
+                bool showBadge = carriedDishes.Count > 0 &&
+                                 (cashier == null || currentState != CustomerState.WaitingAtCashier || cashier.IsHeadOfQueue(this));
+                if (carryBadgeRoot.activeSelf != showBadge) carryBadgeRoot.SetActive(showBadge);
+                carryBadge.Tick();
+            }
+
             if (currentState == CustomerState.WaitingAtCounter)
             {
                 HandleWaiting();
@@ -324,9 +366,9 @@ namespace GI351.KitchenGame
                         }
 
                         int currentQueueIndex = targetCounter.GetQueueIndex(this);
+                        // ความอดทนไม่รีเซ็ตตอนคิวขยับ (นับจากเวลาที่แผงไม่มีของ ทุกคนรอพร้อมกัน)
                         if (currentQueueIndex != -1 && currentQueueIndex < lastQueueIndex)
                         {
-                            currentPatienceTimer = patienceDuration;
                             lastQueueIndex = currentQueueIndex;
                         }
                     }
@@ -535,10 +577,19 @@ namespace GI351.KitchenGame
                     if (distToWaitPoint <= 0.4f && targetCounter.HasFoodAvailable(wantSpecificFood ? preferredDish : (ItemType?)null))
                     {
                         // หยิบอาหารไปถือ แล้วเดินไปจ่ายเงินที่โต๊ะจ่ายเงิน
-                        Item dish = targetCounter.CustomerTakeDish(wantSpecificFood ? preferredDish : (ItemType?)null);
+                        ItemType? want = wantSpecificFood ? preferredDish : (ItemType?)null;
+                        Item dish = targetCounter.CustomerTakeDish(want);
                         if (dish != null)
                         {
                             HoldDish(dish);
+                            // ซื้อเพิ่มจนครบจำนวนที่อยากได้ เท่าที่แผงมี
+                            while (carriedDishes.Count < wantCount && targetCounter.HasFoodAvailable(want))
+                            {
+                                Item more = targetCounter.CustomerTakeDish(want);
+                                if (more == null) break;
+                                HoldDish(more);
+                            }
+                            ResetPatienceTint();
                             if (cashier != null)
                             {
                                 GoToCashier();
@@ -562,11 +613,23 @@ namespace GI351.KitchenGame
                     return;
                 }
 
-                currentPatienceTimer -= Time.deltaTime;
+                // นับถอยหลังเฉพาะตอนแผงไม่มีของที่อยากกิน (มีของแล้วแค่รอคิวหยิบ ความอดทนค่อยๆ ฟื้น)
+                bool foodThere = targetCounter.HasFoodAvailable(wantSpecificFood ? preferredDish : (ItemType?)null);
+                if (foodThere)
+                {
+                    currentPatienceTimer = Mathf.Min(patienceDuration, currentPatienceTimer + Time.deltaTime * 2f);
+                }
+                else
+                {
+                    currentPatienceTimer -= Time.deltaTime;
+                }
+                UpdatePatienceTint();
+
                 if (currentPatienceTimer <= 0f)
                 {
                     // หมดความอดทน โมโหแล้วเดินหนี
                     isAngry = true;
+                    LostCustomers++;
                     ShowAngry();
                     LeaveCounterAndExit();
                 }
@@ -607,7 +670,7 @@ namespace GI351.KitchenGame
         /// </summary>
         private void HoldDish(Item dish)
         {
-            carriedDish = dish;
+            carriedDishes.Add(dish);
             dish.SetCarriedState(true);
             dish.transform.SetParent(transform, true);
 
@@ -620,13 +683,71 @@ namespace GI351.KitchenGame
             {
                 headY = (spriteRenderer.bounds.max.y - transform.position.y) + 0.15f;
             }
-            dish.transform.position = transform.position + new Vector3(0f, headY, -0.05f);
 
-            if (dish.SpriteRenderer != null && spriteRenderer != null)
+            // ถือให้เห็นจานเดียวเหนือหัว (ไม่ซ้อนสูง) จานที่เหลือซ่อนไว้ ดูจำนวนที่ป้าย
+            for (int i = 0; i < carriedDishes.Count; i++)
             {
-                dish.SpriteRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
-                dish.SpriteRenderer.sortingOrder = spriteRenderer.sortingOrder + 1;
+                Item d = carriedDishes[i];
+                if (d == null) continue;
+                d.transform.position = transform.position + new Vector3(0f, headY, -0.05f);
+                if (d.SpriteRenderer != null)
+                {
+                    d.SpriteRenderer.enabled = i == 0;
+                    if (spriteRenderer != null)
+                    {
+                        d.SpriteRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+                        d.SpriteRenderer.sortingOrder = spriteRenderer.sortingOrder + 1;
+                    }
+                }
             }
+
+            UpdateCarryBadge(headY);
+        }
+
+        // ป้ายเหนือหัวบอกว่าถือกี่จาน (ไอคอนอาหาร + ตัวเลข แบบ Juice King)
+        private GameObject carryBadgeRoot;
+        private WorldCountBadge carryBadge;
+
+        private void UpdateCarryBadge(float headY)
+        {
+            if (carriedDishes.Count == 0)
+            {
+                if (carryBadgeRoot != null) carryBadgeRoot.SetActive(false);
+                return;
+            }
+
+            if (carryBadgeRoot == null)
+            {
+                int layer = spriteRenderer != null ? spriteRenderer.sortingLayerID : 0;
+                carryBadgeRoot = new GameObject("CarryBadge");
+                carryBadgeRoot.transform.SetParent(transform, false);
+                carryBadge = WorldCountBadge.Create(carryBadgeRoot.transform, "Badge", new Vector2(0.72f, 0.36f),
+                    new Color(1f, 0.8f, 0.28f, 1f), new Color(0.42f, 0.26f, 0.12f, 1f), new Color(0.25f, 0.15f, 0.08f, 1f), layer, 55);
+            }
+            carryBadgeRoot.SetActive(true);
+            WorldUi.KeepWorldScale(carryBadgeRoot.transform);
+            carryBadgeRoot.transform.position = transform.position + new Vector3(0f, headY + 0.5f, -0.1f);
+
+            Item first = carriedDishes[0];
+            Sprite icon = first != null && first.SpriteRenderer != null ? first.SpriteRenderer.sprite : null;
+            Color iconColor = first != null && first.SpriteRenderer != null ? first.SpriteRenderer.color : Color.white;
+            carryBadge.Set(icon, iconColor, carriedDishes.Count);
+            carryBadge.Punch();
+        }
+
+        /// <summary>ย้อมสีตัวลูกค้าตามความอดทนที่เหลือ: ปกติช่วงแรก แล้วค่อยๆ ส้มแดงจนหมด</summary>
+        private void UpdatePatienceTint()
+        {
+            if (spriteRenderer == null || isThief || hurtFlashCoroutine != null || patienceDuration <= 0f) return;
+            float waited = 1f - Mathf.Clamp01(currentPatienceTimer / patienceDuration);
+            float k = Mathf.InverseLerp(angryStartRatio, 1f, waited);
+            spriteRenderer.color = Color.Lerp(defaultCustomerColor, angryColor, k);
+        }
+
+        private void ResetPatienceTint()
+        {
+            if (spriteRenderer == null || isThief || hurtFlashCoroutine != null) return;
+            spriteRenderer.color = defaultCustomerColor;
         }
 
         private void GoToCashier()
@@ -649,15 +770,25 @@ namespace GI351.KitchenGame
             Vector3 payPoint = cashier.CrowdMode ? cashier.GetQueuePosition(this) : cashier.CustomerPayPoint.position;
             if (Vector2.Distance(rb.position, payPoint) > 0.4f) return;
 
-            payTimer += Time.deltaTime;
-            if (payTimer < cashier.PayDuration) return;
-
-            cashier.ReceivePayment(this, carriedDish);
-            if (carriedDish != null)
+            // ต้องมีคนคิดเงิน (ผู้เล่นยืนในวง หรือพนักงานแคชเชียร์) ไม่งั้นยืนรอ
+            float duration = Mathf.Max(0.01f, cashier.PayDuration);
+            if (!cashier.CanServe)
             {
-                Destroy(carriedDish.gameObject);
-                carriedDish = null;
+                cashier.ReportPayProgress(this, payTimer / duration, false);
+                return;
             }
+
+            payTimer += Time.deltaTime;
+            cashier.ReportPayProgress(this, payTimer / duration, true);
+            if (payTimer < duration) return;
+
+            cashier.ReceivePayment(this, carriedDishes);
+            foreach (Item d in carriedDishes)
+            {
+                if (d != null) Destroy(d.gameObject);
+            }
+            carriedDishes.Clear();
+            if (carryBadgeRoot != null) carryBadgeRoot.SetActive(false);
 
             ShowHappy();
             currentState = CustomerState.WalkingToExit;

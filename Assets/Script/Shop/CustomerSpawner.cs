@@ -49,8 +49,55 @@ namespace GI351.KitchenGame
         [Tooltip("โต๊ะขายอาหารที่ลูกค้าจะเดินไป")]
         [SerializeField] private FoodSellCounter targetCounter;
 
+        [Header("Order Size (ลูกค้าซื้อคนละกี่จาน)")]
+        [Tooltip("ลูกค้าแต่ละคนซื้อสุ่ม 1 ถึงค่านี้ (อัปเกรดได้จากร้าน Big Orders)")]
+        [Min(1)] [SerializeField] private int maxDishesPerCustomer = 1;
+
+        [Header("Start (เริ่มปล่อยลูกค้า)")]
+        [Tooltip("เปิด = ลูกค้าเริ่มมาเมื่อมีอาหารวางบนแผงครั้งแรก (เปิดเกมมาร้านว่าง) / ปิด = มาตั้งแต่เริ่มเกม")]
+        [SerializeField] private bool waitForFirstFood = true;
+
         private readonly List<CustomerAI> activeCustomers = new List<CustomerAI>();
         private float spawnTimer;
+        private bool firstFoodSeen;
+
+        /// <summary>ทุกจุดเกิดลูกค้าในฉาก</summary>
+        public static readonly List<CustomerSpawner> All = new List<CustomerSpawner>();
+
+        /// <summary>ระยะเวลาระหว่างลูกค้าแต่ละคน (วินาที)</summary>
+        public float SpawnInterval => spawnInterval;
+
+        /// <summary>ลูกค้ากี่คนต่อนาที</summary>
+        public float CustomersPerMinute => 60f / Mathf.Max(0.01f, spawnInterval);
+
+        /// <summary>ลูกค้าซื้อได้สูงสุดคนละกี่จาน</summary>
+        public int MaxDishesPerCustomer => maxDishesPerCustomer;
+
+        public void SetMaxDishesPerCustomer(int max)
+        {
+            maxDishesPerCustomer = Mathf.Max(1, max);
+        }
+
+        public void SetSpawnInterval(float seconds)
+        {
+            spawnInterval = Mathf.Max(0.2f, seconds);
+        }
+
+        /// <summary>ตั้งความถี่ลูกค้าเป็น "คนต่อนาที" (ใช้กับอัปเกรดในร้าน)</summary>
+        public void SetCustomersPerMinute(float perMinute)
+        {
+            SetSpawnInterval(60f / Mathf.Max(0.1f, perMinute));
+        }
+
+        private void OnEnable()
+        {
+            if (!All.Contains(this)) All.Add(this);
+        }
+
+        private void OnDisable()
+        {
+            All.Remove(this);
+        }
         private float lastThiefSpawnTime = float.NegativeInfinity;
         private int thievesSpawnedTotal;
 
@@ -98,6 +145,17 @@ namespace GI351.KitchenGame
 
         private void Update()
         {
+            // รอให้มีอาหารวางบนแผงครั้งแรกก่อน แล้วลูกค้าคนแรกมาเกือบทันที
+            if (waitForFirstFood && !firstFoodSeen)
+            {
+                foreach (FoodSellCounter c in FoodSellCounter.All)
+                {
+                    if (c != null && c.DishesCount > 0) { firstFoodSeen = true; break; }
+                }
+                if (!firstFoodSeen) return;
+                spawnTimer = Mathf.Max(spawnTimer, spawnInterval - 1f);
+            }
+
             spawnTimer += Time.deltaTime;
             if (spawnTimer >= spawnInterval)
             {
@@ -141,6 +199,7 @@ namespace GI351.KitchenGame
             if (customerObj.TryGetComponent<CustomerAI>(out var customerAI))
             {
                 customerAI.SetAsThief(isThief);
+                customerAI.SetDishesToBuy(1, maxDishesPerCustomer);
                 customerAI.Init(targetCounter, exitPoint, this);
                 customerAI.IgnoreCollisionWithOtherCustomers();
                 activeCustomers.Add(customerAI);

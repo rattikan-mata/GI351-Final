@@ -45,17 +45,47 @@ namespace GI351.KitchenGame
         [SerializeField] private float foodDisplaySpacing = 0.45f;
 
         [Tooltip("วางอาหารบนโต๊ะได้ไม่จำกัด (ติ๊กถูก = ไม่สนใจ Max Plates)")]
-        [SerializeField] private bool unlimitedFood = true;
+        [SerializeField] private bool unlimitedFood = false;
 
-        [Tooltip("จำนวนอาหารสูงสุดที่วางรอบนโต๊ะนี้ได้ เมื่อปิด Unlimited Food (ถ้ามี plateSlots จะใช้ตามจำนวนช่อง)")]
+        [Tooltip("จำนวนอาหารสูงสุดที่วางรอบนโต๊ะนี้ได้ เมื่อปิด Unlimited Food (ถ้ามี plateSlots จะใช้ตามจำนวนช่อง) เต็มแล้วของที่เหลือค้างในกระเป๋า")]
         [FormerlySerializedAs("maxFoodOnCounter")]
-        [SerializeField] private int maxPlates = 6;
+        [SerializeField] private int maxPlates = 20;
 
-        [Tooltip("กองอาหารซ้อนกันได้สูงสุดกี่ชิ้นต่อหนึ่งกอง ถ้ามากกว่านี้จะขึ้นกองใหม่ข้างๆ (กรณีจัดเรียงอัตโนมัติ)")]
-        [SerializeField] private int foodStackHeight = 6;
+        [Tooltip("วางอาหารลงโต๊ะ 1 จานทุกกี่วินาที ขณะผู้เล่นยืนในวง (แบบ Juice King 0.15)")]
+        [Min(0f)] [SerializeField] private float depositInterval = 0.15f;
 
-        [Tooltip("ระยะห่างระหว่างกองอาหารแต่ละกอง (เมตร)")]
-        [SerializeField] private float foodColumnSpacing = 0.5f;
+        [Tooltip("เวลาที่จานลอยจากผู้เล่นมาลงโต๊ะ (วินาที)")]
+        [Min(0.01f)] [SerializeField] private float depositFlyTime = 0.15f;
+
+        [Header("Flat Display (เรียงอาหารบนโต๊ะแบบกองแบน ไม่ซ้อนสูง)")]
+        [Tooltip("จำนวนจานต่อแถว")]
+        [Min(1)] [SerializeField] private int displayColumns = 5;
+
+        [Tooltip("ระยะห่างระหว่างจาน (x = ซ้ายขวา, y = แถวถัดไปขยับขึ้น)")]
+        [SerializeField] private Vector2 displaySpacing = new Vector2(0.44f, 0.16f);
+
+        [Tooltip("ความกว้างของจานบนโต๊ะ (หน่วยในโลก)")]
+        [Min(0.05f)] [SerializeField] private float displayDishWidth = 0.38f;
+
+        [Tooltip("โชว์จานบนโต๊ะสูงสุดกี่จาน (ที่เกินยังอยู่บนแผง แต่ซ่อนไว้ ดูจำนวนจริงที่ป้าย)")]
+        [Min(1)] [SerializeField] private int maxVisibleDishes = 20;
+
+        [Header("Stock Badge (ป้ายจำนวนอาหารบนแผง แบบ Juice King)")]
+        [Tooltip("ป้ายวงรีบอกจำนวนอาหารที่เหลือบนแผง (ไอคอน + ตัวเลข)")]
+        [SerializeField] private bool showStockBadge = true;
+
+        [Tooltip("ตำแหน่งป้าย เยื้องจากกลางโต๊ะ (เมตร)")]
+        [SerializeField] private Vector2 stockBadgeOffset = new Vector2(0f, -0.5f);
+
+        [Tooltip("ขนาดป้าย (กว้าง x สูง เมตร)")]
+        [SerializeField] private Vector2 stockBadgeSize = new Vector2(0.9f, 0.44f);
+
+        [Tooltip("ไอคอนอาหารบนป้าย (ว่าง = ใช้ภาพอาหารของหม้อที่ทำเมนูนี้ หรือจานแรกที่วาง)")]
+        [SerializeField] private Sprite stockIcon;
+
+        [SerializeField] private Color stockBadgeColor = new Color(1f, 0.8f, 0.28f, 1f);
+        [SerializeField] private Color stockBadgeOutlineColor = new Color(0.42f, 0.26f, 0.12f, 1f);
+        [SerializeField] private Color stockTextColor = new Color(0.25f, 0.15f, 0.08f, 1f);
 
         [Tooltip("ลำดับการวาด (Sorting Order) ของอาหารขณะวางรอบนโต๊ะ เพื่อให้อยู่เหนือหน้าโต๊ะชัดเจน")]
         [SerializeField] private int foodDisplaySortingOrder = 4;
@@ -223,6 +253,12 @@ namespace GI351.KitchenGame
 
         public int DishesCount => dishesOnCounter.Count;
         public int MaxPlates => (plateSlots != null && plateSlots.Length > 0) ? plateSlots.Length : maxPlates;
+
+        /// <summary>เปลี่ยนจำนวนอาหารสูงสุดบนแผง (อัปเกรด Shelf Size จากร้าน)</summary>
+        public void SetMaxPlates(int capacity)
+        {
+            maxPlates = Mathf.Max(1, capacity);
+        }
         public Transform CustomerWaitPoint => customerWaitPoint != null ? customerWaitPoint : transform;
 
         // คิวของลูกค้าที่กำลังยืนรอซื้ออาหาร
@@ -576,22 +612,38 @@ namespace GI351.KitchenGame
 
             // ล็อก/ปลดพร้อมหม้อ: ยังล็อกอยู่ก็ไม่รับของ
             UpdateLockState();
+            UpdateStockBadge();
             if (!IsOpen) return;
 
             // แอนิเมชันของวงแหวน
             UpdateVisualAnimations();
+            UpdateFlyIns();
 
             // ตรวจหา Player ในระยะใกล้เคียงโต๊ะ
             CheckProximityPlayer();
 
-            // ตรวจจับการส่งอาหารอัตโนมัติขณะผู้เล่นยืนอยู่ในโซนหรือใกล้โต๊ะ
+            // ตรวจจับการส่งอาหารอัตโนมัติขณะผู้เล่นยืนอยู่ในโซนหรือใกล้โต๊ะ (ทีละจาน)
             if (isPlayerInRange && cachedPlayerCarry != null)
             {
                 if (!requireKeyPress || WasInteractKeyPressed())
                 {
-                    DepositFoodFromPlayer(cachedPlayerCarry);
+                    TryTimedDeposit(cachedPlayerCarry);
                 }
             }
+        }
+
+        private float nextDepositTime;
+
+        /// <summary>วางอาหาร 1 จานทุก depositInterval วินาที (depositInterval = 0 = วางหมดทีเดียวแบบเดิม)</summary>
+        private void TryTimedDeposit(PlayerCarry playerCarry)
+        {
+            if (depositInterval <= 0f)
+            {
+                DepositFoodFromPlayer(playerCarry);
+                return;
+            }
+            if (Time.time < nextDepositTime) return;
+            if (DepositFoodFromPlayer(playerCarry, 1) > 0) nextDepositTime = Time.time + depositInterval;
         }
 
         private void CheckProximityPlayer()
@@ -727,7 +779,7 @@ namespace GI351.KitchenGame
         /// <summary>
         /// รับอาหารสุกจากผู้เล่นมาวางรอบนโต๊ะ (ไม่ต้องใช้จาน อาหารจะวางเรียงรอบนโต๊ะให้ลูกค้ามาซื้อ)
         /// </summary>
-        public int DepositFoodFromPlayer(PlayerCarry playerCarry)
+        public int DepositFoodFromPlayer(PlayerCarry playerCarry, int maxCount = int.MaxValue)
         {
             if (playerCarry == null || !IsOpen) return 0;
 
@@ -736,7 +788,7 @@ namespace GI351.KitchenGame
 
             int depositedCount = 0;
 
-            while (unlimitedFood || dishesOnCounter.Count < MaxPlates)
+            while (depositedCount < maxCount && (unlimitedFood || dishesOnCounter.Count < MaxPlates))
             {
                 // ดึงอาหารสุกที่ชั้นนี้ขาย (ชั้นหมูรับแค่หมู ชั้นไก่รับแค่ไก่ อาหารพิเศษรับทุกชั้น) ชิ้นบนสุดก่อน
                 Item cookedItem = null;
@@ -776,13 +828,20 @@ namespace GI351.KitchenGame
         {
             if (dish == null) return;
 
-            // จำขนาดในโลกตอนแบกไว้ เพื่อวางบนโต๊ะด้วยขนาดเท่าเดิม
+            // จำขนาดในโลกตอนแบกไว้ เพื่อวางบนโต๊ะด้วยขนาดเท่าเดิม (ใช้กับ plateSlots)
             foodWorldScales[dish] = dish.transform.lossyScale;
+            Vector3 startPos = dish.transform.position;
 
             dishesOnCounter.Add(dish);
             dish.gameObject.SetActive(true);
             dish.SetCarriedState(true);
             dish.transform.SetParent(transform);
+
+            // ลอยจากตัวผู้เล่นมาลงช่องบนโต๊ะ
+            if (depositFlyTime > 0f && (plateSlots == null || plateSlots.Length == 0))
+            {
+                flyingIn[dish] = new FlyIn { start = startPos, startTime = Time.time };
+            }
 
             RearrangeFoodOnCounter();
             onDishesCountChanged?.Invoke(dishesOnCounter.Count);
@@ -816,21 +875,16 @@ namespace GI351.KitchenGame
                 }
                 else
                 {
-                    // 2. กรณีไม่มี plateSlots กองซ้อนขึ้นแนวตั้งจากกลางโต๊ะ ขนาดและระยะเท่ากองบนหลังผู้เล่น
-                    Vector3 step = cachedPlayerCarry != null ? cachedPlayerCarry.WorldStackOffset : new Vector3(0f, foodDisplaySpacing, -0.02f);
-                    // ซ้อนขึ้นเป็นกอง ครบความสูงแล้วขึ้นกองใหม่ข้างๆ (สลับขวา/ซ้ายจากกองแรก) วางได้ไม่จำกัด
-                    int stackH = Mathf.Max(1, foodStackHeight);
-                    int stackIndex = i / stackH;
-                    int rowInStack = i % stackH;
-                    float columnX = ((stackIndex + 1) / 2) * foodColumnSpacing * (stackIndex % 2 == 1 ? 1f : -1f);
-                    Vector3 worldSlotPos = GetFoodDisplayCenterPosition() + new Vector3(columnX, 0f, -0.05f) + step * rowInStack;
-
-                    Vector3 worldScale = foodWorldScales.TryGetValue(dish, out var s) ? s : Vector3.one * 0.85f;
-
+                    // 2. กรณีไม่มี plateSlots เรียงเป็นกองแบนบนโต๊ะ (แถวหน้ากระดาน ไม่ซ้อนสูง)
                     dish.transform.SetParent(transform);
-                    dish.transform.position = worldSlotPos;
                     dish.transform.localRotation = Quaternion.identity;
-                    dish.transform.localScale = new Vector3(worldScale.x / pX, worldScale.y / pY, 1f);
+                    SpriteRenderer dishSr = dish.SpriteRenderer;
+                    dish.transform.localScale = dishSr != null
+                        ? FlatPile.LocalScaleForWidth(dish.transform, dishSr, displayDishWidth)
+                        : new Vector3(0.85f / pX, 0.85f / pY, 1f);
+
+                    // จานที่กำลังลอยมาลงโต๊ะ: Update เป็นคนขยับให้
+                    if (!flyingIn.ContainsKey(dish)) dish.transform.position = GetDisplaySlotPosition(i);
                 }
 
                 // ปิด Collider และ Rigidbody ขณะวางรอบนโต๊ะเพื่อไม่ให้ชนตัวละคร
@@ -846,14 +900,135 @@ namespace GI351.KitchenGame
                     if (tableRenderer != null)
                     {
                         sr.sortingLayerID = tableRenderer.sortingLayerID;
-                        // ชิ้นที่อยู่สูงกว่าวาดทับชิ้นที่อยู่ต่ำกว่า
-                        sr.sortingOrder = Mathf.Max(tableRenderer.sortingOrder + 2, foodDisplaySortingOrder) + i;
+                        // กองแบน: แถวหน้าวาดทับแถวหลัง
+                        sr.sortingOrder = Mathf.Max(tableRenderer.sortingOrder + 2, foodDisplaySortingOrder) + FlatPile.SortingOffset(i, displayColumns, maxVisibleDishes);
                     }
                     else
                     {
-                        sr.sortingOrder = foodDisplaySortingOrder + i;
+                        sr.sortingOrder = foodDisplaySortingOrder + FlatPile.SortingOffset(i, displayColumns, maxVisibleDishes);
                     }
-                    sr.enabled = true;
+                    // โชว์เฉพาะจานในจำนวนที่กำหนด (จานที่กำลังลอยมายังเห็นจนกว่าจะถึง)
+                    sr.enabled = hasPlateSlots || i < maxVisibleDishes || flyingIn.ContainsKey(dish);
+                }
+            }
+        }
+
+        // ---------- ป้ายจำนวนอาหารบนแผง ----------
+
+        private GameObject stockBadgeRoot;
+        private WorldCountBadge stockBadge;
+        private Color stockIconColor = Color.white;
+        private int lastStockCount = -1;
+
+        private void UpdateStockBadge()
+        {
+            bool show = showStockBadge && IsOpen;
+            if (!show)
+            {
+                if (stockBadgeRoot != null && stockBadgeRoot.activeSelf) stockBadgeRoot.SetActive(false);
+                return;
+            }
+
+            if (stockBadgeRoot == null)
+            {
+                SpriteRenderer tableRenderer = GetComponent<SpriteRenderer>();
+                int layer = tableRenderer != null ? tableRenderer.sortingLayerID : 0;
+                int order = (tableRenderer != null ? tableRenderer.sortingOrder : 0) + 60;
+                stockBadgeRoot = new GameObject("StockBadgeRoot");
+                stockBadgeRoot.transform.SetParent(transform, false);
+                stockBadge = WorldCountBadge.Create(stockBadgeRoot.transform, "StockBadge", stockBadgeSize,
+                    stockBadgeColor, stockBadgeOutlineColor, stockTextColor, layer, order);
+                stockBadge.Root.transform.localPosition = new Vector3(stockBadgeOffset.x, stockBadgeOffset.y, 0f);
+            }
+            if (!stockBadgeRoot.activeSelf) stockBadgeRoot.SetActive(true);
+
+            WorldUi.KeepWorldScale(stockBadgeRoot.transform);
+            stockBadgeRoot.transform.position = transform.position + new Vector3(0f, 0f, -0.1f);
+            stockBadgeRoot.transform.rotation = Quaternion.identity;
+
+            // ไอคอน: ที่ตั้งไว้ > จานที่อยู่บนแผง > อาหารของหม้อที่ทำเมนูที่แผงนี้ขาย
+            if (stockIcon == null)
+            {
+                foreach (Item d in dishesOnCounter)
+                {
+                    if (d != null && d.SpriteRenderer != null && d.SpriteRenderer.sprite != null)
+                    {
+                        stockIcon = d.SpriteRenderer.sprite;
+                        stockIconColor = d.SpriteRenderer.color;
+                        break;
+                    }
+                }
+                if (stockIcon == null)
+                {
+                    foreach (CookingPot pot in CookingPot.AllPots)
+                    {
+                        if (pot == null || !Accepts(pot.OutputDishType)) continue;
+                        if (acceptedDishes.Count == 0 && unlockWithPot != null && pot != unlockWithPot) continue;
+                        if (pot.TryGetDishIcon(out Sprite s, out Color c))
+                        {
+                            stockIcon = s;
+                            stockIconColor = c;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            int count = DishesCount;
+            stockBadge.Set(stockIcon, stockIconColor, count);
+            if (lastStockCount >= 0 && count > lastStockCount) stockBadge.Punch();
+            lastStockCount = count;
+            stockBadge.Tick();
+        }
+
+        // ---------- จานที่กำลังลอยจากผู้เล่นมาลงโต๊ะ ----------
+
+        private struct FlyIn
+        {
+            public Vector3 start;
+            public float startTime;
+        }
+
+        private readonly Dictionary<Item, FlyIn> flyingIn = new Dictionary<Item, FlyIn>();
+        private readonly List<Item> flyingDone = new List<Item>();
+
+        /// <summary>ตำแหน่งช่องที่ index บนโต๊ะ (กองแบน)</summary>
+        private Vector3 GetDisplaySlotPosition(int index)
+        {
+            // จานที่เกินจำนวนโชว์ ซ้อนอยู่ที่ช่องสุดท้าย (ถูกซ่อนไว้)
+            index = Mathf.Min(index, Mathf.Max(1, maxVisibleDishes) - 1);
+            Vector2 off = FlatPile.Offset(index, displayColumns, displaySpacing);
+            return GetFoodDisplayCenterPosition() + new Vector3(off.x, off.y, -0.05f);
+        }
+
+        private void UpdateFlyIns()
+        {
+            if (flyingIn.Count == 0) return;
+            flyingDone.Clear();
+            foreach (var kv in flyingIn)
+            {
+                Item dish = kv.Key;
+                int index = dish != null ? dishesOnCounter.IndexOf(dish) : -1;
+                if (index < 0) { flyingDone.Add(dish); continue; }
+
+                float k = Mathf.Clamp01((Time.time - kv.Value.startTime) / Mathf.Max(0.01f, depositFlyTime));
+                Vector3 slot = GetDisplaySlotPosition(index);
+                Vector3 p = Vector3.Lerp(kv.Value.start, slot, Tween.Evaluate(Ease.OutQuad, k));
+                p.y += Mathf.Sin(k * Mathf.PI) * 0.3f;
+                dish.transform.position = p;
+                if (k >= 1f) flyingDone.Add(dish);
+            }
+            foreach (Item d in flyingDone)
+            {
+                flyingIn.Remove(d);
+                if (d != null)
+                {
+                    int index = dishesOnCounter.IndexOf(d);
+                    if (index >= 0)
+                    {
+                        d.transform.position = GetDisplaySlotPosition(index);
+                        if (index >= maxVisibleDishes && d.SpriteRenderer != null) d.SpriteRenderer.enabled = false;
+                    }
                 }
             }
         }
@@ -920,6 +1095,8 @@ namespace GI351.KitchenGame
             {
                 selectedDish.transform.SetParent(null);
                 foodWorldScales.Remove(selectedDish);
+                flyingIn.Remove(selectedDish);
+                if (selectedDish.SpriteRenderer != null) selectedDish.SpriteRenderer.enabled = true;
 
                 // จัดตำแหน่งอาหารที่เหลือบนโต๊ะใหม่
                 RearrangeFoodOnCounter();
@@ -1113,7 +1290,7 @@ namespace GI351.KitchenGame
 
                 if (!requireKeyPress || WasInteractKeyPressed())
                 {
-                    DepositFoodFromPlayer(playerCarry);
+                    TryTimedDeposit(playerCarry);
                 }
             }
         }

@@ -279,20 +279,34 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CashierCounter
   customerPayPoint: {fileID: 4250014993252748233}
   queueDirection: {x: 0, y: -1}
-  queueSpacing: 0.9
-  crowdMode: 1
+  queueSpacing: 0.95
+  crowdMode: 0
   crowdColumns: 5
   crowdSpacing: 0.85
   crowdRowSpacing: 0.6
   crowdJitter: 0.08
-  payDuration: 0.6
+  requireOperator: 1
+  payDuration: 0.75
+  staffPayDuration: 1.2
+  payBarSize: {x: 0.8, y: 0.12}
+  payBarHeight: 1.6
+  payBarBackColor: {r: 0, g: 0, b: 0, a: 0.6}
+  payBarFillColor: {r: 0.35, g: 0.95, b: 0.45, a: 1}
+  payBarWaitingColor: {r: 1, g: 0.47, b: 0.38, a: 1}
   coinPrefab: {fileID: 5018392184920194821, guid: e892c57f92014bbba819024f8d99c421, type: 3}
-  counterMoneyInset: 0.3
+  pileColumns: 6
+  pileSpacing: {x: 0.24, y: 0.11}
+  pileOffset: {x: 0, y: -0.05}
+  maxPileSlots: 48
+  coinFlyTime: 0.25
+  coinStagger: 0.08
+  collectDelay: 0.3
   paySound: {fileID: 0}
   playerRing: {fileID: 4088959607523851565}
   playerRingRadius: 0.5
   playerRingColor: {r: 1, g: 1, b: 1, a: 0.9}
   playerRingActiveColor: {r: 0.3, g: 1, b: 0.6, a: 0.95}
+  playerRingNeededColor: {r: 1, g: 0.8, b: 0.2, a: 1}
   onPaid:
     m_PersistentCalls:
       m_Calls: []
