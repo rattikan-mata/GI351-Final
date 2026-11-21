@@ -111,6 +111,17 @@ namespace GI351.KitchenGame
             baseCaptured = true;
             basePrice = pot.CurrentDishPrice;
             baseSpeed = pot.CookingDuration;
+
+            // กันตั้งค่าผิด: อัปเกรดราคาแล้วราคาต้องสูงขึ้น (เช่น ก๊อปตารางหม้อไก่มาใส่หม้อหมูที่ราคาฐานสูงกว่า)
+            float prev = basePrice;
+            for (int i = 0; i < priceLevels.Count; i++)
+            {
+                if (priceLevels[i].value <= prev)
+                {
+                    Debug.LogWarning("[PotUpgrade] " + pot.PotName + ": Product Price Lv" + (i + 2) + " = $" + priceLevels[i].value.ToString("0.##") + " ไม่สูงกว่าเลเวลก่อนหน้า ($" + prev.ToString("0.##") + ") อัปเกรดแล้วราคาจะไม่ขึ้น", this);
+                }
+                prev = priceLevels[i].value;
+            }
         }
 
         private void OnDisable()

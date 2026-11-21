@@ -514,6 +514,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6d539034e9d1584ca28e92513ae4c05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.FoodSellCounter
+  acceptedDishes: 
+  unlockWithPot: {fileID: 0}
+  lockedAlpha: 0.3
+  unlockPopFrom: 0.6
+  unlockPopTime: 0.35
   plateSlots: []
   foodDisplayPoint: {fileID: 0}
   foodDisplayOffset: {x: 0, y: 0}

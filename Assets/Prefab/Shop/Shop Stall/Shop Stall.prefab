@@ -208,6 +208,7 @@ GameObject:
   - component: {fileID: 1188983409740115280}
   - component: {fileID: 5989593789037977040}
   - component: {fileID: 3683803792171021409}
+  - component: {fileID: 850800840462032608}
   m_Layer: 0
   m_Name: Shop Stall
   m_TagString: Untagged
@@ -298,19 +299,21 @@ MonoBehaviour:
     price: 0
     stock: 0
     id: club
+    tab: Hunt
     locked: 0
     lockedText: 
+    soldOutText: SOLD OUT
     valueLabel: Damage
     levels:
-    - value: 25
+    - value: 20
       price: 0
-    - value: 30
+    - value: 25
       price: 40
-    - value: 40
+    - value: 34
       price: 80
     - value: 50
       price: 150
-    - value: 60
+    - value: 100
       price: 250
     onPurchased:
       m_PersistentCalls:
@@ -320,8 +323,10 @@ MonoBehaviour:
     price: 0
     stock: 0
     id: bag
+    tab: Hunt
     locked: 0
     lockedText: 
+    soldOutText: SOLD OUT
     valueLabel: Capacity
     levels:
     - value: 5
@@ -342,8 +347,10 @@ MonoBehaviour:
     price: 0
     stock: 0
     id: boots
+    tab: Hunt
     locked: 0
     lockedText: 
+    soldOutText: SOLD OUT
     valueLabel: Speed
     levels:
     - value: 5
@@ -364,8 +371,10 @@ MonoBehaviour:
     price: 0
     stock: 0
     id: gloves
+    tab: Hunt
     locked: 0
     lockedText: 
+    soldOutText: SOLD OUT
     valueLabel: Atk Speed x
     levels:
     - value: 1
@@ -381,6 +390,25 @@ MonoBehaviour:
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
+  - itemName: Pork Pot
+    description: Cook pork and open the Pork shelf
+    price: 50
+    stock: 1
+    id: pork_pot
+    tab: Cook
+    locked: 0
+    lockedText: SOON
+    soldOutText: OWNED
+    valueLabel: 
+    levels: []
+    onPurchased:
+      m_PersistentCalls:
+        m_Calls: []
+  tabs:
+  - Hunt
+  - Cook
+  - Store
+  emptyTabText: Coming soon
   zoneCenter: {fileID: 3278608873617845483}
   zoneRadius: 0.5
   openOnEnter: 1
@@ -415,6 +443,21 @@ MonoBehaviour:
     stat: 2
   - itemId: gloves
     stat: 3
+--- !u!114 &850800840462032608
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4636435379294269516}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 235d11597fc851c48b073280cb7c7c00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.PotShopUnlock
+  bindings:
+  - itemId: pork_pot
+    potIngredient: 1
 --- !u!1 &6295968039141360220
 GameObject:
   m_ObjectHideFlags: 0

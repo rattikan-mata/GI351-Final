@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 7425187763182798038}
   - component: {fileID: 6101388199149423569}
   - component: {fileID: 8825630694182402744}
+  - component: {fileID: 5515814336802129285}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -282,6 +283,31 @@ MonoBehaviour:
   popScale: 1.35
   popTime: 0.2
   fullShakePixels: 1
+--- !u!114 &5515814336802129285
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 843211722710816562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa195c973c5889a47acf47e2afbc8eb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.RunTrail
+  levelColors:
+  - {r: 1, g: 1, b: 1, a: 0}
+  - {r: 0.45, g: 1, b: 0.5, a: 0.85}
+  - {r: 0.35, g: 0.75, b: 1, a: 0.85}
+  - {r: 0.8, g: 0.45, b: 1, a: 0.9}
+  - {r: 1, g: 0.82, b: 0.25, a: 0.95}
+  trailTime: 0.22
+  startWidth: 0.45
+  widthPerLevel: 0.05
+  offset: {x: 0, y: -0.3}
+  minSpeed: 1
+  trailMaterial: {fileID: 2100000, guid: e7ab7bf42f220934580fcc495f20674b, type: 2}
+  sortingOrderOffset: -1
 --- !u!1 &3009060927515983737
 GameObject:
   m_ObjectHideFlags: 0
@@ -355,6 +381,7 @@ MonoBehaviour:
   damage: 25
   attackRange: 1
   attackCooldown: 0
+  attackSpeed: 1
   knockbackForce: 3
   hitBackTolerance: 0.05
   hitSweepLeadAngle: 10

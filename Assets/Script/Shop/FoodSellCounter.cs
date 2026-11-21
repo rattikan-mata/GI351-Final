@@ -13,6 +13,24 @@ namespace GI351.KitchenGame
     [RequireComponent(typeof(Collider2D))]
     public class FoodSellCounter : MonoBehaviour
     {
+        [Header("Shelf Dishes (ชั้นนี้ขายอาหารอะไร)")]
+        [Tooltip("อาหารที่ชั้นนี้รับวางและขาย (ว่าง = รับทุกอย่าง) เช่น ชั้นหมูใส่แค่ CookedPig / ชั้นไก่ใส่แค่ CookedChicken / ลูกค้าที่อยากกินเมนูไหนจะเดินมาที่ชั้นที่ขายเมนูนั้น / อาหารพิเศษจากโจรวางได้ทุกชั้น")]
+        [SerializeField] private List<ItemType> acceptedDishes = new List<ItemType>();
+
+        [Header("Unlock (ปลดล็อกชั้นพร้อมหม้อ)")]
+        [Tooltip("ชั้นนี้เปิดใช้เมื่อหม้อนี้ถูกซื้อแล้ว (ว่าง = เปิดตั้งแต่เริ่ม) ระหว่างล็อก: ชั้นจาง เดินทะลุได้ ไม่มีวงวางอาหาร ลูกค้าไม่มา")]
+        [SerializeField] private CookingPot unlockWithPot;
+
+        [Tooltip("ความทึบของชั้นตอนยังล็อก (0 = ซ่อนทั้งชั้น)")]
+        [Range(0f, 1f)]
+        [SerializeField] private float lockedAlpha = 0.3f;
+
+        [Tooltip("ตอนปลดล็อก ชั้นเด้งขยายจากขนาดเท่านี้กลับมาปกติ")]
+        [SerializeField] private float unlockPopFrom = 0.6f;
+
+        [Tooltip("เวลาเด้งตอนปลดล็อก (วินาที)")]
+        [SerializeField] private float unlockPopTime = 0.35f;
+
         [Header("Food Display Slots (จุดโชว์ที่วางอาหารบนโต๊ะ)")]
         [Tooltip("ตำแหน่งวางอาหาร/จานบนโต๊ะแต่ละช่อง (ลาก Transform มาใส่ แต่ละจุดคือจุดโชว์อาหารบนโต๊ะ)")]
         [SerializeField] private Transform[] plateSlots;
@@ -127,6 +145,81 @@ namespace GI351.KitchenGame
         private bool isPlayerInRange = false;
         private PlayerCarry cachedPlayerCarry;
         private Transform playerTransform;
+
+        // ชั้นขายอาหารทุกอันในฉาก (ใช้ให้ลูกค้าเลือกชั้นตามเมนู)
+        private static readonly List<FoodSellCounter> all = new List<FoodSellCounter>();
+        public static IReadOnlyList<FoodSellCounter> All
+        {
+            get
+            {
+                all.RemoveAll(c => c == null);
+                return all;
+            }
+        }
+
+
+        // สถานะล็อก (ปลดพร้อมหม้อ)
+        private bool lockStateApplied;
+        private bool appliedOpen;
+        private SpriteRenderer[] shelfRenderers;
+        private Color[] shelfBaseColors;
+        private bool[] shelfBaseRendererEnabled;
+        private Collider2D[] shelfColliders;
+        private bool[] shelfBaseColliderEnabled;
+        private Vector3 baseLocalScale;
+        private float unlockPopTimer = -1f;
+
+        /// <summary>ชั้นเปิดขายแล้วหรือยัง (ไม่ได้ผูกหม้อ = เปิดตลอด)</summary>
+        public bool IsOpen => unlockWithPot == null || unlockWithPot.IsUnlocked;
+        public CookingPot UnlockWithPot => unlockWithPot;
+
+        public IReadOnlyList<ItemType> AcceptedDishes => acceptedDishes;
+
+        /// <summary>ชั้นนี้รับวาง/ขายอาหารประเภทนี้ไหม (ว่าง = รับทุกอย่าง, อาหารพิเศษจากโจรรับทุกชั้น)</summary>
+        public bool Accepts(ItemType type)
+        {
+            if (type == ItemType.SpecialDish) return true;
+            if (acceptedDishes == null || acceptedDishes.Count == 0) return true;
+            return acceptedDishes.Contains(type);
+        }
+
+        /// <summary>มีชั้นที่ขายเมนูนี้อยู่ในฉากไหม</summary>
+        public static bool AnyCounterSells(ItemType dish)
+        {
+            foreach (FoodSellCounter c in All)
+            {
+                if (c.isActiveAndEnabled && c.IsOpen && c.Accepts(dish)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// เลือกชั้นให้ลูกค้า: ต้องขายเมนูที่อยากกิน คิวยังไม่เต็ม แล้วเลือกที่คนรอน้อยสุด
+        /// ลูกค้าไม่เจาะจงเมนู (เช่น โจร) เลือกชั้นที่มีอาหารวางเยอะสุดก่อน
+        /// คืน null ถ้าไม่มีชั้นที่ขายเมนูนี้เลย
+        /// </summary>
+        public static FoodSellCounter FindCounterFor(ItemType? dish)
+        {
+            FoodSellCounter best = null;
+            float bestScore = float.PositiveInfinity;
+            foreach (FoodSellCounter c in All)
+            {
+                if (!c.isActiveAndEnabled || !c.IsOpen) continue;
+                if (dish.HasValue && !c.Accepts(dish.Value)) continue;
+
+                float score = c.CurrentQueueCount;
+                if (c.IsQueueFull) score += 1000f;
+                if (!dish.HasValue) score -= c.DishesCount * 10f;
+                score += Random.value * 0.5f; // เสมอกันสุ่มเอา
+
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    best = c;
+                }
+            }
+            return best;
+        }
 
         public int DishesCount => dishesOnCounter.Count;
         public int MaxPlates => (plateSlots != null && plateSlots.Length > 0) ? plateSlots.Length : maxPlates;
@@ -264,8 +357,101 @@ namespace GI351.KitchenGame
 
         private void OnEnable()
         {
+            if (!all.Contains(this)) all.Add(this);
             SetupCounterSolidCollider();
             SetupDepositZoneAndRing();
+        }
+
+        private void OnDisable()
+        {
+            all.Remove(this);
+        }
+
+        private void Start()
+        {
+            if (!Application.isPlaying) return;
+            baseLocalScale = transform.localScale;
+            // ชั้นที่ไม่ได้ผูกหม้อ ไม่ต้องยุ่งอะไรเลย (เปิดตลอด)
+            if (unlockWithPot != null) ApplyLockState(IsOpen, false);
+        }
+
+        /// <summary>
+        /// ล็อก: ชั้นจาง (หรือซ่อน) ปิด Collider ทั้งหมด ซ่อนวงวางอาหาร / ปลด: คืนทุกอย่าง แล้วเด้งขยายให้รู้ว่าเปิดแล้ว
+        /// ทำเฉพาะตอนเล่น (ไม่แตะค่าในฉาก)
+        /// </summary>
+        private void ApplyLockState(bool open, bool pop)
+        {
+            if (shelfRenderers == null)
+            {
+                var list = new List<SpriteRenderer>();
+                foreach (SpriteRenderer r in GetComponentsInChildren<SpriteRenderer>(true))
+                {
+                    if (r == null || r == depositRingRenderer) continue;
+                    if (r.GetComponentInParent<Item>() != null) continue; // อาหารบนชั้นไม่นับ
+                    list.Add(r);
+                }
+                shelfRenderers = list.ToArray();
+                shelfBaseColors = new Color[shelfRenderers.Length];
+                shelfBaseRendererEnabled = new bool[shelfRenderers.Length];
+                for (int i = 0; i < shelfRenderers.Length; i++)
+                {
+                    shelfBaseColors[i] = shelfRenderers[i].color;
+                    shelfBaseRendererEnabled[i] = shelfRenderers[i].enabled; // จุด marker ที่ปิดไว้ (Food Point / Circle) ต้องปิดต่อ
+                }
+
+                var cols = new List<Collider2D>();
+                foreach (Collider2D c in GetComponentsInChildren<Collider2D>(true))
+                {
+                    if (c != null && c.GetComponentInParent<Item>() == null) cols.Add(c);
+                }
+                shelfColliders = cols.ToArray();
+                shelfBaseColliderEnabled = new bool[shelfColliders.Length];
+                for (int i = 0; i < shelfColliders.Length; i++) shelfBaseColliderEnabled[i] = shelfColliders[i].enabled;
+            }
+
+            for (int i = 0; i < shelfRenderers.Length; i++)
+            {
+                if (shelfRenderers[i] == null) continue;
+                Color c = shelfBaseColors[i];
+                if (!open) c.a *= lockedAlpha;
+                shelfRenderers[i].color = c;
+                shelfRenderers[i].enabled = shelfBaseRendererEnabled[i] && (open || lockedAlpha > 0.001f);
+            }
+            for (int i = 0; i < shelfColliders.Length; i++)
+            {
+                if (shelfColliders[i] != null) shelfColliders[i].enabled = shelfBaseColliderEnabled[i] && open;
+            }
+            if (depositRingObject != null) depositRingObject.SetActive(open);
+
+            if (!open) isPlayerInRange = false;
+
+            lockStateApplied = true;
+            appliedOpen = open;
+
+            if (open && pop && unlockPopTime > 0f)
+            {
+                unlockPopTimer = 0f;
+                transform.localScale = baseLocalScale * unlockPopFrom;
+            }
+        }
+
+        private void UpdateLockState()
+        {
+            if (unlockWithPot == null && !lockStateApplied) return;
+            bool open = IsOpen;
+            if (!lockStateApplied || open != appliedOpen) ApplyLockState(open, lockStateApplied);
+
+            if (unlockPopTimer >= 0f)
+            {
+                unlockPopTimer += Time.deltaTime;
+                float k = Mathf.Clamp01(unlockPopTimer / unlockPopTime);
+                transform.localScale = baseLocalScale * Mathf.LerpUnclamped(unlockPopFrom, 1f, Tween.Evaluate(Ease.OutBack, k));
+                if (k >= 1f)
+                {
+                    transform.localScale = baseLocalScale;
+                    unlockPopTimer = -1f;
+                }
+            }
         }
 
         private void OnValidate()
@@ -387,6 +573,10 @@ namespace GI351.KitchenGame
                 UpdateEditorVisuals();
                 return;
             }
+
+            // ล็อก/ปลดพร้อมหม้อ: ยังล็อกอยู่ก็ไม่รับของ
+            UpdateLockState();
+            if (!IsOpen) return;
 
             // แอนิเมชันของวงแหวน
             UpdateVisualAnimations();
@@ -539,7 +729,7 @@ namespace GI351.KitchenGame
         /// </summary>
         public int DepositFoodFromPlayer(PlayerCarry playerCarry)
         {
-            if (playerCarry == null) return 0;
+            if (playerCarry == null || !IsOpen) return 0;
 
             // กวาดอาหารที่เป็น null ออกไปก่อน (หากมี)
             dishesOnCounter.RemoveAll(d => d == null);
@@ -548,32 +738,15 @@ namespace GI351.KitchenGame
 
             while (unlimitedFood || dishesOnCounter.Count < MaxPlates)
             {
-                // ดึงอาหารสุกชิ้นใดก็ได้ที่ผู้เล่นถืออยู่ (ไก่ต้ม, หมูต้ม, หรืออาหารปรุงสุกใดๆ)
-                Item cookedItem = playerCarry.PopAnyCookedFood();
-
-                // สำรอง: หาก PopAnyCookedFood ไม่พบ ลองค้นหาตามประเภทแบบเจาะจง
-                if (cookedItem == null)
+                // ดึงอาหารสุกที่ชั้นนี้ขาย (ชั้นหมูรับแค่หมู ชั้นไก่รับแค่ไก่ อาหารพิเศษรับทุกชั้น) ชิ้นบนสุดก่อน
+                Item cookedItem = null;
+                for (int i = playerCarry.CarriedItems.Count - 1; i >= 0; i--)
                 {
-                    if (playerCarry.HasItemOfType(ItemType.CookedChicken))
+                    Item it = playerCarry.CarriedItems[i];
+                    if (it != null && PlayerCarry.IsCookedFood(it) && Accepts(it.Type))
                     {
-                        cookedItem = playerCarry.PopItemOfType(ItemType.CookedChicken);
-                    }
-                    else if (playerCarry.HasItemOfType(ItemType.CookedPig))
-                    {
-                        cookedItem = playerCarry.PopItemOfType(ItemType.CookedPig);
-                    }
-                    else
-                    {
-                        // ลองค้นหาไอเทมใดๆ ในตัวผู้เล่นที่สุกแล้ว (ไม่ใช่เนื้อดิบ)
-                        for (int i = playerCarry.CarriedItems.Count - 1; i >= 0; i--)
-                        {
-                            var it = playerCarry.CarriedItems[i];
-                            if (it != null && PlayerCarry.IsCookedFood(it))
-                            {
-                                cookedItem = playerCarry.PopItemOfType(it.Type);
-                                break;
-                            }
-                        }
+                        cookedItem = playerCarry.PopItemOfType(it.Type);
+                        break;
                     }
                 }
 

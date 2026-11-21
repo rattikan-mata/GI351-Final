@@ -66,14 +66,31 @@ namespace GI351.KitchenGame
                 }
             }
 
+            // สั่งได้เฉพาะเมนูที่มีชั้นขาย (ถ้าฉากยังไม่มีชั้นเลย ไม่ต้องกรอง)
+            if (FoodSellCounter.All.Count > 0)
+            {
+                result.RemoveAll(d => !FoodSellCounter.AnyCounterSells(d));
+            }
+
             return result;
         }
 
-        /// <summary>สุ่มเมนูที่สั่งได้ ถ้าไม่มีเครื่องไหนเลยจะคืน null (กินอะไรก็ได้)</summary>
+        /// <summary>
+        /// สุ่มเมนูที่สั่งได้ ถ้าไม่มีเครื่องไหนเลยจะคืน null (กินอะไรก็ได้)
+        /// เลือกเมนูที่ชั้นขายยังมีที่ว่างให้ยืนรอก่อน (ชั้นหมูคนเต็ม ลูกค้าใหม่จะอยากกินไก่แทน)
+        /// </summary>
         public static ItemType? PickRandomDish()
         {
             var list = GetAvailableDishes();
             if (list.Count == 0) return null;
+
+            var withRoom = list.FindAll(d =>
+            {
+                FoodSellCounter c = FoodSellCounter.FindCounterFor(d);
+                return c != null && !c.IsQueueFull;
+            });
+            if (withRoom.Count > 0) list = withRoom;
+
             return list[Random.Range(0, list.Count)];
         }
 

@@ -32,11 +32,17 @@ namespace GI351.KitchenGame
         [Tooltip("รหัสสินค้า ให้สคริปต์อื่นรู้ว่าซื้ออะไร (เช่น cashier) ปล่อยว่างได้")]
         public string id = "";
 
+        [Tooltip("แท็บที่สินค้านี้อยู่ ต้องตรงกับชื่อใน ShopStall > Tabs (เช่น Hunt / Cook / Store) ปล่อยว่าง = แท็บแรก")]
+        public string tab = "";
+
         [Tooltip("ล็อกไว้ ยังซื้อไม่ได้ (แสดงในร้านแต่ปุ่มเป็น Coming soon)")]
         public bool locked = false;
 
         [Tooltip("ข้อความบนปุ่มตอนล็อก")]
         public string lockedText = "SOON";
+
+        [Tooltip("ข้อความบนปุ่มตอนซื้อครบสต็อกแล้ว (เช่น SOLD OUT / OWNED)")]
+        public string soldOutText = "SOLD OUT";
 
         [Header("Levels (สินค้าแบบอัปเลเวล: ใส่ตั้งแต่ 2 เลเวลขึ้นไป = กดซื้อซ้ำเพื่ออัปจนถึง MAX)")]
         [Tooltip("ชื่อค่าที่เปลี่ยนตามเลเวล แสดงใต้ชื่อสินค้า เช่น Damage / Capacity / Speed")]
@@ -101,6 +107,12 @@ namespace GI351.KitchenGame
         [Tooltip("รายการสินค้า (ตอนนี้ว่าง) เพิ่มสินค้าที่นี่: ชื่อ / ราคา / จำนวนจำกัด / Event ตอนซื้อ")]
         [SerializeField] private List<ShopItemData> items = new List<ShopItemData>();
 
+        [Tooltip("แท็บแยกหมวดสินค้า เช่น Hunt / Cook / Store (ว่าง = ไม่มีแท็บ แสดงสินค้าทั้งหมด) สินค้าเลือกแท็บที่ช่อง Tab ของแต่ละชิ้น")]
+        [SerializeField] private List<string> tabs = new List<string>();
+
+        [Tooltip("ข้อความตอนแท็บนั้นยังไม่มีสินค้า")]
+        [SerializeField] private string emptyTabText = "Coming soon";
+
         [Header("Buy Zone (วงแหวนหน้าร้าน)")]
         [Tooltip("จุดศูนย์กลางวงแหวน (ลาก child Ring มาใส่ ปล่อยว่าง = ใช้ตำแหน่งของ Prefab)")]
         [SerializeField] private Transform zoneCenter;
@@ -136,6 +148,16 @@ namespace GI351.KitchenGame
         }
 
         private readonly List<RowView> rows = new List<RowView>();
+        private readonly List<int> rowItemIndex = new List<int>(); // แถวที่ i แสดงสินค้าลำดับไหนในลิสต์ items
+
+        private struct TabView
+        {
+            public Image image;
+            public Text text;
+        }
+
+        private readonly List<TabView> tabViews = new List<TabView>();
+        private int currentTab;
         private Transform cachedBuyer;
         private float nextBuyerSearchTime;
         private bool isBuyerInside;
@@ -161,6 +183,32 @@ namespace GI351.KitchenGame
         public bool IsOpen => isOpen;
         public bool IsBuyerInside => isBuyerInside;
         public int ItemCount => items != null ? items.Count : 0;
+
+        private bool HasTabs => tabs != null && tabs.Count > 0;
+
+        /// <summary>แท็บที่เปิดอยู่ (ชื่อ) ว่างถ้าร้านนี้ไม่มีแท็บ</summary>
+        public string CurrentTab => HasTabs ? tabs[Mathf.Clamp(currentTab, 0, tabs.Count - 1)] : "";
+
+        /// <summary>เปลี่ยนแท็บที่แสดง (ตามลำดับในลิสต์ Tabs)</summary>
+        public void SelectTab(int index)
+        {
+            if (!HasTabs) return;
+            currentTab = Mathf.Clamp(index, 0, tabs.Count - 1);
+            if (builtUI)
+            {
+                BuildRows();
+                Refresh();
+            }
+        }
+
+        /// <summary>สินค้าชิ้นนี้อยู่แท็บที่เปิดอยู่ไหม (ช่อง Tab ว่าง หรือชื่อไม่ตรงแท็บไหนเลย = อยู่แท็บแรก)</summary>
+        private bool InCurrentTab(ShopItemData it)
+        {
+            if (!HasTabs || it == null) return true;
+            int idx = string.IsNullOrEmpty(it.tab) ? -1 : tabs.FindIndex(t => string.Equals(t, it.tab, StringComparison.OrdinalIgnoreCase));
+            if (idx < 0) idx = 0;
+            return idx == Mathf.Clamp(currentTab, 0, tabs.Count - 1);
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
@@ -371,7 +419,8 @@ namespace GI351.KitchenGame
             panelRect.SetParent(canvasRect, false);
             panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.5f);
             panelRect.pivot = new Vector2(0.5f, 0.5f);
-            panelRect.sizeDelta = new Vector2(820f, 700f);
+            float tabBarHeight = HasTabs ? 70f : 0f;
+            panelRect.sizeDelta = new Vector2(820f, 700f + tabBarHeight);
             panel.GetComponent<Image>().color = new Color(0.05f, 0.06f, 0.11f, 0.96f);
 
             titleText = CreateText(panelRect, "Title", shopTitle, 46, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft);
@@ -387,7 +436,26 @@ namespace GI351.KitchenGame
             vpRect.anchorMin = new Vector2(0f, 0f);
             vpRect.anchorMax = new Vector2(1f, 1f);
             vpRect.offsetMin = new Vector2(30f, 130f);
-            vpRect.offsetMax = new Vector2(-30f, -105f);
+            vpRect.offsetMax = new Vector2(-30f, -105f - tabBarHeight);
+
+            // แถบแท็บใต้ชื่อร้าน
+            tabViews.Clear();
+            if (HasTabs)
+            {
+                float gap = 10f;
+                float width = (820f - 60f - gap * (tabs.Count - 1)) / tabs.Count;
+                for (int i = 0; i < tabs.Count; i++)
+                {
+                    int tabIndex = i;
+                    RectTransform tabBtn = CreateButton(panelRect, "Tab_" + tabs[i], tabs[i].ToUpperInvariant(), new Vector2(width, 58f), new Color(0.16f, 0.18f, 0.28f, 1f), () => SelectTab(tabIndex));
+                    tabBtn.anchorMin = tabBtn.anchorMax = new Vector2(0f, 1f);
+                    tabBtn.pivot = new Vector2(0f, 1f);
+                    tabBtn.anchoredPosition = new Vector2(30f + i * (width + gap), -100f);
+                    Text label = tabBtn.GetComponentInChildren<Text>();
+                    label.fontSize = 30;
+                    tabViews.Add(new TabView { image = tabBtn.GetComponent<Image>(), text = label });
+                }
+            }
             viewport.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.25f);
 
             GameObject content = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
@@ -434,11 +502,13 @@ namespace GI351.KitchenGame
                 Destroy(listContent.GetChild(i).gameObject);
             }
             rows.Clear();
+            rowItemIndex.Clear();
 
             for (int i = 0; i < items.Count; i++)
             {
                 int index = i;
                 ShopItemData it = items[i];
+                if (!InCurrentTab(it)) continue;
 
                 GameObject row = new GameObject("Row_" + i, typeof(RectTransform), typeof(Image), typeof(LayoutElement));
                 RectTransform rowRect = row.GetComponent<RectTransform>();
@@ -457,14 +527,16 @@ namespace GI351.KitchenGame
                     Place(desc.rectTransform, new Vector2(0f, 0.5f), new Vector2(18f, -18f), new Vector2(400f, 28f), new Vector2(0f, 0.5f));
                 }
 
-                Text price = CreateText(rowRect, "Price", "$" + it.price, 32, FontStyle.Bold, new Color(1f, 0.92f, 0.3f, 1f), TextAnchor.MiddleRight);
-                Place(price.rectTransform, new Vector2(1f, 0.5f), new Vector2(-190f, 0f), new Vector2(150f, 40f), new Vector2(1f, 0.5f));
+                // ราคาอยู่กลางช่อง (เยื้องขวานิดหน่อยให้พ้นคำอธิบายยาวๆ ทางซ้าย)
+                Text price = CreateText(rowRect, "Price", "$" + it.price, 34, FontStyle.Bold, new Color(1f, 0.92f, 0.3f, 1f), TextAnchor.MiddleCenter);
+                Place(price.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(40f, 0f), new Vector2(150f, 40f), new Vector2(0.5f, 0.5f));
 
                 RectTransform buy = CreateButton(rowRect, "BuyButton", "BUY", new Vector2(150f, 56f), new Color(0.2f, 0.7f, 1f, 1f), () => TryBuy(index));
                 buy.anchorMin = buy.anchorMax = new Vector2(1f, 0.5f);
                 buy.pivot = new Vector2(1f, 0.5f);
                 buy.anchoredPosition = new Vector2(-16f, 0f);
 
+                rowItemIndex.Add(index);
                 rows.Add(new RowView
                 {
                     name = name,
@@ -476,7 +548,23 @@ namespace GI351.KitchenGame
                 });
             }
 
-            if (emptyText != null) emptyText.gameObject.SetActive(items.Count == 0);
+            if (emptyText != null)
+            {
+                emptyText.text = HasTabs ? emptyTabText : "No items yet";
+                emptyText.gameObject.SetActive(rows.Count == 0);
+            }
+            RefreshTabs();
+        }
+
+        /// <summary>แท็บที่เลือกอยู่เป็นสีฟ้าสว่าง ที่เหลือเป็นสีเข้ม</summary>
+        private void RefreshTabs()
+        {
+            for (int i = 0; i < tabViews.Count; i++)
+            {
+                bool selected = i == Mathf.Clamp(currentTab, 0, tabs.Count - 1);
+                tabViews[i].image.color = selected ? new Color(0.2f, 0.7f, 1f, 1f) : new Color(0.16f, 0.18f, 0.28f, 1f);
+                tabViews[i].text.color = selected ? Color.white : new Color(0.65f, 0.7f, 0.85f, 1f);
+            }
         }
 
         private void Refresh()
@@ -485,9 +573,9 @@ namespace GI351.KitchenGame
             lastMoney = money;
             if (moneyText != null) moneyText.text = "$" + money;
 
-            for (int i = 0; i < rows.Count && i < items.Count; i++)
+            for (int i = 0; i < rows.Count && i < rowItemIndex.Count; i++)
             {
-                ShopItemData it = items[i];
+                ShopItemData it = items[rowItemIndex[i]];
                 RowView v = rows[i];
                 bool soldOut = it.stock > 0 && it.sold >= it.stock;
                 bool afford = money >= it.price;
@@ -512,9 +600,9 @@ namespace GI351.KitchenGame
 
                 v.buyButton.interactable = !soldOut && afford;
                 v.buyImage.color = soldOut ? new Color(0.3f, 0.3f, 0.35f, 1f) : (afford ? new Color(0.2f, 0.7f, 1f, 1f) : new Color(0.25f, 0.3f, 0.45f, 1f));
-                v.buyText.text = soldOut ? "SOLD OUT" : "BUY";
+                v.buyText.text = soldOut ? (string.IsNullOrEmpty(it.soldOutText) ? "SOLD OUT" : it.soldOutText) : "BUY";
                 v.buyText.fontSize = soldOut ? 22 : 36;
-                v.price.text = it.stock > 0 && !soldOut ? "$" + it.price + "  x" + (it.stock - it.sold) : "$" + it.price;
+                v.price.text = it.stock > 1 && !soldOut ? "$" + it.price + "  x" + (it.stock - it.sold) : "$" + it.price;
                 v.price.color = afford || soldOut ? new Color(1f, 0.92f, 0.3f, 1f) : new Color(1f, 0.45f, 0.45f, 1f);
             }
         }

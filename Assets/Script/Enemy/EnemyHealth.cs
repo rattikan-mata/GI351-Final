@@ -6,7 +6,9 @@ namespace GI351.KitchenGame
     public class EnemyHealth : MonoBehaviour, IDamageable
     {
         [Header("HP เลือด (ตั้งที่ Prefab ของสัตว์แต่ละตัว: Chicken / Pig)")]
-        [Tooltip("เลือดสูงสุดของสัตว์ตัวนี้ อ่านตอนเกิดเท่านั้น ไม่มีสคริปต์อื่น (EnemySpawner / HuntArea) แก้ทับ")]
+        [Tooltip("เลือดสูงสุดของสัตว์ตัวนี้ อ่านตอนเกิดเท่านั้น ไม่มีสคริปต์อื่น (EnemySpawner / HuntArea) แก้ทับ\n" +
+                 "สเกลเลือด: ไก่ 30 / หมู 100 / ตัวถัดไปให้ตั้งเลือดตรงกับ 'ดาเมจกระบองเลเวลที่อยากให้ตีทีเดียวตาย x จำนวนที่' " +
+                 "แล้วคลิกขวา Hunt Upgrades (ที่ Shop Stall) > Print Hits-To-Kill Table เช็คว่าอัปกระบองทุกขั้นยังเห็นผล")]
         [Min(1)]
         [SerializeField] private int maxHealth = 30;
 

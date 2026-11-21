@@ -254,6 +254,16 @@ MonoBehaviour:
   fleeSpeed: 3.5
   fleeDuration: 2
   fleeEdgeMargin: 0.35
+  avoidRadius: 1
+  separationStrength: 1.2
+  lookAhead: 1.4
+  sidestepStrength: 1.4
+  turnSharpness: 10
+  stuckCheckInterval: 0.4
+  stuckProgressRatio: 0.3
+  stuckChecksBeforeRepath: 2
+  targetClearance: 1.2
+  collideWhileWandering: 0
   zoneShape: 1
   useSpawnPositionAsCenter: 1
   customCenter: {x: 0, y: 0}

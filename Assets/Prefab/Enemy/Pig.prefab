@@ -128,7 +128,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fd129205955b594083cc294f1b2e0a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.EnemyHealth
-  maxHealth: 60
+  maxHealth: 100
   meatDropPrefab: {fileID: 2869220307959938083, guid: 846ce6b3559f66541a3fa89c83ce55e1, type: 3}
   dropCount: 1
   hurtColor: {r: 1, g: 0, b: 0, a: 1}
@@ -162,6 +162,16 @@ MonoBehaviour:
   fleeSpeed: 3
   fleeDuration: 2
   fleeEdgeMargin: 0.35
+  avoidRadius: 1
+  separationStrength: 1.2
+  lookAhead: 1.4
+  sidestepStrength: 1.4
+  turnSharpness: 10
+  stuckCheckInterval: 0.4
+  stuckProgressRatio: 0.3
+  stuckChecksBeforeRepath: 2
+  targetClearance: 1.2
+  collideWhileWandering: 0
   zoneShape: 1
   useSpawnPositionAsCenter: 1
   customCenter: {x: 0, y: 0}

@@ -18,8 +18,11 @@ namespace GI351.KitchenGame
         [Tooltip("เปิดระบบซื้อสำหรับหม้อหมู (Pork/Pig Pot) โดยอัตโนมัติ")]
         [SerializeField] private bool autoRequirePurchaseForPork = true;
 
-        [Tooltip("ราคาที่ต้องจ่ายเพื่อซื้อหม้อ (เหรียญ)")]
+        [Tooltip("ราคาที่ต้องจ่ายเพื่อซื้อหม้อ (เหรียญ) ใช้กับวงซื้อที่หม้อ (ถ้าซื้อจากร้าน ราคาตั้งที่สินค้าในร้าน)")]
         [SerializeField] private int purchasePrice = 50;
+
+        [Tooltip("ปิด = ไม่มีวงซื้อที่หม้อ ซื้อได้จากร้านเท่านั้น (Shop > Cook) / เปิด = เดินเข้าวงทองหน้าหม้อเพื่อซื้อแบบเดิม")]
+        [SerializeField] private bool buyAtPotRing = false;
 
         [Tooltip("จุดที่ให้ผู้เล่นยืนเพื่อซื้อหม้อ (ลาก Transform มาใส่ หรือปล่อยว่างเพื่อใช้ระยะเยื้อง)")]
         [SerializeField] private Transform purchaseZonePoint;
@@ -408,11 +411,18 @@ namespace GI351.KitchenGame
             if (standZoneObject != null) standZoneObject.SetActive(false);
             if (outputRingObject != null) outputRingObject.SetActive(false);
 
-            // 4. เปิดจุดยืนซื้อหม้อ
+            // 4. เปิดจุดยืนซื้อหม้อ (เฉพาะถ้าให้ซื้อที่หม้อ ไม่งั้นซื้อจากร้าน)
             if (Application.isPlaying)
             {
-                SetupPurchaseZone();
-                if (purchaseZoneObject != null) purchaseZoneObject.SetActive(true);
+                if (buyAtPotRing)
+                {
+                    SetupPurchaseZone();
+                    if (purchaseZoneObject != null) purchaseZoneObject.SetActive(true);
+                }
+                else if (purchaseZoneObject != null)
+                {
+                    purchaseZoneObject.SetActive(false);
+                }
             }
         }
 
@@ -461,6 +471,18 @@ namespace GI351.KitchenGame
         private void SetupPurchaseZone()
         {
             Transform existingZone = transform.Find("PotPurchaseZone");
+
+            // ซื้อจากร้านแทน: ไม่สร้างวงซื้อ (ถ้ามีอยู่แล้วให้ซ่อน)
+            if (!buyAtPotRing)
+            {
+                if (existingZone != null)
+                {
+                    purchaseZoneObject = existingZone.gameObject;
+                    purchaseZoneObject.SetActive(false);
+                }
+                return;
+            }
+
             if (existingZone != null)
             {
                 purchaseZoneObject = existingZone.gameObject;
@@ -663,7 +685,7 @@ namespace GI351.KitchenGame
             // ถ้ายังไม่ได้ซื้อหม้อ ให้ทำงานเฉพาะระบบจุดยืนซื้อหม้อเท่านั้น
             if (!isUnlocked)
             {
-                UpdatePurchaseZoneLogic();
+                if (buyAtPotRing) UpdatePurchaseZoneLogic();
                 return;
             }
 
@@ -1509,7 +1531,7 @@ namespace GI351.KitchenGame
         {
             bool needPurchase = !isUnlocked || (!Application.isPlaying && (requiresPurchase || (autoRequirePurchaseForPork && IsPigPot())));
 
-            if (needPurchase)
+            if (needPurchase && buyAtPotRing)
             {
                 // วาดตำแหน่งจุดยืนซื้อหม้อ (สีเหลืองทอง / ส้ม)
                 Vector3 buyPos = GetPurchaseZonePosition();

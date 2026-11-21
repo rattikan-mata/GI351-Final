@@ -30,6 +30,38 @@ namespace GI351.KitchenGame
         [Tooltip("ระยะที่ถือว่าชิดขอบเขต (เมตร) ถ้าวิ่งหนีมาถึงจะเลี้ยวไปตามขอบ ไม่วิ่งทะลุและไม่ยืนติดขอบ")]
         [SerializeField] private float fleeEdgeMargin = 0.35f;
 
+        [Header("Avoid Others (หลบสัตว์ตัวอื่น กันเดินชนแล้วติดกัน)")]
+        [Tooltip("ระยะที่เริ่มเว้นห่างจากสัตว์ตัวอื่น (เมตร)")]
+        [SerializeField] private float avoidRadius = 1f;
+
+        [Tooltip("แรงผลักออกจากตัวที่อยู่ใกล้ (0 = ไม่หลบ)")]
+        [SerializeField] private float separationStrength = 1.2f;
+
+        [Tooltip("มองไปข้างหน้ากี่เมตร ถ้ามีตัวขวางทางจะเบี่ยงหลบด้านข้าง")]
+        [SerializeField] private float lookAhead = 1.4f;
+
+        [Tooltip("แรงเบี่ยงหลบตัวที่ขวางข้างหน้า")]
+        [SerializeField] private float sidestepStrength = 1.4f;
+
+        [Tooltip("ความไวในการเลี้ยว (สูง = เลี้ยวทันที, ต่ำ = เลี้ยวนุ่ม)")]
+        [SerializeField] private float turnSharpness = 10f;
+
+        [Tooltip("เช็กว่าติดอยู่ทุกกี่วินาที")]
+        [SerializeField] private float stuckCheckInterval = 0.4f;
+
+        [Tooltip("ถ้าเข้าใกล้เป้าหมายได้น้อยกว่าสัดส่วนนี้ของระยะที่ควรเดินได้ ถือว่าติด")]
+        [Range(0f, 1f)]
+        [SerializeField] private float stuckProgressRatio = 0.3f;
+
+        [Tooltip("ติดซ้ำกี่ครั้งติดกันถึงจะเปลี่ยนเป้าหมายใหม่")]
+        [SerializeField] private int stuckChecksBeforeRepath = 2;
+
+        [Tooltip("ไม่สุ่มจุดหมายที่อยู่ใกล้สัตว์ตัวอื่นกว่านี้ (เมตร)")]
+        [SerializeField] private float targetClearance = 1.2f;
+
+        [Tooltip("ปิด = สัตว์ที่เดินสุ่ม/ยืนพักเดินผ่านกันได้ ไม่ดันกันจนติด (ตัวที่กำลังวิ่งหนียังชนตัวอื่นได้) / เปิด = ชนกันตลอดแบบเดิม")]
+        [SerializeField] private bool collideWhileWandering = false;
+
         [Header("Wander Zone (ขอบเขตการเดิน ปรับได้ใน Inspector)")]
         [Tooltip("รูปแบบโซน (วงกลม หรือ สี่เหลี่ยม)")]
         [SerializeField] private ZoneShape zoneShape = ZoneShape.Circle;
@@ -72,6 +104,14 @@ namespace GI351.KitchenGame
         private Vector2 boundaryMax;
         private const float BoundaryEdgePadding = 0.3f;
 
+        // หลบตัวอื่น / เช็กติด
+        private static readonly System.Collections.Generic.List<EnemyWander> All = new System.Collections.Generic.List<EnemyWander>();
+        private Vector2 steerDir;
+        private float stuckTimer;
+        private float lastTargetDistance;
+        private int stuckCount;
+        private Collider2D[] bodyColliders;
+
         public float MoveSpeed
         {
             get => moveSpeed;
@@ -110,6 +150,7 @@ namespace GI351.KitchenGame
             rb = GetComponent<Rigidbody2D>();
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
             health = GetComponent<EnemyHealth>();
+            CacheBodyColliders();
 
             rb.gravityScale = 0f;
             rb.freezeRotation = true;
@@ -126,6 +167,17 @@ namespace GI351.KitchenGame
             {
                 health.onDamaged.AddListener(HandleDamaged);
             }
+        }
+
+        private void OnEnable()
+        {
+            if (!All.Contains(this)) All.Add(this);
+            RefreshAnimalCollisions();
+        }
+
+        private void OnDisable()
+        {
+            All.Remove(this);
         }
 
         private void OnDestroy()
@@ -232,9 +284,174 @@ namespace GI351.KitchenGame
                 return;
             }
 
-            Vector2 moveVelocity = dir.normalized * moveSpeed;
+            Vector2 desired = dir / distance;
+            Vector2 steered = ApplyAvoidance(currentPos, desired, 1f);
+            Vector2 moveVelocity = steered * moveSpeed;
             rb.linearVelocity = moveVelocity;
             FaceDirection(moveVelocity);
+
+            CheckStuck(distance);
+        }
+
+        /// <summary>
+        /// บวกแรงหลบสัตว์ตัวอื่นเข้ากับทิศที่อยากไป:
+        /// 1) เว้นระยะ: ตัวที่ใกล้เกิน avoidRadius ผลักออก
+        /// 2) เบี่ยงหลบ: ตัวที่ขวางทางข้างหน้า เบี่ยงไปด้านที่ว่าง (ประจันหน้าตรงๆ ทั้งคู่เบี่ยงไปทางขวาของตัวเอง จะเดินสวนกันได้)
+        /// แล้วเลี้ยวนุ่มๆ ไม่ให้สั่นกลับหน้าไปมา
+        /// </summary>
+        private Vector2 ApplyAvoidance(Vector2 pos, Vector2 desired, float weight)
+        {
+            Vector2 separation = Vector2.zero;
+            Vector2 sidestep = Vector2.zero;
+            float nearestAhead = float.PositiveInfinity;
+
+            for (int i = 0; i < All.Count; i++)
+            {
+                EnemyWander other = All[i];
+                if (other == this || other == null || other.rb == null) continue;
+                if (other.health != null && other.health.IsDead) continue;
+
+                Vector2 toOther = other.rb.position - pos;
+                float d = toOther.magnitude;
+                if (d < 0.0001f)
+                {
+                    // ทับกันพอดี ดันออกตามลำดับในลิสต์
+                    separation += (i % 2 == 0 ? Vector2.right : Vector2.left);
+                    continue;
+                }
+
+                if (d < avoidRadius)
+                {
+                    separation -= toOther / d * (1f - d / avoidRadius);
+                }
+
+                // ขวางทางข้างหน้า?
+                float forward = Vector2.Dot(toOther, desired);
+                if (forward > 0f && forward < lookAhead && forward < nearestAhead)
+                {
+                    float cross = desired.x * toOther.y - desired.y * toOther.x; // + = อีกตัวอยู่ทางซ้าย
+                    if (Mathf.Abs(cross) < avoidRadius)
+                    {
+                        nearestAhead = forward;
+                        Vector2 right = new Vector2(desired.y, -desired.x);
+                        // อีกตัวอยู่ซ้าย -> เบี่ยงขวา, อยู่ขวา -> เบี่ยงซ้าย, ตรงกลางพอดี -> ขวา
+                        float side = cross > 0.05f ? 1f : cross < -0.05f ? -1f : 1f;
+                        float urgency = (1f - forward / lookAhead) * (1f - Mathf.Abs(cross) / avoidRadius);
+                        sidestep = right * side * urgency;
+                    }
+                }
+            }
+
+            Vector2 target = desired + (separation * separationStrength + sidestep * sidestepStrength) * weight;
+            if (target.sqrMagnitude < 0.0001f) target = new Vector2(desired.y, -desired.x); // แรงหักล้างกันหมด เดินไปด้านข้าง
+            target.Normalize();
+
+            if (steerDir.sqrMagnitude < 0.0001f) steerDir = target;
+            float k = 1f - Mathf.Exp(-turnSharpness * Time.fixedDeltaTime);
+            steerDir = Vector2.Lerp(steerDir, target, k);
+            if (steerDir.sqrMagnitude < 0.0001f) steerDir = target;
+            return steerDir.normalized;
+        }
+
+        /// <summary>
+        /// ทุก stuckCheckInterval ดูว่าเข้าใกล้เป้าหมายได้ตามที่ควรไหม ถ้าไม่ (โดนตัวอื่นดัน/ขวางอยู่) ติดกันหลายรอบ
+        /// ให้เปลี่ยนเป้าหมายใหม่ไปทางที่ว่าง หรือบางทีก็หยุดพักแป๊บนึงให้อีกตัวเดินผ่านไปก่อน
+        /// </summary>
+        private void CheckStuck(float distance)
+        {
+            stuckTimer += Time.fixedDeltaTime;
+            if (stuckTimer < stuckCheckInterval) return;
+
+            float expected = moveSpeed * stuckTimer;
+            float progress = lastTargetDistance - distance;
+            stuckTimer = 0f;
+            lastTargetDistance = distance;
+
+            if (expected <= 0f || progress >= expected * stuckProgressRatio)
+            {
+                stuckCount = 0;
+                return;
+            }
+
+            stuckCount++;
+            if (stuckCount < stuckChecksBeforeRepath) return;
+
+            if (Random.value < 0.35f)
+            {
+                // หยุดพักสั้นๆ ให้ตัวอื่นไปก่อน
+                rb.linearVelocity = Vector2.zero;
+                isIdle = true;
+                idleTimer = Random.Range(0.3f, 0.8f);
+                ResetStuck(0f);
+            }
+            else
+            {
+                PickNewTargetPoint();
+            }
+        }
+
+        #region Animal Collisions (สัตว์ไม่ชนกัน ยกเว้นตัวที่วิ่งหนี)
+
+        private void CacheBodyColliders()
+        {
+            var list = new System.Collections.Generic.List<Collider2D>();
+            foreach (Collider2D c in GetComponentsInChildren<Collider2D>(true))
+            {
+                if (c != null && !c.isTrigger) list.Add(c);
+            }
+            bodyColliders = list.ToArray();
+        }
+
+        /// <summary>
+        /// ตั้งการชนระหว่างตัวนี้กับสัตว์ทุกตัว: ชนกันเฉพาะคู่ที่มีตัวใดตัวหนึ่งกำลังวิ่งหนีอยู่
+        /// ตัวที่เดินสุ่ม/ยืนพักจะเดินผ่านกันได้ ไม่มีทางดันกันจนติด (ส่วนการหลบด้านบนช่วยให้ไม่เดินทับกันให้เห็น)
+        /// </summary>
+        private void RefreshAnimalCollisions()
+        {
+            if (bodyColliders == null) CacheBodyColliders();
+            for (int i = 0; i < All.Count; i++)
+            {
+                EnemyWander other = All[i];
+                if (other == this || other == null) continue;
+                bool collide = collideWhileWandering || isFleeing || other.isFleeing;
+                SetCollision(other, collide);
+            }
+        }
+
+        private void SetCollision(EnemyWander other, bool collide)
+        {
+            if (bodyColliders == null || other.bodyColliders == null) return;
+            foreach (Collider2D a in bodyColliders)
+            {
+                if (a == null) continue;
+                foreach (Collider2D b in other.bodyColliders)
+                {
+                    if (b != null) Physics2D.IgnoreCollision(a, b, !collide);
+                }
+            }
+        }
+
+        #endregion
+
+        private void ResetStuck(float distance)
+        {
+            stuckTimer = 0f;
+            stuckCount = 0;
+            lastTargetDistance = distance;
+        }
+
+        private bool IsNearOtherAnimal(Vector2 point, float radius)
+        {
+            float r2 = radius * radius;
+            for (int i = 0; i < All.Count; i++)
+            {
+                EnemyWander other = All[i];
+                if (other == this || other == null || other.rb == null) continue;
+                if ((other.rb.position - point).sqrMagnitude < r2) return true;
+                // อย่าไปจุดเดียวกับที่อีกตัวกำลังเดินไป
+                if (!other.isIdle && !other.isFleeing && (other.currentTargetPoint - point).sqrMagnitude < r2) return true;
+            }
+            return false;
         }
 
         /// <summary>กลับหน้าซ้าย-ขวาตามทิศที่เคลื่อนที่</summary>
@@ -272,16 +489,19 @@ namespace GI351.KitchenGame
                 if (player != null) playerTarget = player.transform;
             }
 
+            bool wasFleeing = isFleeing;
             isFleeing = true;
             isIdle = false;
             fleeTimer = fleeDuration;
             slideTimer = 0f;
+            if (!wasFleeing) RefreshAnimalCollisions();
         }
 
         private void EndFlee()
         {
             isFleeing = false;
             slideTimer = 0f;
+            RefreshAnimalCollisions();
             PickNewTargetPoint();
         }
 
@@ -298,6 +518,9 @@ namespace GI351.KitchenGame
                 if (away.sqrMagnitude < 0.0001f) away = Vector2.right;
             }
             away.Normalize();
+
+            // หนีแล้วก็ยังเว้นระยะกับตัวอื่น ไม่วิ่งไปกองรวมกันที่มุม
+            away = ApplyAvoidance(pos, away, 0.6f);
 
             Vector2 dir = hasBoundary ? SteerAlongEdges(pos, away) : away;
             rb.linearVelocity = dir * fleeSpeed;
@@ -369,21 +592,43 @@ namespace GI351.KitchenGame
 
         public void PickNewTargetPoint()
         {
+            // ลองสุ่มหลายจุด เอาจุดที่ไม่มีสัตว์ตัวอื่นอยู่/กำลังเดินไป ถ้าติดอยู่ให้ไปคนละทางกับเดิม
+            Vector2 pos = rb != null ? rb.position : (Vector2)transform.position;
+            Vector2 oldDir = currentTargetPoint - pos;
+            bool wasStuck = stuckCount >= stuckChecksBeforeRepath && oldDir.sqrMagnitude > 0.0001f;
+            if (wasStuck) oldDir.Normalize();
+
+            Vector2 best = RandomPointInZone();
+            for (int attempt = 0; attempt < 8; attempt++)
+            {
+                Vector2 cand = attempt == 0 ? best : RandomPointInZone();
+                bool clear = !IsNearOtherAnimal(cand, targetClearance);
+                bool newWay = !wasStuck || Vector2.Dot((cand - pos).normalized, oldDir) < 0.3f;
+                if (clear && newWay)
+                {
+                    best = cand;
+                    break;
+                }
+                if (attempt == 0 || clear) best = cand;
+            }
+
+            currentTargetPoint = best;
+            steerDir = Vector2.zero;
+            ResetStuck((currentTargetPoint - pos).magnitude);
+        }
+
+        private Vector2 RandomPointInZone()
+        {
             if (zoneShape == ZoneShape.Circle)
             {
-                Vector2 randomOffset = Random.insideUnitCircle * circleRadius;
-                currentTargetPoint = centerPoint + randomOffset;
+                return centerPoint + Random.insideUnitCircle * circleRadius;
             }
-            else
-            {
-                // ถ้ามีกรอบ เว้นระยะจากขอบนิดหน่อยไม่ให้เดินไปเบียดขอบ
-                float pad = hasBoundary ? BoundaryEdgePadding : 0f;
-                float halfW = Mathf.Max(0f, rectangleSize.x * 0.5f - pad);
-                float halfH = Mathf.Max(0f, rectangleSize.y * 0.5f - pad);
-                float rx = Random.Range(-halfW, halfW);
-                float ry = Random.Range(-halfH, halfH);
-                currentTargetPoint = centerPoint + new Vector2(rx, ry);
-            }
+
+            // ถ้ามีกรอบ เว้นระยะจากขอบนิดหน่อยไม่ให้เดินไปเบียดขอบ
+            float pad = hasBoundary ? BoundaryEdgePadding : 0f;
+            float halfW = Mathf.Max(0f, rectangleSize.x * 0.5f - pad);
+            float halfH = Mathf.Max(0f, rectangleSize.y * 0.5f - pad);
+            return centerPoint + new Vector2(Random.Range(-halfW, halfW), Random.Range(-halfH, halfH));
         }
 
         private void OnDrawGizmos()

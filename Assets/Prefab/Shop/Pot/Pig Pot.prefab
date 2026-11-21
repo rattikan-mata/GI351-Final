@@ -329,6 +329,7 @@ MonoBehaviour:
   requiresPurchase: 0
   autoRequirePurchaseForPork: 1
   purchasePrice: 50
+  buyAtPotRing: 0
   purchaseZonePoint: {fileID: 0}
   purchaseZoneOffset: {x: 0, y: -0.6}
   purchaseZoneRadius: 0.65
@@ -448,11 +449,11 @@ MonoBehaviour:
   priceLabel: Product Price
   priceLevels:
   - cost: 50
-    value: 12
+    value: 24
   - cost: 120
-    value: 15
+    value: 30
   - cost: 250
-    value: 20
+    value: 40
   speedLabel: Production Speed
   speedLevels:
   - cost: 40

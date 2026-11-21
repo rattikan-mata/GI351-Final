@@ -118,6 +118,11 @@ namespace GI351.KitchenGame
                     {
                         m.SetMoveSpeed(value);
                     }
+                    // หางตอนวิ่ง: สีตามเลเวลรองเท้า
+                    foreach (RunTrail t in FindObjectsByType<RunTrail>(FindObjectsInactive.Include))
+                    {
+                        t.SetLevel(item.Level);
+                    }
                     break;
 
                 case Stat.AttackSpeed:
@@ -128,6 +133,71 @@ namespace GI351.KitchenGame
                     break;
             }
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// เครื่องมือเช็คสเกล: คลิกขวาที่ Hunt Upgrades > Print Hits-To-Kill Table
+        /// พิมพ์ตาราง "ตีกี่ทีตาย" ของสัตว์ทุกตัวใน Prefab เทียบทุกเลเวลกระบอง
+        /// เลเวลไหนอัปแล้วไม่มีสัตว์ตัวไหนตายเร็วขึ้นเลย จะขึ้นเตือนสีเหลือง (= ซื้อแล้วไม่ได้อะไร ควรปรับดาเมจ/เลือด)
+        /// </summary>
+        [ContextMenu("Print Hits-To-Kill Table")]
+        private void PrintHitsToKillTable()
+        {
+            if (stall == null) stall = GetComponent<ShopStall>();
+            ShopItemData club = null;
+            foreach (Binding b in bindings)
+            {
+                if (b.stat != Stat.WeaponDamage) continue;
+                club = stall != null ? stall.FindItem(b.itemId) : null;
+                if (club != null) break;
+            }
+            if (club == null || !club.IsLeveled)
+            {
+                Debug.LogWarning("[HuntUpgrades] ไม่พบสินค้ากระบองแบบเลเวล", this);
+                return;
+            }
+
+            var rows = new List<KeyValuePair<string, int>>();
+            foreach (string guid in UnityEditor.AssetDatabase.FindAssets("t:Prefab"))
+            {
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                GameObject go = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (go == null || !go.TryGetComponent(out EnemyHealth h)) continue;
+                rows.Add(new KeyValuePair<string, int>(go.name, h.MaxHealth));
+            }
+
+            var sb = new System.Text.StringBuilder("[HuntUpgrades] Hits-to-kill per club level\n");
+            sb.Append("Damage:".PadRight(16));
+            foreach (ShopItemLevel lv in club.levels) sb.Append(Mathf.RoundToInt(lv.value).ToString().PadLeft(6));
+            sb.AppendLine();
+
+            var improved = new bool[club.levels.Count];
+            foreach (var row in rows)
+            {
+                sb.Append((row.Key + " " + row.Value + "hp").PadRight(16));
+                int prev = int.MaxValue;
+                for (int i = 0; i < club.levels.Count; i++)
+                {
+                    int dmg = Mathf.Max(1, Mathf.RoundToInt(club.levels[i].value));
+                    int hits = Mathf.CeilToInt((float)row.Value / dmg);
+                    if (i > 0 && hits < prev) improved[i] = true;
+                    prev = hits;
+                    sb.Append(hits.ToString().PadLeft(6));
+                }
+                sb.AppendLine();
+            }
+
+            bool ok = true;
+            for (int i = 1; i < improved.Length; i++)
+            {
+                if (improved[i]) continue;
+                ok = false;
+                sb.AppendLine("<color=yellow>Lv" + (i + 1) + " (" + Mathf.RoundToInt(club.levels[i].value) + " dmg) ไม่ทำให้สัตว์ตัวไหนตายเร็วขึ้นเลย</color>");
+            }
+            if (ok) sb.AppendLine("ทุกเลเวลมีสัตว์อย่างน้อย 1 ตัวที่ตายเร็วขึ้น");
+            Debug.Log(sb.ToString(), this);
+        }
+#endif
 
         /// <summary>เรียกจาก Weapon ตอนเปิดใช้งาน: ให้อาวุธนี้ได้ดาเมจตามเลเวลกระบองที่ซื้อไว้ (ถ้าไม่มีร้านในฉากก็ไม่ทำอะไร)</summary>
         public static void ApplyToWeapon(Weapon weapon)

@@ -129,7 +129,7 @@ namespace GI351.KitchenGame
             bool isThief = Random.value < thiefSpawnChance && CanSpawnThief();
 
             // ถ้าเป็นลูกค้าปกติ และแถวต่อคิวเต็มแล้ว จะไม่เสกเพิ่ม (แต่โจรสามารถเสกออกมาเพื่อแซงคิวได้เสมอ)
-            if (!isThief && targetCounter.IsQueueFull) return;
+            if (!isThief && AllCountersFull()) return;
 
             GameObject prefabToUse = (isThief && thiefPrefab != null) ? thiefPrefab : customerPrefab;
             if (prefabToUse == null) prefabToUse = customerPrefab;
@@ -151,6 +151,19 @@ namespace GI351.KitchenGame
                     thievesSpawnedTotal++;
                 }
             }
+        }
+
+        /// <summary>ทุกชั้นขายอาหารคิวเต็มหมดแล้วหรือยัง (ลูกค้าแต่ละคนจะเลือกชั้นตามเมนูที่อยากกินเอง)</summary>
+        private bool AllCountersFull()
+        {
+            bool any = false;
+            foreach (FoodSellCounter c in FoodSellCounter.All)
+            {
+                if (!c.isActiveAndEnabled || !c.IsOpen) continue;
+                any = true;
+                if (!c.IsQueueFull) return false;
+            }
+            return any ? true : (targetCounter != null && targetCounter.IsQueueFull);
         }
 
         public void OnCustomerDespawned(CustomerAI customer)

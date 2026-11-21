@@ -172,20 +172,7 @@ namespace GI351.KitchenGame
             }
             currentPatienceTimer = patienceDuration;
 
-            if (wantSpecificFood && !isThief)
-            {
-                // สุ่มเมนูที่อยากกิน เฉพาะเมนูที่เครื่องปลดล็อกแล้ว (โจรกินได้ทุกอย่างจึงไม่ต้องสุ่ม)
-                ItemType? picked = DishMenu.PickRandomDish();
-                if (picked.HasValue)
-                {
-                    preferredDish = picked.Value;
-                    ShowWantBubble();
-                }
-                else
-                {
-                    wantSpecificFood = false; // ยังไม่มีเครื่องไหนปลด -> กินอะไรก็ได้
-                }
-            }
+            PickDishAndCounter();
 
             // เพิกเฉยการชนระหว่างลูกค้าทุกคน เพื่อให้โจรเดินทะลุลูกค้าแซงคิวได้เสมอ
             IgnoreCollisionWithOtherCustomers();
@@ -205,6 +192,35 @@ namespace GI351.KitchenGame
                     lastQueueIndex = targetCounter.GetQueueIndex(this);
                 }
             }
+        }
+
+        private bool dishPicked;
+
+        /// <summary>
+        /// สุ่มเมนูที่อยากกิน (เฉพาะเมนูที่เครื่องปลดล็อกแล้วและมีชั้นขาย) แล้วเลือกชั้นที่ขายเมนูนั้น
+        /// โจรไม่เจาะจงเมนู เลือกชั้นที่มีอาหารวางเยอะสุด ทำครั้งเดียวต่อลูกค้า
+        /// </summary>
+        private void PickDishAndCounter()
+        {
+            if (dishPicked) return;
+            dishPicked = true;
+
+            if (wantSpecificFood && !isThief)
+            {
+                ItemType? picked = DishMenu.PickRandomDish();
+                if (picked.HasValue)
+                {
+                    preferredDish = picked.Value;
+                    ShowWantBubble();
+                }
+                else
+                {
+                    wantSpecificFood = false; // ยังไม่มีเครื่องไหนปลด -> กินอะไรก็ได้
+                }
+            }
+
+            FoodSellCounter counter = FoodSellCounter.FindCounterFor(RequestedDish);
+            if (counter != null) targetCounter = counter;
         }
 
         public void SetAsThief(bool thief)
@@ -238,6 +254,9 @@ namespace GI351.KitchenGame
             spawnerReference = spawner;
 
             if (isThief) ApplyThiefAppearance();
+
+            // เลือกเมนู แล้วไปชั้นที่ขายเมนูนั้น (ชั้นหมู / ชั้นไก่)
+            PickDishAndCounter();
 
             // โจรก็ต่อท้ายแถวตามปกติ เหมือนลูกค้าทั่วไป (ไม่แซงคิว)
             if (targetCounter != null)
