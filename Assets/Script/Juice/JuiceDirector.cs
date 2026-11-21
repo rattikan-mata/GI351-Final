@@ -16,6 +16,7 @@ namespace GI351.KitchenGame
         {
             runner = null;
             defaultConfig = null;
+            particles = null;
         }
 
         /// <summary>ค่าเริ่มต้น (ตามค่าในโค้ดของ JuiceConfig) ใช้เมื่อสัตว์ไม่ได้ผูก asset ไว้</summary>
@@ -61,6 +62,51 @@ namespace GI351.KitchenGame
                 shake = cam.gameObject.AddComponent<CameraShake>();
             }
             shake.Shake(pixels, seconds, pixelsPerUnit);
+        }
+
+        /// <summary>
+        /// เศษกระเด็นตอนตีโดน/ฆ่า ที่ตำแหน่ง position (ตอนตีพุ่งไปทาง awayFrom->position, ตอนฆ่าพุ่งรอบตัว + ควัน)
+        /// colors = สีเม็ด (ว่าง = ขาว) sorting ใช้ของ sprite สัตว์แล้ววางเม็ดไว้ด้านหน้า
+        /// </summary>
+        public static void Particles(JuiceConfig cfg, Vector2 position, Vector2 awayFrom, bool kill, Color[] colors,
+            int sortingLayerId, int sortingOrder)
+        {
+            if (!Application.isPlaying || cfg == null || !cfg.particlesEnabled) return;
+            JuiceParticles fx = GetParticles();
+
+            Vector2Int range = kill ? cfg.killParticleCount : cfg.hitParticleCount;
+            int count = Random.Range(Mathf.Min(range.x, range.y), Mathf.Max(range.x, range.y) + 1);
+
+            fx.Burst(cfg, new JuiceParticles.BurstSettings
+            {
+                position = position,
+                direction = kill ? Vector2.zero : (position - awayFrom).normalized,
+                spread = kill ? 360f : cfg.hitParticleSpread,
+                count = count,
+                extraPixels = kill ? cfg.killParticleExtraPixels : 0,
+                colors = colors,
+                sortingLayerId = sortingLayerId,
+                sortingOrder = sortingOrder + 6
+            });
+
+            if (kill && cfg.killSmokeEnabled)
+            {
+                Vector2Int sc = cfg.killSmokeCount;
+                int smoke = Random.Range(Mathf.Min(sc.x, sc.y), Mathf.Max(sc.x, sc.y) + 1);
+                fx.Smoke(cfg, position, smoke, sortingLayerId, sortingOrder + 5);
+            }
+        }
+
+        private static JuiceParticles particles;
+
+        private static JuiceParticles GetParticles()
+        {
+            if (particles != null) return particles;
+            GameObject go = new GameObject("JuiceParticles");
+            go.hideFlags = HideFlags.HideInHierarchy;
+            Object.DontDestroyOnLoad(go);
+            particles = go.AddComponent<JuiceParticles>();
+            return particles;
         }
 
         internal static void ForgetRunner(JuiceRunner r)

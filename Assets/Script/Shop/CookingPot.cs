@@ -40,6 +40,13 @@ namespace GI351.KitchenGame
         [Range(0.05f, 1f)]
         [SerializeField] private float lockedAlpha = 0.35f;
 
+        [Header("Pot Art (ภาพหม้อ)")]
+        [Tooltip("ภาพหม้อตอนว่าง/ยังไม่ต้ม (ว่าง = ใช้ภาพที่ SpriteRenderer อยู่แล้ว)")]
+        [SerializeField] private Sprite idleSprite;
+
+        [Tooltip("ภาพหม้อตอนกำลังต้ม เช่น ปิดฝา มีไฟ (ว่าง = ใช้ภาพว่างตลอด)")]
+        [SerializeField] private Sprite cookingSprite;
+
         [Tooltip("ถ้าติ๊กถูก ต้องกดปุ่ม E เพื่อซื้อ (ถ้าไม่ติ๊ก แค่เดินเข้ามาเหยียบวงจะซื้อให้อัตโนมัติถ้าเงินพอ)")]
         [SerializeField] private bool requireKeyPressToBuy = false;
 
@@ -674,6 +681,14 @@ namespace GI351.KitchenGame
             }
         }
 
+        /// <summary>สลับภาพหม้อ ว่าง <-> กำลังต้ม (ถ้าตั้งภาพไว้)</summary>
+        private void UpdatePotSprite()
+        {
+            if (potSpriteRenderer == null || (idleSprite == null && cookingSprite == null)) return;
+            Sprite want = isCurrentlyCooking && cookingSprite != null ? cookingSprite : idleSprite;
+            if (want != null && potSpriteRenderer.sprite != want) potSpriteRenderer.sprite = want;
+        }
+
         private void Update()
         {
             if (!Application.isPlaying)
@@ -695,6 +710,7 @@ namespace GI351.KitchenGame
             // วัตถุดิบลอยไปเรียงบนหม้อ + หลอดความคืบหน้าใต้หม้อ
             UpdateIngredientVisuals();
             UpdateProgressBar();
+            UpdatePotSprite();
 
             // แอนิเมชันของวงแหวนสีขาว (จุดยืนผู้เล่น)
             UpdateFloorRingAnimation();

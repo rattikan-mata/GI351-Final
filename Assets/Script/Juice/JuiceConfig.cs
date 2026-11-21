@@ -162,5 +162,67 @@ namespace GI351.KitchenGame
 
         [Tooltip("ตอนฆ่า: ระยะเวลา (วินาที ตามเวลาจริง)")]
         [Min(0f)] public float shakeOnKillTime = 0.15f;
+
+        [Header("5) Particles (เศษกระเด็นตอนตี/ฆ่า สีตั้งที่ EnemyHealth > Particle Colors ของสัตว์แต่ละตัว)")]
+        public bool particlesEnabled = true;
+
+        [Tooltip("ปิด = เม็ดกลมนุ่ม ขอบเนียน หด/จางแบบลื่น (เข้ากับภาพวาด) / เปิด = สี่เหลี่ยมพิกเซล ปัดตารางพิกเซล (เข้ากับ pixel art)")]
+        public bool pixelStyle = false;
+
+        [Tooltip("ตอนตีโดน: จำนวนเม็ด สุ่มระหว่าง x ถึง y (Juice King: 4-6)")]
+        public Vector2Int hitParticleCount = new Vector2Int(4, 6);
+
+        [Tooltip("ตอนตีโดน: เม็ดพุ่งออกฝั่งตรงข้ามผู้เล่น กว้างกี่องศา (360 = รอบตัว)")]
+        [Range(0f, 360f)] public float hitParticleSpread = 110f;
+
+        [Tooltip("ตอนฆ่า: จำนวนเม็ด สุ่มระหว่าง x ถึง y (Juice King: 10-20) พุ่งรอบตัว")]
+        public Vector2Int killParticleCount = new Vector2Int(12, 18);
+
+        [Tooltip("ความเร็วพุ่งออกด้านข้าง (หน่วย/วินาที) สุ่มระหว่าง x ถึง y")]
+        public Vector2 particleSpeed = new Vector2(2f, 4.5f);
+
+        [Tooltip("ความเร็วเด้งขึ้น (หน่วย/วินาที) สุ่มระหว่าง x ถึง y ยิ่งมากยิ่งลอยสูงก่อนตก")]
+        public Vector2 particleUpSpeed = new Vector2(2f, 4f);
+
+        [Tooltip("แรงโน้มถ่วงดึงเม็ดลงพื้น (หน่วย/วินาที²)")]
+        [Min(0f)] public float particleGravity = 20f;
+
+        [Tooltip("แรงหน่วงความเร็วด้านข้าง (ยิ่งมากยิ่งหยุดเร็ว)")]
+        [Min(0f)] public float particleDrag = 4f;
+
+        [Tooltip("อายุเม็ด (วินาที) สุ่มระหว่าง x ถึง y ช่วงท้ายเม็ดจะหดทีละพิกเซลจนหาย")]
+        public Vector2 particleLife = new Vector2(0.3f, 0.55f);
+
+        [Tooltip("ขนาดเม็ด (พิกเซลของเกม 1 = 1/16 หน่วย) สุ่มระหว่าง x ถึง y แบบเม็ดกลมคือเส้นผ่านศูนย์กลาง")]
+        public Vector2Int particleSizePixels = new Vector2Int(3, 4);
+
+        [Tooltip("ตอนฆ่า: เม็ดใหญ่กว่าตอนตีกี่พิกเซล")]
+        [Min(0)] public int killParticleExtraPixels = 1;
+
+        [Tooltip("ใช้เวลาจริง (unscaled) = เม็ดพุ่งระหว่าง hit stop ด้วย / ปิด = เม็ดค้างกลางอากาศตอนหยุดแล้วพุ่งตอนเกมเดินต่อ")]
+        public bool particleUnscaledTime = false;
+
+        [Header("5) Particles - Smoke (ควันตอนฆ่า)")]
+        public bool killSmokeEnabled = true;
+
+        [Tooltip("จำนวนก้อนควัน สุ่มระหว่าง x ถึง y")]
+        public Vector2Int killSmokeCount = new Vector2Int(4, 6);
+
+        [Tooltip("ขนาดก้อนควันตอนเริ่ม (พิกเซล เส้นผ่านศูนย์กลาง) สุ่มระหว่าง x ถึง y")]
+        public Vector2Int smokeSizePixels = new Vector2Int(6, 8);
+
+        [Tooltip("ก้อนควันโตขึ้นอีกกี่พิกเซลก่อนหาย")]
+        [Min(0)] public int smokeGrowPixels = 6;
+
+        [Tooltip("อายุควัน (วินาที) สุ่มระหว่าง x ถึง y")]
+        public Vector2 smokeLife = new Vector2(0.35f, 0.55f);
+
+        [Tooltip("ควันกระจายออกด้านข้าง (หน่วย/วินาที)")]
+        [Min(0f)] public float smokeSpreadSpeed = 1.2f;
+
+        [Tooltip("ควันลอยขึ้น (หน่วย/วินาที)")]
+        [Min(0f)] public float smokeRiseSpeed = 0.8f;
+
+        public Color smokeColor = new Color(1f, 1f, 1f, 0.75f);
     }
 }

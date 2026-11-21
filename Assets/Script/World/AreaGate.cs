@@ -25,6 +25,14 @@ namespace GI351.KitchenGame
         [Tooltip("ต้องเปิดประตูนี้ก่อน ประตูนี้ถึงจะจ่ายเงินได้ (ว่าง = จ่ายได้เลย) ระหว่างที่ยังไม่เปิด วงจ่ายเงินจะซ่อนอยู่แต่สิ่งกีดขวางยังปิดทางอยู่")]
         [SerializeField] private AreaGate requiredGate;
 
+        [Tooltip("ยังไม่เปิดขาย (โซนยังไม่มีของ): สิ่งกีดขวางปิดทางไว้ วงขึ้นสีเทาพร้อมข้อความด้านล่าง จ่ายเงินไม่ได้ ราคาเก็บไว้ตามเดิม เอาติ๊กออกเมื่อโซนพร้อม")]
+        [SerializeField] private bool comingSoon = false;
+
+        [Tooltip("ข้อความกลางวงตอนยังไม่เปิดขาย")]
+        [SerializeField] private string comingSoonText = "SOON";
+
+        [SerializeField] private Color ringComingSoonColor = new Color(0.6f, 0.6f, 0.65f, 0.7f);
+
         [Header("Barrier (สิ่งกีดขวาง)")]
         [Tooltip("ตัวแม่ของสิ่งกีดขวางทั้งหมด (ต้นไม้/รั้ว + Collider) เมื่อเปิดประตู Collider ทั้งหมดจะถูกปิดและภาพจางหาย")]
         [SerializeField] private Transform barrierRoot;
@@ -84,7 +92,8 @@ namespace GI351.KitchenGame
         public int Paid => paid;
         public int Remaining => Mathf.Max(0, price - paid);
         public float Progress => price > 0 ? Mathf.Clamp01((float)paid / price) : 1f;
-        public bool IsAvailable => requiredGate == null || requiredGate.IsUnlocked;
+        public bool IsAvailable => !comingSoon && (requiredGate == null || requiredGate.IsUnlocked);
+        public bool IsComingSoon => comingSoon;
 
         private void Awake()
         {
@@ -112,7 +121,22 @@ namespace GI351.KitchenGame
             if (isUnlocked) return;
 
             bool available = IsAvailable;
-            if (payRing != null && payRing.gameObject.activeSelf != available) payRing.gameObject.SetActive(available);
+            // ยังไม่เปิดขาย: โชว์วงเทา + SOON (เฉพาะเมื่อประตูก่อนหน้าเปิดแล้ว ไม่งั้นซ่อนเหมือนเดิม)
+            bool showSoon = comingSoon && (requiredGate == null || requiredGate.IsUnlocked);
+            bool ringVisible = available || showSoon;
+            if (payRing != null && payRing.gameObject.activeSelf != ringVisible) payRing.gameObject.SetActive(ringVisible);
+            if (showSoon)
+            {
+                drainBuffer = 0f;
+                isBuyerInside = false;
+                if (ringRenderer != null)
+                {
+                    ringRenderer.color = Color.Lerp(ringRenderer.color, ringComingSoonColor, Time.deltaTime * 10f);
+                    ringRenderer.transform.localScale = Vector3.one * baseRingScale;
+                }
+                RefreshVisuals();
+                return;
+            }
 
             isBuyerInside = false;
             if (available && payRing != null)
@@ -210,7 +234,7 @@ namespace GI351.KitchenGame
 
         private void RefreshVisuals()
         {
-            if (priceText != null) priceText.text = "$" + Remaining;
+            if (priceText != null) priceText.text = comingSoon ? comingSoonText : "$" + Remaining;
         }
 
         private void UpdateRing(int money)

@@ -7,8 +7,9 @@ namespace GI351.KitchenGame
     {
         [Header("HP เลือด (ตั้งที่ Prefab ของสัตว์แต่ละตัว: Chicken / Pig)")]
         [Tooltip("เลือดสูงสุดของสัตว์ตัวนี้ อ่านตอนเกิดเท่านั้น ไม่มีสคริปต์อื่น (EnemySpawner / HuntArea) แก้ทับ\n" +
-                 "สเกลเลือด: ไก่ 30 / หมู 100 / ตัวถัดไปให้ตั้งเลือดตรงกับ 'ดาเมจกระบองเลเวลที่อยากให้ตีทีเดียวตาย x จำนวนที่' " +
-                 "แล้วคลิกขวา Hunt Upgrades (ที่ Shop Stall) > Print Hits-To-Kill Table เช็คว่าอัปกระบองทุกขั้นยังเห็นผล")]
+                 "สเกล: สัตว์ตัวที่ N ตี 2 ทีตาย ตอนกระบอง LvN และตีทีเดียวตายตอน Lv(N+1)\n" +
+                 "ไก่ 30 / หมู 100 / ตัวที่ 3 = 200 / ตัวที่ 4 = 400 (กระบอง 20/50/100/200/400)\n" +
+                 "ตัวใหม่: เลือด = ดาเมจ Lv(N+1) และต้องมากกว่าดาเมจ LvN แล้วคลิกขวา Hunt Upgrades (ที่ Shop Stall) > Print Hits-To-Kill Table เช็ค")]
         [Min(1)]
         [SerializeField] private int maxHealth = 30;
 
@@ -30,6 +31,9 @@ namespace GI351.KitchenGame
         [Header("Juice (เอฟเฟกต์ตอนตี/ตาย: hit stop, squash, death pop, เนื้อบินโค้ง, กล้องสั่น)")]
         [Tooltip("ตัวเลขทั้งหมดของเอฟเฟกต์อยู่ใน JuiceConfig (Assets/Settings/JuiceConfig.asset) ว่าง = ใช้ค่าเริ่มต้นในโค้ด")]
         [SerializeField] private JuiceConfig juice;
+
+        [Tooltip("สีเศษกระเด็นตอนตี/ฆ่า สุ่มจากในลิสต์ (เช่น ไก่ = ขนขาว/ครีม, หมู = ฝุ่นชมพู) ว่าง = ขาว\nจำนวน/ความเร็ว/ควัน ตั้งที่ JuiceConfig หัวข้อ 5) Particles")]
+        [SerializeField] private Color[] particleColors = { Color.white };
 
         [Header("Events")]
         public UnityEvent<int, int> onHealthChanged;
@@ -144,6 +148,27 @@ namespace GI351.KitchenGame
             {
                 enemyJuice.PlayHit();
             }
+
+            if (cfg.particlesEnabled)
+            {
+                Vector2 center = spriteRenderer != null ? (Vector2)spriteRenderer.bounds.center : (Vector2)transform.position;
+                int layer = spriteRenderer != null ? spriteRenderer.sortingLayerID : 0;
+                int order = spriteRenderer != null ? spriteRenderer.sortingOrder : 0;
+                JuiceDirector.Particles(cfg, center, GetHitSource(center), lethal, particleColors, layer, order);
+            }
+        }
+
+        private static Transform playerTransform;
+
+        /// <summary>จุดที่ตีมา (ตำแหน่งผู้เล่น) ใช้หาทิศให้เศษพุ่งออกฝั่งตรงข้าม ไม่เจอผู้เล่น = พุ่งขึ้นบน</summary>
+        private Vector2 GetHitSource(Vector2 center)
+        {
+            if (playerTransform == null)
+            {
+                PlayerMovement pm = FindAnyObjectByType<PlayerMovement>();
+                if (pm != null) playerTransform = pm.transform;
+            }
+            return playerTransform != null ? (Vector2)playerTransform.position : center + Vector2.down;
         }
 
         public void SetDefaultColor(Color color)

@@ -138,7 +138,7 @@ namespace GI351.KitchenGame
         /// <summary>
         /// เครื่องมือเช็คสเกล: คลิกขวาที่ Hunt Upgrades > Print Hits-To-Kill Table
         /// พิมพ์ตาราง "ตีกี่ทีตาย" ของสัตว์ทุกตัวใน Prefab เทียบทุกเลเวลกระบอง
-        /// เลเวลไหนอัปแล้วไม่มีสัตว์ตัวไหนตายเร็วขึ้นเลย จะขึ้นเตือนสีเหลือง (= ซื้อแล้วไม่ได้อะไร ควรปรับดาเมจ/เลือด)
+        /// เช็คสเกล "สัตว์ตัวที่ N (เรียงตามเลือด) ตี 2 ทีตอน LvN และทีเดียวตอน Lv(N+1)" ไม่ตรงจะขึ้นเตือนสีเหลือง
         /// </summary>
         [ContextMenu("Print Hits-To-Kill Table")]
         private void PrintHitsToKillTable()
@@ -171,31 +171,46 @@ namespace GI351.KitchenGame
             foreach (ShopItemLevel lv in club.levels) sb.Append(Mathf.RoundToInt(lv.value).ToString().PadLeft(6));
             sb.AppendLine();
 
-            var improved = new bool[club.levels.Count];
-            foreach (var row in rows)
+            // สเกล: เรียงสัตว์ตามเลือด ตัวที่ N (เริ่ม 1) ต้องตี 2 ทีตอน LvN และ 1 ทีตอน Lv(N+1)
+            rows.Sort((a, b) => a.Value.CompareTo(b.Value));
+            bool ok = true;
+            var warnings = new System.Text.StringBuilder();
+            for (int r = 0; r < rows.Count; r++)
             {
+                var row = rows[r];
                 sb.Append((row.Key + " " + row.Value + "hp").PadRight(16));
-                int prev = int.MaxValue;
                 for (int i = 0; i < club.levels.Count; i++)
                 {
-                    int dmg = Mathf.Max(1, Mathf.RoundToInt(club.levels[i].value));
-                    int hits = Mathf.CeilToInt((float)row.Value / dmg);
-                    if (i > 0 && hits < prev) improved[i] = true;
-                    prev = hits;
+                    int hits = HitsToKill(row.Value, club.levels[i].value);
                     sb.Append(hits.ToString().PadLeft(6));
                 }
                 sb.AppendLine();
-            }
 
-            bool ok = true;
-            for (int i = 1; i < improved.Length; i++)
-            {
-                if (improved[i]) continue;
-                ok = false;
-                sb.AppendLine("<color=yellow>Lv" + (i + 1) + " (" + Mathf.RoundToInt(club.levels[i].value) + " dmg) ไม่ทำให้สัตว์ตัวไหนตายเร็วขึ้นเลย</color>");
+                int twoHitLv = r;      // index ของ LvN
+                int oneHitLv = r + 1;  // index ของ Lv(N+1)
+                if (twoHitLv < club.levels.Count && HitsToKill(row.Value, club.levels[twoHitLv].value) != 2)
+                {
+                    ok = false;
+                    warnings.AppendLine("<color=yellow>" + row.Key + " ควรตี 2 ทีตาย ตอน Lv" + (twoHitLv + 1) + "</color>");
+                }
+                if (oneHitLv < club.levels.Count && HitsToKill(row.Value, club.levels[oneHitLv].value) != 1)
+                {
+                    ok = false;
+                    warnings.AppendLine("<color=yellow>" + row.Key + " ควรตีทีเดียวตาย ตอน Lv" + (oneHitLv + 1) + "</color>");
+                }
             }
-            if (ok) sb.AppendLine("ทุกเลเวลมีสัตว์อย่างน้อย 1 ตัวที่ตายเร็วขึ้น");
+            sb.Append(warnings);
+            if (ok) sb.AppendLine("ตรงสเกล: สัตว์ตัวที่ N ตี 2 ทีตอน LvN และทีเดียวตอน Lv(N+1)");
+            if (rows.Count + 1 < club.levels.Count)
+            {
+                sb.AppendLine("Lv" + (rows.Count + 2) + " ขึ้นไป ยังไม่มีสัตว์รองรับ (รอสัตว์ตัวใหม่)");
+            }
             Debug.Log(sb.ToString(), this);
+        }
+
+        private static int HitsToKill(int hp, float damage)
+        {
+            return Mathf.CeilToInt((float)hp / Mathf.Max(1, Mathf.RoundToInt(damage)));
         }
 #endif
 

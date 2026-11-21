@@ -51,6 +51,10 @@ namespace GI351.KitchenGame
         [Tooltip("รายการเลเวล ตัวที่ 1 = Lv1 (มีตั้งแต่เริ่ม ไม่ใช้ราคา) ตัวถัดไป = ค่าที่ได้ และราคาที่ต้องจ่ายเพื่ออัปไปเลเวลนั้น ถ้าใส่ 2 ตัวขึ้นไป ช่อง Price / Stock ด้านบนจะไม่ถูกใช้")]
         public List<ShopItemLevel> levels = new List<ShopItemLevel>();
 
+        [Tooltip("เปิดขายถึงเลเวลไหน (0 = ทุกเลเวล) เช่น 3 = อัปได้ถึง Lv3 แล้วปุ่มขึ้น SOON\n" +
+                 "เลเวลที่เกินยังเก็บค่าไว้ในลิสต์ (เตรียมไว้สำหรับสัตว์ตัวใหม่) แค่ยังไม่ขาย")]
+        [Min(0)] public int levelCap = 0;
+
         [Tooltip("ยิงเมื่อซื้อสำเร็จ 1 ครั้ง ลากสคริปต์ที่จะให้ของ/ผลมาผูกที่นี่")]
         public UnityEvent onPurchased;
 
@@ -70,6 +74,9 @@ namespace GI351.KitchenGame
         }
 
         public bool IsMaxLevel => IsLeveled && Level >= levels.Count;
+
+        /// <summary>อัปถึงเลเวลที่เปิดขายแล้ว แต่ยังมีเลเวลถัดไปเตรียมไว้ (ยังไม่เปิดขาย)</summary>
+        public bool IsAtLevelCap => IsLeveled && !IsMaxLevel && levelCap > 0 && Level >= levelCap;
 
         /// <summary>ค่าของเลเวลปัจจุบัน</summary>
         public float CurrentValue => IsLeveled ? levels[Level - 1].value : 0f;
@@ -277,7 +284,7 @@ namespace GI351.KitchenGame
             if (index < 0 || index >= ItemCount) return false;
             ShopItemData it = items[index];
             if (it.locked) return false;
-            if (it.IsLeveled) return !it.IsMaxLevel && CurrentMoney >= it.NextPrice;
+            if (it.IsLeveled) return !it.IsMaxLevel && !it.IsAtLevelCap && CurrentMoney >= it.NextPrice;
             if (it.stock > 0 && it.sold >= it.stock) return false;
             return CurrentMoney >= it.price;
         }
@@ -311,7 +318,7 @@ namespace GI351.KitchenGame
             bool leveled = it.IsLeveled;
             if (leveled)
             {
-                if (it.IsMaxLevel) return false;
+                if (it.IsMaxLevel || it.IsAtLevelCap) return false;
             }
             else if (it.stock > 0 && it.sold >= it.stock)
             {
@@ -621,6 +628,19 @@ namespace GI351.KitchenGame
                 v.buyImage.color = new Color(0.22f, 0.22f, 0.26f, 1f);
                 v.buyText.text = "MAX";
                 v.buyText.fontSize = 32;
+                return;
+            }
+
+            if (it.IsAtLevelCap)
+            {
+                // เลเวลถัดไปเตรียมไว้แล้วแต่ยังไม่เปิดขาย
+                v.name.text = it.itemName + "  Lv" + it.Level;
+                if (v.desc != null) v.desc.text = label + FormatValue(it.CurrentValue);
+                v.price.text = "";
+                v.buyButton.interactable = false;
+                v.buyImage.color = new Color(0.3f, 0.3f, 0.35f, 1f);
+                v.buyText.text = string.IsNullOrEmpty(it.lockedText) ? "SOON" : it.lockedText;
+                v.buyText.fontSize = 30;
                 return;
             }
 

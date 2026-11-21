@@ -307,14 +307,15 @@ MonoBehaviour:
     levels:
     - value: 20
       price: 0
-    - value: 25
-      price: 40
-    - value: 34
-      price: 80
     - value: 50
-      price: 150
+      price: 40
     - value: 100
+      price: 80
+    - value: 200
+      price: 150
+    - value: 400
       price: 250
+    levelCap: 3
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
@@ -339,6 +340,7 @@ MonoBehaviour:
       price: 150
     - value: 20
       price: 250
+    levelCap: 0
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
@@ -363,6 +365,7 @@ MonoBehaviour:
       price: 150
     - value: 7
       price: 250
+    levelCap: 0
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
@@ -387,6 +390,7 @@ MonoBehaviour:
       price: 150
     - value: 1.75
       price: 250
+    levelCap: 0
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
@@ -401,6 +405,7 @@ MonoBehaviour:
     soldOutText: OWNED
     valueLabel: 
     levels: []
+    levelCap: 0
     onPurchased:
       m_PersistentCalls:
         m_Calls: []

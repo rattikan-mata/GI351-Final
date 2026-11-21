@@ -63,3 +63,24 @@ MonoBehaviour:
   shakeOnHitTime: 0.1
   shakeOnKillPixels: {x: 2, y: 3}
   shakeOnKillTime: 0.15
+  particlesEnabled: 1
+  pixelStyle: 0
+  hitParticleCount: {x: 4, y: 6}
+  hitParticleSpread: 110
+  killParticleCount: {x: 12, y: 18}
+  particleSpeed: {x: 2, y: 4.5}
+  particleUpSpeed: {x: 2, y: 4}
+  particleGravity: 20
+  particleDrag: 4
+  particleLife: {x: 0.3, y: 0.55}
+  particleSizePixels: {x: 3, y: 4}
+  killParticleExtraPixels: 1
+  particleUnscaledTime: 0
+  killSmokeEnabled: 1
+  killSmokeCount: {x: 4, y: 6}
+  smokeSizePixels: {x: 6, y: 8}
+  smokeGrowPixels: 6
+  smokeLife: {x: 0.35, y: 0.55}
+  smokeSpreadSpeed: 1.2
+  smokeRiseSpeed: 0.8
+  smokeColor: {r: 1, g: 1, b: 1, a: 0.75}
