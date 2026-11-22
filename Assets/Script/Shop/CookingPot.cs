@@ -58,31 +58,22 @@ namespace GI351.KitchenGame
         [Tooltip("ไอคอนอาหารที่ได้บนป้ายสูตร (ว่าง = ใช้ภาพจาก Cooked Dish Prefab)")]
         [SerializeField] private Sprite dishIcon;
 
-        [Tooltip("ป้ายวงรีบอกจำนวนที่อยู่ในหม้อ (ไอคอน + ตัวเลข) โชว์เมื่อมีของในหม้อ")]
-        [SerializeField] private bool showCountBadge = true;
-
-        [Tooltip("ตำแหน่งป้ายจำนวน เยื้องจากกลางหม้อ (เมตร)")]
-        [SerializeField] private Vector2 countBadgeOffset = new Vector2(-0.75f, 0.95f);
-
-        [Tooltip("ขนาดป้ายจำนวน (กว้าง x สูง เมตร)")]
-        [SerializeField] private Vector2 countBadgeSize = new Vector2(0.95f, 0.5f);
-
-        [SerializeField] private Color countBadgeColor = new Color(1f, 0.8f, 0.28f, 1f);
-        [SerializeField] private Color countBadgeOutlineColor = new Color(0.42f, 0.26f, 0.12f, 1f);
-        [SerializeField] private Color countTextColor = new Color(0.25f, 0.15f, 0.08f, 1f);
-
-        [Tooltip("ป้ายสูตรเหนือหม้อ: วัตถุดิบ → อาหารที่ได้")]
+        [Tooltip("ป้ายเดียวเหนือหม้อ: วัตถุดิบ + จำนวนในหม้อ → อาหารที่ได้ และพื้นป้ายเป็นหลอดความคืบหน้าการต้มในตัว")]
         [SerializeField] private bool showRecipeSign = true;
 
-        [Tooltip("ตำแหน่งป้ายสูตร เยื้องจากกลางหม้อ (เมตร)")]
-        [SerializeField] private Vector2 recipeSignOffset = new Vector2(0.45f, 1.55f);
+        [Tooltip("ตำแหน่งป้าย เยื้องจากกลางหม้อ (เมตร)")]
+        [SerializeField] private Vector2 recipeSignOffset = new Vector2(0f, 1.55f);
 
-        [Tooltip("ขนาดป้ายสูตร (กว้าง x สูง เมตร)")]
-        [SerializeField] private Vector2 recipeSignSize = new Vector2(1.5f, 0.6f);
+        [Tooltip("ขนาดป้าย (กว้าง x สูง เมตร)")]
+        [SerializeField] private Vector2 potSignSize = new Vector2(1.9f, 0.7f);
 
         [SerializeField] private Color recipeSignColor = new Color(0.98f, 0.9f, 0.72f, 1f);
         [SerializeField] private Color recipeSignOutlineColor = new Color(0.55f, 0.36f, 0.2f, 1f);
         [SerializeField] private Color recipeArrowColor = new Color(0.62f, 0.4f, 0.55f, 1f);
+        [SerializeField] private Color countTextColor = new Color(0.25f, 0.15f, 0.08f, 1f);
+
+        [Tooltip("สีหลอดความคืบหน้าในป้าย (ถาดเต็มจะใช้ Tray Full Bar Color แทน)")]
+        [SerializeField] private Color signProgressColor = new Color(0.6f, 0.88f, 0.42f, 1f);
 
         [Tooltip("ถ้าติ๊กถูก ต้องกดปุ่ม E เพื่อซื้อ (ถ้าไม่ติ๊ก แค่เดินเข้ามาเหยียบวงจะซื้อให้อัตโนมัติถ้าเงินพอ)")]
         [SerializeField] private bool requireKeyPressToBuy = false;
@@ -223,19 +214,6 @@ namespace GI351.KitchenGame
         [Tooltip("จำนวนชิ้นสูงสุดที่โชว์บนหม้อ (เกินนี้จะซ่อนไว้แต่ยังอยู่ในคิว)")]
         [SerializeField] private int maxVisibleIngredients = 8;
 
-        [Header("Cooking Progress Bar (หลอดความคืบหน้าใต้หม้อ)")]
-        [Tooltip("เปิดแสดงหลอดความคืบหน้า เต็มหลอดแล้วจะได้อาหาร")]
-        [SerializeField] private bool showProgressBar = true;
-
-        [Tooltip("ตำแหน่งเยื้องจากกลางหม้อ (เมตร)")]
-        [SerializeField] private Vector2 progressBarOffset = new Vector2(0f, -1.15f);
-
-        [Tooltip("ขนาดหลอด (กว้าง x สูง เมตร)")]
-        [SerializeField] private Vector2 progressBarSize = new Vector2(1.6f, 0.16f);
-
-        [SerializeField] private Color progressBarBackColor = new Color(0f, 0f, 0f, 0.6f);
-        [SerializeField] private Color progressBarFillColor = new Color(0.35f, 0.95f, 0.45f, 1f);
-
         [Header("Gizmo Settings")]
         [Tooltip("สีของโซนตรวจจับใน Scene View")]
         [SerializeField] private Color zoneGizmoColor = new Color(0.2f, 0.8f, 1f, 0.25f);
@@ -277,7 +255,6 @@ namespace GI351.KitchenGame
         private float outputRingSpawnPulseTimer = 0f;
 
         private static Sprite generatedRingSprite;
-        private static Sprite whitePixelSprite;
 
         // วัตถุดิบที่ลอยไปวางบนหม้อ (ชิ้นแรกคือชิ้นที่กำลังต้ม)
         private class IngredientVisual
@@ -290,11 +267,6 @@ namespace GI351.KitchenGame
         }
         private readonly List<IngredientVisual> ingredientVisuals = new List<IngredientVisual>();
         private float lastIngredientLaunchTime = -999f;
-
-        // หลอดความคืบหน้า
-        private GameObject progressBarRoot;
-        private Transform progressBarFill;
-        private TextMesh progressCountText;
 
         public bool IsUnlocked => isUnlocked;
         public bool RequiresPurchase => requiresPurchase;
@@ -812,9 +784,8 @@ namespace GI351.KitchenGame
             UpdateCookingQueue();
             UpdateTrayCollect();
 
-            // วัตถุดิบลอยไปเรียงบนหม้อ + หลอดความคืบหน้าใต้หม้อ
+            // วัตถุดิบลอยไปเรียงบนหม้อ + ป้ายบนหม้อ (จำนวน + หลอดความคืบหน้าในป้าย)
             UpdateIngredientVisuals();
-            UpdateProgressBar();
             UpdatePotSprite();
             UpdatePotUI();
 
@@ -1307,101 +1278,6 @@ namespace GI351.KitchenGame
             }
         }
 
-        // ========================== หลอดความคืบหน้าใต้หม้อ ==========================
-
-        private void SetupProgressBar()
-        {
-            if (progressBarRoot != null) return;
-
-            SpriteRenderer potRenderer = GetComponent<SpriteRenderer>();
-            int layerId = potRenderer != null ? potRenderer.sortingLayerID : 0;
-            int baseOrder = potRenderer != null ? potRenderer.sortingOrder : 0;
-
-            progressBarRoot = new GameObject("CookingProgressBar");
-            progressBarRoot.transform.SetParent(transform, false);
-
-            // พื้นหลังหลอด
-            var back = new GameObject("Back");
-            back.transform.SetParent(progressBarRoot.transform, false);
-            var backSr = back.AddComponent<SpriteRenderer>();
-            backSr.sprite = GetWhitePixelSprite(new Vector2(0.5f, 0.5f));
-            backSr.color = progressBarBackColor;
-            backSr.sortingLayerID = layerId;
-            backSr.sortingOrder = baseOrder + 40; // อยู่เหนือกองจานบนถาด
-            back.transform.localScale = new Vector3(progressBarSize.x, progressBarSize.y, 1f);
-
-            // ตัวหลอด (pivot ซ้าย ยืดไปทางขวาตามความคืบหน้า)
-            var fill = new GameObject("Fill");
-            fill.transform.SetParent(progressBarRoot.transform, false);
-            var fillSr = fill.AddComponent<SpriteRenderer>();
-            fillSr.sprite = GetWhitePixelSprite(new Vector2(0f, 0.5f));
-            fillSr.color = progressBarFillColor;
-            fillSr.sortingLayerID = layerId;
-            fillSr.sortingOrder = baseOrder + 41;
-            fill.transform.localPosition = new Vector3(-progressBarSize.x * 0.5f, 0f, 0f);
-            progressBarFill = fill.transform;
-
-            // จำนวนชิ้นที่รอต้ม (เช่น x3)
-            var text = new GameObject("Count");
-            text.transform.SetParent(progressBarRoot.transform, false);
-            text.transform.localPosition = new Vector3(progressBarSize.x * 0.5f + 0.1f, 0f, 0f);
-            progressCountText = text.AddComponent<TextMesh>();
-            progressCountText.anchor = TextAnchor.MiddleLeft;
-            progressCountText.characterSize = 0.05f;
-            progressCountText.fontSize = 48;
-            progressCountText.color = Color.white;
-            var mr = text.GetComponent<MeshRenderer>();
-            mr.sortingLayerID = layerId;
-            mr.sortingOrder = baseOrder + 42;
-        }
-
-        private void UpdateProgressBar()
-        {
-            bool show = showProgressBar && isCurrentlyCooking;
-            if (!show)
-            {
-                if (progressBarRoot != null) progressBarRoot.SetActive(false);
-                return;
-            }
-
-            SetupProgressBar();
-            progressBarRoot.SetActive(true);
-
-            // ให้หลอดมีสเกลในโลกเท่ากับ 1 ไม่ว่าหม้อจะถูกสเกลเท่าไหร่
-            Vector3 lossy = transform.lossyScale;
-            progressBarRoot.transform.localScale = new Vector3(
-                1f / Mathf.Max(0.0001f, Mathf.Abs(lossy.x)),
-                1f / Mathf.Max(0.0001f, Mathf.Abs(lossy.y)),
-                1f);
-            progressBarRoot.transform.position = transform.position + new Vector3(progressBarOffset.x, progressBarOffset.y, -0.1f);
-            progressBarRoot.transform.rotation = Quaternion.identity;
-
-            // ถาดเต็ม: หลอดเต็มเป็นสีส้มแดง บอกว่าหม้อหยุดรอให้มาเก็บ
-            float shownProgress = IsTrayFull ? 1f : CurrentProgress;
-            progressBarFill.localScale = new Vector3(progressBarSize.x * shownProgress, progressBarSize.y, 1f);
-            if (progressBarFill.TryGetComponent(out SpriteRenderer fillRenderer))
-            {
-                fillRenderer.color = IsTrayFull ? trayFullBarColor : progressBarFillColor;
-            }
-
-            int count = CookingItemsCount;
-            // จำนวนในหม้อย้ายไปอยู่ที่ป้ายแล้ว (ถ้าปิดป้ายค่อยโชว์ x3 ข้างหลอด)
-            progressCountText.text = IsTrayFull ? "FULL" : (!showCountBadge && count > 1 ? $"x{count}" : "");
-        }
-
-        /// <summary>
-        /// Sprite สีขาว 1x1 หน่วย (ใช้ทำหลอด) แยกตาม pivot
-        /// </summary>
-        private static Sprite GetWhitePixelSprite(Vector2 pivot)
-        {
-            if (pivot == new Vector2(0.5f, 0.5f) && whitePixelSprite != null) return whitePixelSprite;
-
-            var tex = Texture2D.whiteTexture;
-            var sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), pivot, tex.width);
-            if (pivot == new Vector2(0.5f, 0.5f)) whitePixelSprite = sprite;
-            return sprite;
-        }
-
         /// <summary>
         /// เพิ่มวัตถุดิบพิเศษ (โจรที่สลบ) เข้าคิวทำอาหารพิเศษ
         /// </summary>
@@ -1654,13 +1530,18 @@ namespace GI351.KitchenGame
             LayoutTray();
         }
 
-        // ========================== ป้ายบนหม้อ (จำนวนในหม้อ + สูตร) ==========================
+        // ========================== ป้ายบนหม้อ (วัตถุดิบ + จำนวน → อาหาร, พื้นป้ายเป็นหลอดความคืบหน้า) ==========================
 
         private GameObject potUIRoot;
-        private WorldCountBadge potCountBadge;
         private GameObject recipeSign;
         private SpriteRenderer recipeRawRenderer;
         private SpriteRenderer recipeDishRenderer;
+        private SpriteRenderer signProgressRenderer;
+        private TextMesh signCountText;
+        private int lastSignCount = int.MinValue;
+        private float signPunchStart = -10f;
+        private const float SignPunchTime = 0.16f;
+        private const float SignProgressInset = 0.07f;
 
         /// <summary>จำนวนที่อยู่ในหม้อจริง (ไม่นับชิ้นที่ยังลอยไม่ถึงปากหม้อ)</summary>
         private int DisplayedPotCount()
@@ -1678,7 +1559,7 @@ namespace GI351.KitchenGame
 
         private void UpdatePotUI()
         {
-            if (!showCountBadge && !showRecipeSign)
+            if (!showRecipeSign)
             {
                 if (potUIRoot != null) potUIRoot.SetActive(false);
                 return;
@@ -1719,24 +1600,36 @@ namespace GI351.KitchenGame
                 }
             }
 
-            int count = DisplayedPotCount();
-            bool showBadge = showCountBadge && count > 0;
-            potCountBadge.Visible = showBadge;
-            if (showBadge) potCountBadge.Set(ingredientIcon, Color.white, count);
-            potCountBadge.Tick();
+            float iconBox = potSignSize.y * 0.68f;
+            WorldUi.FitIcon(recipeRawRenderer, ingredientIcon, iconBox);
+            WorldUi.FitIcon(recipeDishRenderer, dishIcon, iconBox);
 
-            if (recipeSign.activeSelf != showRecipeSign) recipeSign.SetActive(showRecipeSign);
-            if (showRecipeSign)
+            // จำนวนในหม้อ (ข้างไอคอนวัตถุดิบ) ว่างเมื่อหม้อว่าง
+            int count = DisplayedPotCount();
+            if (count != lastSignCount)
             {
-                WorldUi.FitIcon(recipeRawRenderer, ingredientIcon, recipeSignSize.y * 0.72f);
-                WorldUi.FitIcon(recipeDishRenderer, dishIcon, recipeSignSize.y * 0.72f);
+                signCountText.text = count > 0 ? count.ToString() : "";
+                lastSignCount = count;
             }
+
+            // หลอดความคืบหน้าในป้าย: ยืดจากซ้ายไปขวา ถาดเต็มเป็นสีส้มแดง (หม้อหยุดรอให้มาเก็บ)
+            float progress = !isCurrentlyCooking ? 0f : (IsTrayFull ? 1f : CurrentProgress);
+            float innerW = potSignSize.x - SignProgressInset * 2f;
+            float innerH = potSignSize.y - SignProgressInset * 2f;
+            signProgressRenderer.enabled = progress > 0.001f;
+            signProgressRenderer.transform.localScale = new Vector3(innerW * progress, innerH, 1f);
+            signProgressRenderer.color = IsTrayFull ? trayFullBarColor : signProgressColor;
+
+            // เด้งตอนของตกลงหม้อ
+            float k = (Time.unscaledTime - signPunchStart) / SignPunchTime;
+            float s = k >= 0f && k < 1f ? Mathf.Lerp(1f, 1.15f, Mathf.Sin(k * Mathf.PI)) : 1f;
+            recipeSign.transform.localScale = new Vector3(s, s, 1f);
         }
 
-        /// <summary>ป้ายจำนวนเด้งตอนของตกลงหม้อ</summary>
+        /// <summary>ป้ายเด้งตอนของตกลงหม้อ</summary>
         private void PunchCountBadge()
         {
-            if (potCountBadge != null) potCountBadge.Punch();
+            signPunchStart = Time.unscaledTime;
         }
 
         private void SetupPotUI()
@@ -1750,29 +1643,44 @@ namespace GI351.KitchenGame
             potUIRoot = new GameObject("PotUI");
             potUIRoot.transform.SetParent(transform, false);
 
-            // ---- ป้ายจำนวน (วงรี: ไอคอนซ้าย ตัวเลขขวา) ----
-            potCountBadge = WorldCountBadge.Create(potUIRoot.transform, "CountBadge", countBadgeSize,
-                countBadgeColor, countBadgeOutlineColor, countTextColor, layer, order);
-            potCountBadge.Root.transform.localPosition = new Vector3(countBadgeOffset.x, countBadgeOffset.y, 0f);
-            potCountBadge.Visible = false;
-
             const float outline = 0.06f;
+            float w = potSignSize.x, h = potSignSize.y;
 
-            // ---- ป้ายสูตร (วัตถุดิบ → อาหาร) ----
+            // ป้ายเดียว: [วัตถุดิบ 9 ▸ อาหาร]
             recipeSign = new GameObject("RecipeSign");
             recipeSign.transform.SetParent(potUIRoot.transform, false);
             recipeSign.transform.localPosition = new Vector3(recipeSignOffset.x, recipeSignOffset.y, 0f);
 
             WorldUi.MakeShape(recipeSign.transform, "Outline", WorldUi.RoundRect, recipeSignOutlineColor,
-                new Vector2(recipeSignSize.x + outline * 2f, recipeSignSize.y + outline * 2f), Vector3.zero, layer, order);
-            WorldUi.MakeShape(recipeSign.transform, "Fill", WorldUi.RoundRect, recipeSignColor, recipeSignSize, Vector3.zero, layer, order + 1);
+                new Vector2(w + outline * 2f, h + outline * 2f), Vector3.zero, layer, order);
+            WorldUi.MakeShape(recipeSign.transform, "Fill", WorldUi.RoundRect, recipeSignColor, potSignSize, Vector3.zero, layer, order + 1);
 
-            float iconX = recipeSignSize.x * 0.3f;
-            recipeRawRenderer = WorldUi.MakeShape(recipeSign.transform, "Raw", null, Color.white, Vector2.one, new Vector3(-iconX, 0f, 0f), layer, order + 2);
-            recipeDishRenderer = WorldUi.MakeShape(recipeSign.transform, "Dish", null, Color.white, Vector2.one, new Vector3(iconX, 0f, 0f), layer, order + 2);
-            float arrow = recipeSignSize.y * 0.38f;
-            WorldUi.MakeShape(recipeSign.transform, "Arrow", WorldUi.Arrow, recipeArrowColor, new Vector2(arrow, arrow), Vector3.zero, layer, order + 2);
+            // หลอดความคืบหน้า (pivot ซ้าย) อยู่ใต้ไอคอน
+            signProgressRenderer = WorldUi.MakeShape(recipeSign.transform, "Progress", WorldUi.PixelLeft, signProgressColor,
+                new Vector2(0f, h - SignProgressInset * 2f), new Vector3(-w * 0.5f + SignProgressInset, 0f, 0f), layer, order + 2);
+            signProgressRenderer.enabled = false;
+
+            recipeRawRenderer = WorldUi.MakeShape(recipeSign.transform, "Raw", null, Color.white, Vector2.one, new Vector3(-w * 0.32f, 0f, 0f), layer, order + 3);
+
+            var textGo = new GameObject("Count");
+            textGo.transform.SetParent(recipeSign.transform, false);
+            textGo.transform.localPosition = new Vector3(-w * 0.1f, 0.01f, 0f);
+            signCountText = textGo.AddComponent<TextMesh>();
+            signCountText.anchor = TextAnchor.MiddleCenter;
+            signCountText.alignment = TextAlignment.Center;
+            signCountText.fontStyle = FontStyle.Bold;
+            signCountText.fontSize = 64;
+            signCountText.characterSize = h * 0.11f;
+            signCountText.color = countTextColor;
+            var mr = textGo.GetComponent<MeshRenderer>();
+            mr.sortingLayerID = layer;
+            mr.sortingOrder = order + 3;
+
+            float arrow = h * 0.36f;
+            WorldUi.MakeShape(recipeSign.transform, "Arrow", WorldUi.Arrow, recipeArrowColor, new Vector2(arrow, arrow), new Vector3(w * 0.08f, 0f, 0f), layer, order + 3);
+            recipeDishRenderer = WorldUi.MakeShape(recipeSign.transform, "Dish", null, Color.white, Vector2.one, new Vector3(w * 0.3f, 0f, 0f), layer, order + 3);
         }
+
 
         public Vector3 GetStandZonePosition()
         {
