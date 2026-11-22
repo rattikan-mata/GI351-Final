@@ -308,15 +308,15 @@ MonoBehaviour:
     levels:
     - value: 20
       price: 0
+    - value: 35
+      price: 30
     - value: 50
-      price: 40
+      price: 60
     - value: 100
-      price: 80
-    - value: 200
-      price: 150
-    - value: 400
+      price: 120
+    - value: 150
       price: 250
-    levelCap: 3
+    levelCap: 4
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
@@ -362,20 +362,14 @@ MonoBehaviour:
     levels:
     - value: 5
       price: 0
-    - value: 5.25
-      price: 20
-    - value: 5.5
-      price: 35
-    - value: 5.75
-      price: 55
     - value: 6
-      price: 80
-    - value: 6.3
-      price: 120
-    - value: 6.6
-      price: 170
+      price: 25
     - value: 7
-      price: 250
+      price: 50
+    - value: 8
+      price: 80
+    - value: 9
+      price: 120
     levelCap: 0
     onPurchased:
       m_PersistentCalls:
@@ -418,6 +412,21 @@ MonoBehaviour:
     id: pork_pot
     tab: Cook
     locked: 0
+    lockedText: SOON
+    soldOutText: OWNED
+    valueLabel: 
+    levels: []
+    levelCap: 0
+    onPurchased:
+      m_PersistentCalls:
+        m_Calls: []
+  - itemName: Frog Pot
+    description: Cook frog legs into Frog Soup
+    price: 200
+    stock: 1
+    id: frog_pot
+    tab: Cook
+    locked: 1
     lockedText: SOON
     soldOutText: OWNED
     valueLabel: 
@@ -551,6 +560,8 @@ MonoBehaviour:
   bindings:
   - itemId: pork_pot
     potIngredient: 1
+  - itemId: frog_pot
+    potIngredient: 7
 --- !u!114 &1865791447962721318
 MonoBehaviour:
   m_ObjectHideFlags: 0

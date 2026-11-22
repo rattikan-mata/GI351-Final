@@ -138,7 +138,7 @@ namespace GI351.KitchenGame
         /// <summary>
         /// เครื่องมือเช็คสเกล: คลิกขวาที่ Hunt Upgrades > Print Hits-To-Kill Table
         /// พิมพ์ตาราง "ตีกี่ทีตาย" ของสัตว์ทุกตัวใน Prefab เทียบทุกเลเวลกระบอง
-        /// เช็คสเกล "สัตว์ตัวที่ N (เรียงตามเลือด) ตี 2 ทีตอน LvN และทีเดียวตอน Lv(N+1)" ไม่ตรงจะขึ้นเตือนสีเหลือง
+        /// เช็คสเกล "สัตว์ทุกตัวลด 3 ที -> 2 ที -> 1 ที ทีละเลเวล" ไม่ตรงจะขึ้นเตือนสีเหลือง
         /// </summary>
         [ContextMenu("Print Hits-To-Kill Table")]
         private void PrintHitsToKillTable()
@@ -171,39 +171,52 @@ namespace GI351.KitchenGame
             foreach (ShopItemLevel lv in club.levels) sb.Append(Mathf.RoundToInt(lv.value).ToString().PadLeft(6));
             sb.AppendLine();
 
-            // สเกล: เรียงสัตว์ตามเลือด ตัวที่ N (เริ่ม 1) ต้องตี 2 ทีตอน LvN และ 1 ทีตอน Lv(N+1)
+            // สเกล: สัตว์ทุกตัวต้องลดจาก 3 ที -> 2 ที -> 1 ที ทีละเลเวลติดกัน (ไม่ข้าม ไม่ค้าง)
+            // ยกเว้นตัวที่ตีได้ไม่เกิน 3 ทีตั้งแต่ Lv1 (สัตว์ตัวแรก) เริ่มที่กี่ทีก็ได้แต่ต้องลดทีละ 1
             rows.Sort((a, b) => a.Value.CompareTo(b.Value));
             bool ok = true;
+            int lastOneHitLv = 0;
             var warnings = new System.Text.StringBuilder();
             for (int r = 0; r < rows.Count; r++)
             {
                 var row = rows[r];
                 sb.Append((row.Key + " " + row.Value + "hp").PadRight(16));
+                int[] hits = new int[club.levels.Count];
                 for (int i = 0; i < club.levels.Count; i++)
                 {
-                    int hits = HitsToKill(row.Value, club.levels[i].value);
-                    sb.Append(hits.ToString().PadLeft(6));
+                    hits[i] = HitsToKill(row.Value, club.levels[i].value);
+                    sb.Append(hits[i].ToString().PadLeft(6));
                 }
                 sb.AppendLine();
 
-                int twoHitLv = r;      // index ของ LvN
-                int oneHitLv = r + 1;  // index ของ Lv(N+1)
-                if (twoHitLv < club.levels.Count && HitsToKill(row.Value, club.levels[twoHitLv].value) != 2)
+                int start = System.Array.FindIndex(hits, h => h <= 3);
+                if (start < 0)
                 {
                     ok = false;
-                    warnings.AppendLine("<color=yellow>" + row.Key + " ควรตี 2 ทีตาย ตอน Lv" + (twoHitLv + 1) + "</color>");
+                    warnings.AppendLine("<color=yellow>" + row.Key + " กระบองเลเวลสูงสุดยังตีเกิน 3 ที</color>");
+                    continue;
                 }
-                if (oneHitLv < club.levels.Count && HitsToKill(row.Value, club.levels[oneHitLv].value) != 1)
+                if (start > 0 && hits[start] != 3)
                 {
                     ok = false;
-                    warnings.AppendLine("<color=yellow>" + row.Key + " ควรตีทีเดียวตาย ตอน Lv" + (oneHitLv + 1) + "</color>");
+                    warnings.AppendLine("<color=yellow>" + row.Key + " ข้ามจาก " + hits[start - 1] + " ทีไป " + hits[start] + " ที ตอน Lv" + (start + 1) + " (ควรเป็น 3 ที)</color>");
                 }
+                for (int i = start + 1; i < hits.Length && hits[i - 1] > 1; i++)
+                {
+                    if (hits[i] != hits[i - 1] - 1)
+                    {
+                        ok = false;
+                        warnings.AppendLine("<color=yellow>" + row.Key + " Lv" + i + " -> Lv" + (i + 1) + " ควรลดจาก " + hits[i - 1] + " เหลือ " + (hits[i - 1] - 1) + " ที (ได้ " + hits[i] + ")</color>");
+                    }
+                }
+                int oneHit = System.Array.IndexOf(hits, 1);
+                lastOneHitLv = Mathf.Max(lastOneHitLv, oneHit + 1);
             }
             sb.Append(warnings);
-            if (ok) sb.AppendLine("ตรงสเกล: สัตว์ตัวที่ N ตี 2 ทีตอน LvN และทีเดียวตอน Lv(N+1)");
-            if (rows.Count + 1 < club.levels.Count)
+            if (ok) sb.AppendLine("ตรงสเกล: สัตว์ทุกตัวลด 3 ที -> 2 ที -> 1 ที ทีละเลเวล");
+            if (lastOneHitLv > 0 && lastOneHitLv < club.levels.Count)
             {
-                sb.AppendLine("Lv" + (rows.Count + 2) + " ขึ้นไป ยังไม่มีสัตว์รองรับ (รอสัตว์ตัวใหม่)");
+                sb.AppendLine("Lv" + (lastOneHitLv + 1) + " ขึ้นไป ยังไม่มีสัตว์รองรับ (รอสัตว์ตัวใหม่)");
             }
             Debug.Log(sb.ToString(), this);
         }

@@ -37,7 +37,7 @@ namespace GI351.KitchenGame
             {
                 if (pot == null || !pot.IsUnlocked) continue;
 
-                ItemType dish = pot.IsPigPot() ? ItemType.CookedPig : ItemType.CookedChicken;
+                ItemType dish = pot.OutputDishType;
                 if (!result.Contains(dish)) result.Add(dish);
             }
 
@@ -94,27 +94,9 @@ namespace GI351.KitchenGame
             return list[Random.Range(0, list.Count)];
         }
 
-        public static string GetShortName(ItemType dish)
-        {
-            switch (dish)
-            {
-                case ItemType.CookedChicken: return "Chicken";
-                case ItemType.CookedPig: return "Pork";
-                case ItemType.MixedDish: return "Mix";
-                default: return "Any";
-            }
-        }
+        public static string GetShortName(ItemType dish) => FoodTypes.ShortName(dish);
 
-        public static Color GetColor(ItemType dish)
-        {
-            switch (dish)
-            {
-                case ItemType.CookedChicken: return new Color(1f, 0.85f, 0.2f, 1f);
-                case ItemType.CookedPig: return new Color(1f, 0.55f, 0.65f, 1f);
-                case ItemType.MixedDish: return new Color(0.8f, 0.6f, 1f, 1f);
-                default: return Color.white;
-            }
-        }
+        public static Color GetColor(ItemType dish) => FoodTypes.DishColor(dish);
     }
 }
 

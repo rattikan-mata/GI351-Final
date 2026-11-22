@@ -372,7 +372,14 @@ namespace GI351.KitchenGame
         public ItemType RequiredIngredient => requiredIngredient;
 
         /// <summary>อาหารที่หม้อนี้ทำออกมา</summary>
-        public ItemType OutputDishType => IsPigPot() ? ItemType.CookedPig : ItemType.CookedChicken;
+        public ItemType OutputDishType
+        {
+            get
+            {
+                if (FoodTypes.TryGetDish(requiredIngredient, out ItemType dish)) return dish;
+                return IsPigPot() ? ItemType.CookedPig : ItemType.CookedChicken;
+            }
+        }
 
         /// <summary>ภาพและสีของอาหารที่หม้อนี้ทำ (ใช้ทำไอคอนบนป้าย) คืน false ถ้าไม่มีภาพ</summary>
         public bool TryGetDishIcon(out Sprite sprite, out Color color)

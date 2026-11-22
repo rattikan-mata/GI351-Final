@@ -1,0 +1,217 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3754125921781682485
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4322058872116632}
+  - component: {fileID: 4724191930434283834}
+  - component: {fileID: 1364571523067871426}
+  - component: {fileID: 4268453864685642440}
+  m_Layer: 0
+  m_Name: Frog Leg
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4322058872116632
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3754125921781682485}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -9.82, y: -4.74, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &4724191930434283834
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3754125921781682485}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: 12403a3a07d2a2941a0ce2917e15c79f, type: 3}
+  m_Color: {r: 0.72, g: 1, b: 0.62, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 1, y: 0.5}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
+--- !u!60 &1364571523067871426
+PolygonCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3754125921781682485}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 0.5679245, y: 0.6018868}
+    newSize: {x: 1, y: 0.5}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Points:
+    m_Paths:
+    - - {x: -0.06698114, y: -0.13867925}
+      - {x: -0.051886793, y: -0.14622642}
+      - {x: -0.03490566, y: -0.1481132}
+      - {x: -0.014150944, y: -0.13301887}
+      - {x: -0.010377359, y: -0.11792453}
+      - {x: 0.019811321, y: -0.12924528}
+      - {x: 0.08584906, y: -0.1254717}
+      - {x: 0.11226416, y: -0.11792453}
+      - {x: 0.14056604, y: -0.10849057}
+      - {x: 0.15566038, y: -0.10283019}
+      - {x: 0.19528303, y: -0.07641509}
+      - {x: 0.21792454, y: -0.051886793}
+      - {x: 0.25, y: -0.004716981}
+      - {x: 0.26698112, y: 0.025471698}
+      - {x: 0.2745283, y: 0.04811321}
+      - {x: 0.2783019, y: 0.07830189}
+      - {x: 0.2783019, y: 0.11415094}
+      - {x: 0.2745283, y: 0.14433962}
+      - {x: 0.26320755, y: 0.18018869}
+      - {x: 0.24245283, y: 0.21037737}
+      - {x: 0.2254717, y: 0.22924529}
+      - {x: 0.18962264, y: 0.26132077}
+      - {x: 0.15, y: 0.28584906}
+      - {x: 0.10660377, y: 0.29528302}
+      - {x: 0.05754717, y: 0.29528302}
+      - {x: 0.03490566, y: 0.29150945}
+      - {x: 0.008490566, y: 0.28207546}
+      - {x: -0.019811321, y: 0.26886794}
+      - {x: -0.053773586, y: 0.24622642}
+      - {x: -0.0990566, y: 0.19905661}
+      - {x: -0.11226416, y: 0.18207547}
+      - {x: -0.13490567, y: 0.12924528}
+      - {x: -0.14245284, y: 0.07641509}
+      - {x: -0.13679245, y: 0.010377359}
+      - {x: -0.12358491, y: -0.014150944}
+      - {x: -0.13679245, y: -0.021698114}
+      - {x: -0.1481132, y: -0.031132076}
+      - {x: -0.15377359, y: -0.05566038}
+      - {x: -0.13679245, y: -0.07830189}
+      - {x: -0.14056604, y: -0.09150943}
+      - {x: -0.19150944, y: -0.1481132}
+      - {x: -0.22735849, y: -0.18396227}
+      - {x: -0.25943395, y: -0.19905661}
+      - {x: -0.2783019, y: -0.22169812}
+      - {x: -0.2783019, y: -0.24622642}
+      - {x: -0.26509434, y: -0.26509434}
+      - {x: -0.25, y: -0.27075472}
+      - {x: -0.23679246, y: -0.29150945}
+      - {x: -0.22924529, y: -0.29528302}
+      - {x: -0.20660378, y: -0.29528302}
+      - {x: -0.19716981, y: -0.29339623}
+      - {x: -0.18207547, y: -0.2745283}
+      - {x: -0.15754718, y: -0.2254717}
+      - {x: -0.08584906, y: -0.14433962}
+  m_UseDelaunayMesh: 1
+--- !u!114 &4268453864685642440
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3754125921781682485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af6ccca836fa0a2458719f1ac65f929d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.Item
+  itemType: 7
+  itemName: Raw Frog Leg
+  sellPrice: 10
+  canDespawn: 1
+  despawnTime: 30
+  blinkBeforeDespawn: 1
+  blinkWarningTime: 5
+  spriteRenderer: {fileID: 0}

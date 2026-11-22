@@ -395,11 +395,9 @@ namespace GI351.KitchenGame
         {
             if (item == null) return false;
             if (item.Type == ItemType.UnconsciousThief) return false;
-            if (item.Type == ItemType.ChickenMeat || item.Type == ItemType.PigMeat) return false;
-            if (item.Type == ItemType.SpecialDish || item.Type == ItemType.MixedDish) return true;
+            if (FoodTypes.IsRawMeat(item.Type)) return false;
             if (item is CookedDish) return true;
-            if (item.Type == ItemType.CookedChicken || item.Type == ItemType.CookedPig) return true;
-            return false;
+            return FoodTypes.IsCookedDish(item.Type);
         }
 
         /// <summary>
