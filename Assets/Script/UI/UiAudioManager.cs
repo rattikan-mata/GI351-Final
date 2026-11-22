@@ -4,7 +4,12 @@ namespace GI351.KitchenGame
 {
     public class UiAudioManager : MonoBehaviour
     {
+        public const string BgmPrefKey = "ui.bgm";
+        public const string SfxPrefKey = "ui.sfx";
+
         public static UiAudioManager Instance { get; private set; }
+        public static float BgmVolume { get; private set; } = 1f;
+        public static float SfxVolume { get; private set; } = 1f;
 
         [Header("Audio Source")]
         [SerializeField] private AudioSource sfxSource;
@@ -38,6 +43,24 @@ namespace GI351.KitchenGame
                 sfxSource = gameObject.AddComponent<AudioSource>();
                 sfxSource.playOnAwake = false;
             }
+
+            BgmVolume = PlayerPrefs.GetFloat(BgmPrefKey, BgmVolume);
+            SfxVolume = PlayerPrefs.GetFloat(SfxPrefKey, SfxVolume);
+            sfxSource.volume = SfxVolume;
+        }
+
+        public static void SetBgmVolume(float value)
+        {
+            BgmVolume = Mathf.Clamp01(value);
+            PlayerPrefs.SetFloat(BgmPrefKey, BgmVolume);
+        }
+
+        public static void SetSfxVolume(float value)
+        {
+            SfxVolume = Mathf.Clamp01(value);
+            PlayerPrefs.SetFloat(SfxPrefKey, SfxVolume);
+            if (Instance != null && Instance.sfxSource != null)
+                Instance.sfxSource.volume = SfxVolume;
         }
 
         public void PlayClick() => PlayClip(buttonClick, 1f, true);

@@ -77,8 +77,28 @@ namespace GI351.KitchenGame
                 });
             }
 
+            BindVolumeSlider(bgmSlider, true);
+            BindVolumeSlider(sfxSlider, false);
+
             if (settingsBox != null) settingsBox.SetActive(false);
             if (mode == MenuMode.PauseMenu && panel != null) panel.SetActive(false);
+        }
+
+        private static void BindVolumeSlider(Slider slider, bool bgm)
+        {
+            if (slider == null) return;
+            float saved = PlayerPrefs.GetFloat(bgm ? UiAudioManager.BgmPrefKey : UiAudioManager.SfxPrefKey, 1f);
+            slider.SetValueWithoutNotify(saved);
+            if (bgm)
+            {
+                UiAudioManager.SetBgmVolume(saved);
+                slider.onValueChanged.AddListener(UiAudioManager.SetBgmVolume);
+            }
+            else
+            {
+                UiAudioManager.SetSfxVolume(saved);
+                slider.onValueChanged.AddListener(UiAudioManager.SetSfxVolume);
+            }
         }
 
         private void Update()
@@ -113,12 +133,15 @@ namespace GI351.KitchenGame
             bool isMain = menuMode == MenuMode.MainMenu;
             string objName = isMain ? "Main Menu Panel" : "Pause Menu Panel";
             RectTransform canvasRect = UiBuild.CreateCanvas(parent, objName, 120);
+            UiBuild.Stretch(canvasRect);
+            canvasRect.GetComponent<GraphicRaycaster>().ignoreReversedGraphics = true;
             GameMenuPanelsView view = canvasRect.gameObject.AddComponent<GameMenuPanelsView>();
             view.mode = menuMode;
+            view.gameplaySceneName = "SampleScene";
 
             RectTransform overlay = UiBuild.CreateRect(canvasRect, "Panel", typeof(Image));
             UiBuild.Stretch(overlay);
-            overlay.GetComponent<Image>().color = new Color(0.04f, 0.05f, 0.1f, isMain ? 0.75f : 0.88f);
+            overlay.GetComponent<Image>().color = new Color(0f, 0f, 0f, isMain ? 0.75f : 0.88f);
             view.panel = overlay.gameObject;
 
             RectTransform box = UiBuild.CreateRect(overlay, "Window Box", typeof(Image), typeof(VerticalLayoutGroup));
@@ -126,18 +149,19 @@ namespace GI351.KitchenGame
             box.GetComponent<Image>().color = new Color(0.1f, 0.12f, 0.2f, 0.96f);
 
             VerticalLayoutGroup vlg = box.GetComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(40, 40, 40, 40);
+            vlg.padding = new RectOffset(48, 48, 48, 48);
             vlg.spacing = 22f;
             vlg.childAlignment = TextAnchor.MiddleCenter;
-            vlg.childControlWidth = true;
+            vlg.childControlWidth = false;
             vlg.childControlHeight = false;
-            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandWidth = false;
+            vlg.childForceExpandHeight = false;
 
             view.titleText = UiBuild.CreateText(box, "Title", isMain ? "KITCHEN HUNT" : "PAUSED", 52, FontStyle.Bold, new Color(1f, 0.85f, 0.25f, 1f), TextAnchor.MiddleCenter);
             view.titleText.rectTransform.sizeDelta = new Vector2(440f, 90f);
 
             view.primaryButton = UiBuild.CreateButton(box, "Primary Button", isMain ? "START GAME" : "RESUME", new Vector2(440f, 78f), new Color(0.25f, 0.75f, 0.35f, 1f), 36);
-            view.settingsButton = UiBuild.CreateButton(box, "Settings Button", "SETTINGS", new Vector2(440f, 78f), new Color(0.2f, 0.65f, 0.95f, 1f), 36);
+            view.settingsButton = UiBuild.CreateButton(box, "Settings Button", "SETTINGS", new Vector2(440f, 78f), new Color(0.45f, 0.47f, 0.52f, 1f), 36);
             view.quitOrMenuButton = UiBuild.CreateButton(box, "Quit Button", isMain ? "QUIT GAME" : "MAIN MENU", new Vector2(440f, 78f), new Color(0.95f, 0.25f, 0.42f, 1f), 36);
 
             RectTransform setBox = UiBuild.CreateRect(overlay, "Settings Box", typeof(Image));
@@ -149,11 +173,12 @@ namespace GI351.KitchenGame
             UiBuild.Place(setTitle.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -45f), new Vector2(480f, 50f), new Vector2(0.5f, 0.5f));
 
             view.bgmSlider = CreateLabeledSlider(setBox, "BGM", new Vector2(0f, -125f));
-            view.sfxSlider = CreateLabeledSlider(setBox, "SFX", new Vector2(0f, -205f));
+            view.sfxSlider = CreateLabeledSlider(setBox, "SFX", new Vector2(0f, -206f));
 
             view.closeSettingsButton = UiBuild.CreateButton(setBox, "Close Settings", "BACK", new Vector2(220f, 64f), new Color(0.3f, 0.35f, 0.45f, 1f), 30);
             UiBuild.Place((RectTransform)view.closeSettingsButton.transform, new Vector2(0.5f, 0f), new Vector2(0f, 28f), new Vector2(220f, 64f), new Vector2(0.5f, 0f));
 
+            setBox.gameObject.SetActive(false);
             return view;
         }
 
@@ -176,7 +201,9 @@ namespace GI351.KitchenGame
             UiBuild.Stretch(fill);
             fill.GetComponent<Image>().color = new Color(0.2f, 0.75f, 1f, 1f);
 
+            Image bgImage = bg.GetComponent<Image>();
             Slider slider = sliderRt.GetComponent<Slider>();
+            slider.targetGraphic = bgImage;
             slider.fillRect = fill;
             slider.minValue = 0f;
             slider.maxValue = 1f;
