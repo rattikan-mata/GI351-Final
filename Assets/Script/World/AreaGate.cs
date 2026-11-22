@@ -94,6 +94,8 @@ namespace GI351.KitchenGame
         public float Progress => price > 0 ? Mathf.Clamp01((float)paid / price) : 1f;
         public bool IsAvailable => !comingSoon && (requiredGate == null || requiredGate.IsUnlocked);
         public bool IsComingSoon => comingSoon;
+        /// <summary>ประตูที่ต้องเปิดก่อนประตูนี้ (ว่าง = เปิดได้เลย) ใช้เรียงลำดับปลดล็อกโซน</summary>
+        public AreaGate RequiredGate => requiredGate;
 
         // ช่องทางเดินของประตู (กรอบรวมของ Collider สิ่งกีดขวาง) เก็บไว้ตั้งแต่ Awake เพราะเปิดประตูแล้ว Collider จะถูกปิด
         private bool hasPassage;

@@ -73,14 +73,14 @@ namespace GI351.KitchenGame
 
         private void Start()
         {
-            // ประตูไปโซนถัดไป = ประตูของโซนอื่นที่ช่องประตูอยู่ติดโซนนี้ (เช่น เกาะไก่ -> ประตูเกาะหมู)
+            // ประตูไปโซนถัดไป = ประตูถัดไปตามลำดับปลดล็อก (ประตูที่ต้องเปิดประตูของโซนนี้ก่อน)
+            // โซนเริ่มต้นที่ไม่มีประตู -> ประตูแรกที่ไม่ต้องเปิดอะไรก่อน (เช่น เกาะไก่ -> ประตูเกาะหมู, เกาะหมู -> ประตูเกาะกบ)
             if (maxAnimalsAfterNextOpens <= 0 || spawner == null) return;
-            Rect grown = Grow(AreaRect, LinkReach);
             for (int i = 0; i < all.Count; i++)
             {
                 HuntArea other = all[i];
                 if (other == null || other == this || other.gate == null || other.gate == gate) continue;
-                if (!other.gate.TryGetPassage(out Rect passage) || !grown.Overlaps(passage)) continue;
+                if (other.gate.RequiredGate != gate) continue;
                 nextGate = other.gate;
                 break;
             }
