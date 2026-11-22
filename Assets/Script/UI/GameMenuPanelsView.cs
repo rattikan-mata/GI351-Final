@@ -138,6 +138,7 @@ namespace GI351.KitchenGame
             GameMenuPanelsView view = canvasRect.gameObject.AddComponent<GameMenuPanelsView>();
             view.mode = menuMode;
             view.gameplaySceneName = "SampleScene";
+            view.mainMenuSceneName = "MainMenu";
 
             RectTransform overlay = UiBuild.CreateRect(canvasRect, "Panel", typeof(Image));
             UiBuild.Stretch(overlay);
@@ -179,6 +180,7 @@ namespace GI351.KitchenGame
             UiBuild.Place((RectTransform)view.closeSettingsButton.transform, new Vector2(0.5f, 0f), new Vector2(0f, 28f), new Vector2(220f, 64f), new Vector2(0.5f, 0f));
 
             setBox.gameObject.SetActive(false);
+            if (!isMain) overlay.gameObject.SetActive(false);
             return view;
         }
 
