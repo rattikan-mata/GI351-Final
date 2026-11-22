@@ -30,6 +30,18 @@ namespace GI351.KitchenGame
         [Tooltip("ระยะที่ถือว่าชิดขอบเขต (เมตร) ถ้าวิ่งหนีมาถึงจะเลี้ยวไปตามขอบ ไม่วิ่งทะลุและไม่ยืนติดขอบ")]
         [SerializeField] private float fleeEdgeMargin = 0.35f;
 
+        [Tooltip("มองทางข้างหน้ากี่เมตรตอนวิ่งหนี ถ้าเจอกำแพง/น้ำ/ขอบโซน จะเลี้ยวไปทางที่โล่งก่อนถึง ไม่วิ่งไปติดกำแพง")]
+        [Min(0.3f)]
+        [SerializeField] private float fleeWallLookAhead = 2.2f;
+
+        [Header("Flee Between Areas (วิ่งหนีข้ามโซนล่า)")]
+        [Tooltip("เปิด = ตอนวิ่งหนี วิ่งผ่านช่องประตูที่เปิดแล้วไปโซนล่าอื่นได้ (หนีไปถึงแล้วจะอยู่โซนใหม่ต่อ)")]
+        [SerializeField] private bool fleeToOtherAreas = true;
+
+        [Tooltip("โอกาสที่ตัวที่วิ่งหนีจะมุ่งไปช่องประตู (ถ้าช่องไม่ได้อยู่ทางผู้เล่น)")]
+        [Range(0f, 1f)]
+        [SerializeField] private float crossAreaChance = 0.6f;
+
         [Header("Panic (ตีตัวหนึ่ง ตัวรอบๆ แตกตื่นหนีตาม)")]
         [Tooltip("เปิด = ตัวนี้โดนตีแล้ว สัตว์ตัวอื่นในรัศมีด้านล่างวิ่งหนีไปด้วย (ตัวที่ปิด Flee When Hit จะไม่หนีตาม)")]
         [SerializeField] private bool panicNearbyOnHit = true;
@@ -110,9 +122,18 @@ namespace GI351.KitchenGame
         private bool isFleeing;
         private float fleeTimer;
         private Transform playerTarget;
-        private Vector2 slideDir;
-        private float slideTimer;
-        private const float SlideCommitTime = 0.6f;
+        private Vector2 lastFleeDir;
+        private float fleeStuckTimer;
+
+        // วิ่งหนีข้ามโซน
+        private HuntArea homeArea;
+        private bool isCrossing;
+        private HuntArea.Link crossLink;
+        private bool crossPassedLink;
+        private HuntArea crossFrom;
+        private static readonly RaycastHit2D[] wallHits = new RaycastHit2D[8];
+        private const int FleeDirections = 16;
+        private static readonly ContactFilter2D WallFilter = new ContactFilter2D { useTriggers = false };
 
         // ตกใจตามตัวอื่น (รอดีเลย์ก่อนเริ่มหนี)
         private float pendingPanicTimer = -1f;
@@ -159,10 +180,22 @@ namespace GI351.KitchenGame
         /// <summary>กรอบที่สัตว์ถูกขังไว้ (ตั้งจาก EnemySpawner) คืน false ถ้าไม่มีกรอบ</summary>
         public bool TryGetBoundary(out Vector2 min, out Vector2 max)
         {
+            // อยู่ในระบบโซนล่า: ใช้กรอบของโซน/ทางเชื่อมที่ตัวอยู่ตอนนี้ (หนีข้ามโซนไปแล้ว เนื้อจะตกในโซนนั้น)
+            if (UsesAreaRegion && HuntArea.TryGetRegionRectAt(Position, out Rect r))
+            {
+                min = r.min;
+                max = r.max;
+                return true;
+            }
             min = boundaryMin;
             max = boundaryMax;
             return hasBoundary;
         }
+
+        private Vector2 Position => rb != null ? rb.position : (Vector2)transform.position;
+
+        /// <summary>เดินอยู่ในโซนล่า (HuntArea) และวิ่งข้ามไปโซนอื่นที่เปิดแล้วได้</summary>
+        private bool UsesAreaRegion => fleeToOtherAreas && homeArea != null;
 
         private void Awake()
         {
@@ -221,6 +254,8 @@ namespace GI351.KitchenGame
                 if (health == null || !health.IsKnockedBack)
                 {
                     fleeTimer -= Time.deltaTime;
+                    // หมดเวลาตอนอยู่กลางช่องประตู: วิ่งต่อให้พ้นช่องก่อน ไม่ยืนขวางทาง
+                    if (fleeTimer <= 0f && UsesAreaRegion && HuntArea.FindOpenAreaAt(Position) == null) fleeTimer = 0.2f;
                     if (fleeTimer <= 0f) EndFlee();
                 }
                 return;
@@ -250,24 +285,37 @@ namespace GI351.KitchenGame
             zoneShape = ZoneShape.Rectangle;
             centerPoint = center;
             rectangleSize = new Vector2(Mathf.Abs(size.x), Mathf.Abs(size.y));
+
+            homeArea = HuntArea.FindAreaAt(center);
         }
 
         /// <summary>
         /// ดึงตัวกลับเข้ากรอบถ้าหลุดออกไป (เช่น โดนตีกระเด็น) และตัดความเร็วที่พุ่งออกนอกกรอบ
+        /// อยู่ในระบบโซนล่า: กรอบ = ทุกโซนที่เปิดแล้ว + ช่องประตูที่เชื่อมกัน
         /// </summary>
         private void KeepInsideBoundary()
         {
             Vector2 pos = rb.position;
-            Vector2 clamped = new Vector2(
-                Mathf.Clamp(pos.x, boundaryMin.x, boundaryMax.x),
-                Mathf.Clamp(pos.y, boundaryMin.y, boundaryMax.y));
+            Vector2 clamped;
+            if (UsesAreaRegion)
+            {
+                if (HuntArea.IsInsideRoamRegion(pos)) return;
+                clamped = HuntArea.ClampToRoamRegion(pos);
+            }
+            else
+            {
+                clamped = new Vector2(
+                    Mathf.Clamp(pos.x, boundaryMin.x, boundaryMax.x),
+                    Mathf.Clamp(pos.y, boundaryMin.y, boundaryMax.y));
+            }
 
             if (clamped == pos) return;
 
             rb.position = clamped;
             Vector2 vel = rb.linearVelocity;
-            if ((pos.x < boundaryMin.x && vel.x < 0f) || (pos.x > boundaryMax.x && vel.x > 0f)) vel.x = 0f;
-            if ((pos.y < boundaryMin.y && vel.y < 0f) || (pos.y > boundaryMax.y && vel.y > 0f)) vel.y = 0f;
+            Vector2 push = pos - clamped; // ทิศที่หลุดออกไป
+            if ((push.x < 0f && vel.x < 0f) || (push.x > 0f && vel.x > 0f)) vel.x = 0f;
+            if ((push.y < 0f && vel.y < 0f) || (push.y > 0f && vel.y > 0f)) vel.y = 0f;
             rb.linearVelocity = vel;
         }
 
@@ -560,23 +608,74 @@ namespace GI351.KitchenGame
             isFleeing = true;
             isIdle = false;
             fleeTimer = wasFleeing ? Mathf.Max(fleeTimer, duration) : duration;
-            slideTimer = 0f;
-            if (!wasFleeing) RefreshAnimalCollisions();
+            if (!wasFleeing)
+            {
+                lastFleeDir = Vector2.zero;
+                fleeStuckTimer = 0f;
+                ChooseCrossing();
+                RefreshAnimalCollisions();
+            }
         }
 
         private void EndFlee()
         {
             isFleeing = false;
-            slideTimer = 0f;
+            isCrossing = false;
+
+            // หนีไปถึงโซนอื่นแล้ว อยู่โซนใหม่ต่อเลย
+            if (UsesAreaRegion)
+            {
+                HuntArea now = HuntArea.FindOpenAreaAt(Position);
+                if (now != null && now != homeArea)
+                {
+                    Rect r = now.InnerRect;
+                    SetBoundary(r.center, r.size);
+                    homeArea = now;
+                }
+            }
+
             RefreshAnimalCollisions();
             PickNewTargetPoint();
         }
 
-        /// <summary>วิ่งออกห่างจากผู้เล่นด้วย fleeSpeed ถ้าชนขอบเขตให้เลี้ยวไปตามขอบ</summary>
-        private void FleeStep()
+        /// <summary>
+        /// ตอนเริ่มหนี สุ่มว่าจะมุ่งไปช่องประตูที่เปิดแล้วไหม (เลือกช่องที่ไม่ได้อยู่ทางผู้เล่น)
+        /// </summary>
+        private void ChooseCrossing()
         {
-            Vector2 pos = rb.position;
+            isCrossing = false;
+            crossPassedLink = false;
+            if (!UsesAreaRegion || Random.value > crossAreaChance) return;
 
+            Vector2 pos = Position;
+            HuntArea here = HuntArea.FindOpenAreaAt(pos);
+            if (here == null) return;
+
+            Vector2 away = AwayFromPlayer(pos);
+            float best = -0.15f; // ช่องที่อยู่ทางผู้เล่นมากๆ ไม่ไป
+            var links = HuntArea.Links;
+            for (int i = 0; i < links.Count; i++)
+            {
+                HuntArea.Link l = links[i];
+                if (l.a != here && l.b != here) continue;
+                Vector2 to = l.Center - pos;
+                if (to.sqrMagnitude < 0.0001f) continue;
+                float score = Vector2.Dot(to.normalized, away);
+                if (score > best)
+                {
+                    best = score;
+                    crossLink = l;
+                    crossFrom = here;
+                    isCrossing = true;
+                }
+            }
+
+            // ตัวที่มุ่งไปช่องประตู หนีนานขึ้นให้พ้นไปถึงอีกโซน
+            if (isCrossing) fleeTimer = Mathf.Max(fleeTimer, fleeDuration * 1.6f);
+        }
+
+        private Vector2 AwayFromPlayer(Vector2 pos)
+        {
             Vector2 away = playerTarget != null ? pos - (Vector2)playerTarget.position : Vector2.zero;
             if (away.sqrMagnitude < 0.0001f)
             {
@@ -584,75 +683,115 @@ namespace GI351.KitchenGame
                 away = pos - centerPoint;
                 if (away.sqrMagnitude < 0.0001f) away = Vector2.right;
             }
-            away.Normalize();
+            return away.normalized;
+        }
+
+        /// <summary>วิ่งออกห่างจากผู้เล่นด้วย fleeSpeed มองทางข้างหน้า ถ้าจะชนกำแพง/น้ำ/ขอบโซนเลี้ยวไปทางที่โล่งก่อน</summary>
+        private void FleeStep()
+        {
+            Vector2 pos = rb.position;
+            Vector2 away = AwayFromPlayer(pos);
+            Vector2 goal = away;
+
+            if (isCrossing)
+            {
+                // มุ่งไปกลางช่องประตู ผ่านช่องแล้วมุ่งเข้ากลางโซนอีกฝั่ง
+                HuntArea dest = crossLink.Other(crossFrom);
+                if (dest == null || !dest.IsOpen) isCrossing = false;
+                else
+                {
+                    if (!crossPassedLink && (crossLink.Center - pos).sqrMagnitude < 0.6f * 0.6f) crossPassedLink = true;
+                    Vector2 target = crossPassedLink ? (Vector2)dest.transform.position : crossLink.Center;
+                    Vector2 to = target - pos;
+                    if (crossPassedLink && dest.InnerRect.Contains(pos) && to.magnitude < 2f) isCrossing = false;
+                    else if (to.sqrMagnitude > 0.0001f) goal = (to.normalized * 1.4f + away * 0.4f).normalized;
+                }
+            }
+
+            // ยังติดอยู่ (ความเร็วจริงต่ำมากสักพัก): เลิกมุ่งไปช่องประตู และไม่ยึดทิศเดิม ให้เลือกทางใหม่
+            if (rb.linearVelocity.magnitude < fleeSpeed * 0.3f) fleeStuckTimer += Time.fixedDeltaTime;
+            else fleeStuckTimer = 0f;
+            if (fleeStuckTimer > 0.4f)
+            {
+                fleeStuckTimer = 0f;
+                isCrossing = false;
+                lastFleeDir = -lastFleeDir;
+            }
 
             // หนีแล้วก็ยังเว้นระยะกับตัวอื่น ไม่วิ่งไปกองรวมกันที่มุม
-            away = ApplyAvoidance(pos, away, 0.6f);
-
-            Vector2 dir = hasBoundary ? SteerAlongEdges(pos, away) : away;
+            Vector2 clear = ChooseClearDirection(pos, goal);
+            Vector2 dir = ApplyAvoidance(pos, clear, 0.6f);
+            lastFleeDir = dir;
             rb.linearVelocity = dir * fleeSpeed;
             FaceDirection(dir);
         }
 
         /// <summary>
-        /// ถ้าทิศหนีพุ่งเข้าหาขอบเขต ตัดส่วนที่พุ่งออกนอกแล้วไถไปตามขอบแทน
-        /// ถ้าเกือบตรงเข้าหาขอบ/มุม จะเลือกทิศไถไปตามขอบที่ห่างผู้เล่นที่สุด แล้วยึดทิศนั้นสักพัก (กันสั่นไปมาติดมุม)
+        /// ลองหลายทิศรอบตัว ให้คะแนน = ตรงกับทิศที่อยากไป + ทางข้างหน้าโล่งแค่ไหน + ต่อเนื่องจากทิศเดิม
+        /// ทิศที่อีกไม่กี่ก้าวจะชนกำแพง/น้ำ/ขอบโซนโดนหักคะแนนหนัก เลยเลี้ยวเลียบกำแพงออกไปแทนการวิ่งเข้าไปติด
         /// </summary>
-        private Vector2 SteerAlongEdges(Vector2 pos, Vector2 away)
+        private Vector2 ChooseClearDirection(Vector2 pos, Vector2 goal)
         {
-            float m = fleeEdgeMargin;
-            bool wallMinX = pos.x <= boundaryMin.x + m;
-            bool wallMaxX = pos.x >= boundaryMax.x - m;
-            bool wallMinY = pos.y <= boundaryMin.y + m;
-            bool wallMaxY = pos.y >= boundaryMax.y - m;
-
-            // กำลังไถตามทิศที่ยึดไว้ ใช้ต่อจนหมดเวลาหรือจะชนกำแพงใหม่
-            if (slideTimer > 0f)
-            {
-                slideTimer -= Time.fixedDeltaTime;
-                if (!PushesIntoWall(slideDir, wallMinX, wallMaxX, wallMinY, wallMaxY)) return slideDir;
-                slideTimer = 0f;
-            }
-
-            bool blockX = (wallMinX && away.x < 0f) || (wallMaxX && away.x > 0f);
-            bool blockY = (wallMinY && away.y < 0f) || (wallMaxY && away.y > 0f);
-            if (!blockX && !blockY) return away;
-
-            Vector2 dir = away;
-            if (blockX) dir.x = 0f;
-            if (blockY) dir.y = 0f;
-
-            // ยังเหลือแรงไถไปตามขอบมากพอ ใช้ทิศนั้นได้เลย
-            if (dir.magnitude >= 0.5f) return dir.normalized;
-
-            // ตรงเข้าหาขอบ/มุม: เลือกทิศที่ไม่ชนกำแพงและไกลผู้เล่นที่สุด (เสมอกันเลือกเข้าหากลางโซน)
-            Vector2 toCenter = ((boundaryMin + boundaryMax) * 0.5f - pos).normalized;
-            Vector2 best = Vector2.zero;
+            Vector2 best = goal;
             float bestScore = float.NegativeInfinity;
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i <= FleeDirections; i++)
             {
-                Vector2 cand = i == 0 ? Vector2.up : i == 1 ? Vector2.down : i == 2 ? Vector2.left : Vector2.right;
-                if (PushesIntoWall(cand, wallMinX, wallMaxX, wallMinY, wallMaxY)) continue;
+                Vector2 d;
+                if (i == FleeDirections) d = goal;
+                else
+                {
+                    float a = i * Mathf.PI * 2f / FleeDirections;
+                    d = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+                }
 
-                float score = Vector2.Dot(cand, away) + 0.01f * Vector2.Dot(cand, toCenter);
+                // อยากไปทางนี้แค่ไหน (0..1) x ทางโล่งแค่ไหน (ยกกำลังสอง: ทางที่อีกไม่ไกลจะชนแทบไม่ได้คะแนน)
+                // ติดมุมโดยมีผู้เล่นไล่หลัง ทางที่ชนะคือทางเลียบกำแพงออกไป ไม่ใช่ซอกเล็กๆ เข้ามุม
+                float clear = Clearance(pos, d) / fleeWallLookAhead; // 0..1
+                float interest = (Vector2.Dot(d, goal) + 1f) * 0.5f;
+                float score = interest * clear * clear;
+                if (lastFleeDir.sqrMagnitude > 0.0001f) score += Mathf.Max(0f, Vector2.Dot(d, lastFleeDir)) * clear * 0.15f;
                 if (score > bestScore)
                 {
                     bestScore = score;
-                    best = cand;
+                    best = d;
                 }
             }
-
-            // หาทิศไม่ได้เลย (โซนแคบมาก) วิ่งเข้ากลางโซน
-            if (best == Vector2.zero) best = toCenter;
-
-            slideDir = best;
-            slideTimer = SlideCommitTime;
-            return slideDir;
+            return best;
         }
 
-        private bool PushesIntoWall(Vector2 d, bool wallMinX, bool wallMaxX, bool wallMinY, bool wallMaxY)
+        /// <summary>วิ่งไปทิศนี้ได้อีกกี่เมตรก่อนชนกำแพง/น้ำ (Collider ที่ไม่ขยับ) หรือหลุดขอบพื้นที่ (สูงสุด fleeWallLookAhead)</summary>
+        private float Clearance(Vector2 pos, Vector2 d)
         {
-            return (wallMinX && d.x < 0f) || (wallMaxX && d.x > 0f) || (wallMinY && d.y < 0f) || (wallMaxY && d.y > 0f);
+            float max = fleeWallLookAhead;
+
+            // ขอบพื้นที่ที่วิ่งได้
+            const float step = 0.3f;
+            for (float t = step; t <= max; t += step)
+            {
+                Vector2 q = pos + d * t;
+                bool inside = UsesAreaRegion
+                    ? HuntArea.IsInsideRoamRegion(q)
+                    : !hasBoundary || (q.x >= boundaryMin.x + fleeEdgeMargin && q.x <= boundaryMax.x - fleeEdgeMargin
+                                       && q.y >= boundaryMin.y + fleeEdgeMargin && q.y <= boundaryMax.y - fleeEdgeMargin);
+                if (!inside) { max = t - step; break; }
+            }
+
+            // กำแพง/น้ำ/ประตูที่ยังไม่เปิด ใช้รูปร่างตัวจริงของสัตว์กวาดไป (ไม่นับสัตว์ ผู้เล่น และของที่ขยับได้)
+            int n = rb.Cast(d, WallFilter, wallHits, max);
+            for (int i = 0; i < n; i++)
+            {
+                Collider2D c = wallHits[i].collider;
+                if (c == null || c.isTrigger) continue;
+                if (c.attachedRigidbody != null && (c.attachedRigidbody == rb || c.attachedRigidbody.bodyType == RigidbodyType2D.Dynamic)) continue;
+                if (wallHits[i].distance <= 0.001f)
+                {
+                    // ชิดกำแพงอยู่แล้ว: ทิศที่ดันเข้ากำแพงไปไม่ได้เลย ทิศที่ไถเลียบ/ออกจากกำแพงไม่นับ
+                    if (Vector2.Dot(wallHits[i].normal, d) < -0.1f) return 0f;
+                    continue;
+                }
+                max = Mathf.Min(max, wallHits[i].distance);
+            }
+            return Mathf.Max(0f, max);
         }
 
         #endregion

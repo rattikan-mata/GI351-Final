@@ -95,8 +95,47 @@ namespace GI351.KitchenGame
         public bool IsAvailable => !comingSoon && (requiredGate == null || requiredGate.IsUnlocked);
         public bool IsComingSoon => comingSoon;
 
+        // ช่องทางเดินของประตู (กรอบรวมของ Collider สิ่งกีดขวาง) เก็บไว้ตั้งแต่ Awake เพราะเปิดประตูแล้ว Collider จะถูกปิด
+        private bool hasPassage;
+        private Rect passageRect;
+
+        /// <summary>ช่องทางเดินระหว่างโซนที่ประตูนี้กั้นอยู่ (ใช้ให้สัตว์วิ่งหนีข้ามโซนที่เปิดแล้ว)</summary>
+        public bool TryGetPassage(out Rect rect)
+        {
+            rect = passageRect;
+            return hasPassage;
+        }
+
+        private void CachePassage()
+        {
+            if (barrierRoot == null) return;
+            foreach (Collider2D c in barrierRoot.GetComponentsInChildren<Collider2D>(true))
+            {
+                if (c == null || c.isTrigger) continue;
+                Rect r;
+                if (c is BoxCollider2D box)
+                {
+                    Vector3 center = box.transform.TransformPoint(box.offset);
+                    Vector3 s = box.transform.lossyScale;
+                    Vector2 size = new Vector2(Mathf.Abs(box.size.x * s.x), Mathf.Abs(box.size.y * s.y));
+                    r = new Rect((Vector2)center - size * 0.5f, size);
+                }
+                else
+                {
+                    Bounds b = c.bounds;
+                    r = new Rect(b.min, b.size);
+                }
+                if (!hasPassage) passageRect = r;
+                else passageRect = Rect.MinMaxRect(Mathf.Min(passageRect.xMin, r.xMin), Mathf.Min(passageRect.yMin, r.yMin),
+                    Mathf.Max(passageRect.xMax, r.xMax), Mathf.Max(passageRect.yMax, r.yMax));
+                hasPassage = true;
+            }
+        }
+
         private void Awake()
         {
+            CachePassage();
+
             if (ringRenderer != null && ringRenderer.sprite != null)
             {
                 float w = ringRenderer.sprite.bounds.size.x;

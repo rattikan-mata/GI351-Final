@@ -290,19 +290,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.PotUpgrade
   priceLabel: Product Price
   priceLevels:
-  - cost: 50
+  - cost: 10
     value: 12
-  - cost: 120
+  - cost: 20
     value: 15
-  - cost: 250
+  - cost: 30
     value: 20
   speedLabel: Production Speed
   speedLevels:
-  - cost: 40
+  - cost: 30
     value: 2.5
-  - cost: 100
+  - cost: 60
     value: 2
-  - cost: 220
+  - cost: 140
     value: 1.5
   hideWhenNoLevels: 1
   closeDelay: 0.35

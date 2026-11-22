@@ -62,6 +62,12 @@ namespace GI351.KitchenGame
             spawnRadius = Mathf.Max(0.1f, radius);
         }
 
+        /// <summary>เปลี่ยนจำนวนสูงสุดระหว่างเกม (เพิ่มแล้วจะค่อยๆ เกิดเพิ่มตาม spawnInterval)</summary>
+        public void SetMaxCount(int maxCount)
+        {
+            maxConcurrentCount = Mathf.Max(0, maxCount);
+        }
+
         private void Start()
         {
             // เสกจำนวนเริ่มต้นตอนเริ่มเกม
