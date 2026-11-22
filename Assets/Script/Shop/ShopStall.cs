@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.UI;
 #endif
 
 namespace GI351.KitchenGame
@@ -103,7 +101,7 @@ namespace GI351.KitchenGame
     /// ร้านค้าในฉาก: ผู้เล่นเดินเข้าวงแหวนทองหน้าร้าน -> เปิดหน้าซื้อของ (รายการสินค้า + ราคา + ปุ่ม BUY)
     /// ออกจากวง / กด Exit / กด Esc -> ปิดหน้าซื้อ รายการสินค้าอยู่ในลิสต์ Items (ใส่เองใน Inspector)
     /// สินค้าธรรมดา = ซื้อครั้งเดียว/มีสต็อก ส่วนสินค้าที่ใส่ Levels 2 เลเวลขึ้นไป = กดซื้อซ้ำเพื่ออัปเลเวลจนถึง MAX
-    /// หน้าซื้อถูกสร้างตอนเล่น (ไม่ต้องลาก Canvas)
+    /// หน้าตาหน้าซื้ออยู่ใน prefab ช่อง Panel Prefab (Prefab/UI/Shop Panel) แก้ใน Hierarchy ได้
     /// </summary>
     public class ShopStall : MonoBehaviour
     {
@@ -140,30 +138,18 @@ namespace GI351.KitchenGame
         [SerializeField] private Color ringColor = new Color(1f, 0.85f, 0.2f, 0.95f);
         [SerializeField] private Color ringActiveColor = new Color(0.4f, 1f, 0.6f, 0.95f);
 
+        [Header("UI (หน้าตาหน้าซื้อ)")]
+        [Tooltip("prefab หน้าซื้อ (Prefab/UI/Shop Panel) ดับเบิลคลิก prefab เพื่อแก้หน้าตาใน Hierarchy\nปล่อยว่าง = สร้างหน้าตาเริ่มต้นด้วยโค้ด")]
+        [SerializeField] private ShopPanelView panelPrefab;
+
         [Header("Events")]
         public UnityEvent onOpened;
         public UnityEvent onClosed;
 
-        private struct RowView
-        {
-            public Text name;
-            public Text desc;
-            public Text price;
-            public Text buyText;
-            public Image buyImage;
-            public Button buyButton;
-        }
-
-        private readonly List<RowView> rows = new List<RowView>();
+        private readonly List<ShopRowView> rows = new List<ShopRowView>();
         private readonly List<int> rowItemIndex = new List<int>(); // แถวที่ i แสดงสินค้าลำดับไหนในลิสต์ items
 
-        private struct TabView
-        {
-            public Image image;
-            public Text text;
-        }
-
-        private readonly List<TabView> tabViews = new List<TabView>();
+        private readonly List<Button> tabButtons = new List<Button>();
         private int currentTab;
         private Transform cachedBuyer;
         private float nextBuyerSearchTime;
@@ -173,16 +159,7 @@ namespace GI351.KitchenGame
         private bool builtUI;
         private int lastMoney = int.MinValue;
 
-        private string arrowText = "->";
-
-        private GameObject canvasObject;
-        private GameObject panel;
-        private RectTransform listContent;
-        private Text moneyText;
-        private Text titleText;
-        private Text emptyText;
-
-        private static Font uiFont;
+        private ShopPanelView view;
 
         /// <summary>ยิงเมื่อซื้อสินค้าสำเร็จ (ใช้ให้สคริปต์อื่นทำงานตาม id ของสินค้า เช่น จ้างพนักงาน)</summary>
         public event Action<ShopItemData> ItemPurchased;
@@ -208,19 +185,16 @@ namespace GI351.KitchenGame
             }
         }
 
-        /// <summary>สินค้าชิ้นนี้อยู่แท็บที่เปิดอยู่ไหม (ช่อง Tab ว่าง หรือชื่อไม่ตรงแท็บไหนเลย = อยู่แท็บแรก)</summary>
-        private bool InCurrentTab(ShopItemData it)
+        /// <summary>รายชื่อแท็บ (ว่าง = ร้านนี้ไม่มีแท็บ)</summary>
+        public IReadOnlyList<string> Tabs => tabs;
+
+        /// <summary>สินค้าชิ้นนี้อยู่แท็บ tabIndex ไหม (ช่อง Tab ว่าง หรือชื่อไม่ตรงแท็บไหนเลย = อยู่แท็บแรก)</summary>
+        public bool IsItemInTab(ShopItemData it, int tabIndex)
         {
             if (!HasTabs || it == null) return true;
             int idx = string.IsNullOrEmpty(it.tab) ? -1 : tabs.FindIndex(t => string.Equals(t, it.tab, StringComparison.OrdinalIgnoreCase));
             if (idx < 0) idx = 0;
-            return idx == Mathf.Clamp(currentTab, 0, tabs.Count - 1);
-        }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics()
-        {
-            uiFont = null;
+            return idx == Mathf.Clamp(tabIndex, 0, tabs.Count - 1);
         }
 
         private Vector3 ZonePosition => zoneCenter != null ? zoneCenter.position : transform.position;
@@ -377,7 +351,7 @@ namespace GI351.KitchenGame
             {
                 if (!builtUI) BuildUI();
                 isOpen = true;
-                panel.SetActive(true);
+                view.panel.SetActive(true);
                 BuildRows();
                 Refresh();
                 onOpened?.Invoke();
@@ -385,7 +359,7 @@ namespace GI351.KitchenGame
             else
             {
                 isOpen = false;
-                if (panel != null) panel.SetActive(false);
+                if (view != null && view.panel != null) view.panel.SetActive(false);
                 onClosed?.Invoke();
             }
         }
@@ -401,112 +375,68 @@ namespace GI351.KitchenGame
 
         // ---------------- UI build ----------------
 
+        /// <summary>สร้างหน้าซื้อจาก prefab (หรือหน้าตาเริ่มต้นถ้าไม่ได้ใส่ prefab) แล้วผูกปุ่ม</summary>
         private void BuildUI()
         {
             builtUI = true;
-            EnsureEventSystem();
-            if (uiFont == null) uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            arrowText = uiFont != null && uiFont.HasCharacter('\u2192') ? "\u2192" : ">";
+            UiBuild.EnsureEventSystem();
 
-            canvasObject = new GameObject("ShopCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-            canvasObject.transform.SetParent(transform, false);
-            Canvas canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 90;
-            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
-            RectTransform canvasRect = canvasObject.GetComponent<RectTransform>();
-
-            // กล่องร้านกลางจอ (ไม่บังทั้งจอ ให้เห็นฉากด้านหลัง)
-            panel = new GameObject("Panel", typeof(RectTransform), typeof(Image));
-            RectTransform panelRect = panel.GetComponent<RectTransform>();
-            panelRect.SetParent(canvasRect, false);
-            panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRect.pivot = new Vector2(0.5f, 0.5f);
-            float tabBarHeight = HasTabs ? 70f : 0f;
-            panelRect.sizeDelta = new Vector2(820f, 700f + tabBarHeight);
-            panel.GetComponent<Image>().color = new Color(0.05f, 0.06f, 0.11f, 0.96f);
-
-            titleText = CreateText(panelRect, "Title", shopTitle, 46, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft);
-            Place(titleText.rectTransform, new Vector2(0f, 1f), new Vector2(36f, -50f), new Vector2(500f, 70f), new Vector2(0f, 0.5f));
-
-            moneyText = CreateText(panelRect, "Money", "$0", 40, FontStyle.Bold, new Color(1f, 0.85f, 0.2f, 1f), TextAnchor.MiddleRight);
-            Place(moneyText.rectTransform, new Vector2(1f, 1f), new Vector2(-36f, -50f), new Vector2(260f, 70f), new Vector2(1f, 0.5f));
-
-            // พื้นที่รายการ (เลื่อนได้)
-            GameObject viewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D), typeof(ScrollRect), typeof(Image));
-            RectTransform vpRect = viewport.GetComponent<RectTransform>();
-            vpRect.SetParent(panelRect, false);
-            vpRect.anchorMin = new Vector2(0f, 0f);
-            vpRect.anchorMax = new Vector2(1f, 1f);
-            vpRect.offsetMin = new Vector2(30f, 130f);
-            vpRect.offsetMax = new Vector2(-30f, -105f - tabBarHeight);
-
-            // แถบแท็บใต้ชื่อร้าน
-            tabViews.Clear();
-            if (HasTabs)
+            if (panelPrefab != null)
             {
-                float gap = 10f;
-                float width = (820f - 60f - gap * (tabs.Count - 1)) / tabs.Count;
-                for (int i = 0; i < tabs.Count; i++)
+                view = Instantiate(panelPrefab, transform, false);
+                view.name = panelPrefab.name;
+                string missing = view.FindMissingPart();
+                if (missing != null)
                 {
-                    int tabIndex = i;
-                    RectTransform tabBtn = CreateButton(panelRect, "Tab_" + tabs[i], tabs[i].ToUpperInvariant(), new Vector2(width, 58f), new Color(0.16f, 0.18f, 0.28f, 1f), () => SelectTab(tabIndex));
-                    tabBtn.anchorMin = tabBtn.anchorMax = new Vector2(0f, 1f);
-                    tabBtn.pivot = new Vector2(0f, 1f);
-                    tabBtn.anchoredPosition = new Vector2(30f + i * (width + gap), -100f);
-                    Text label = tabBtn.GetComponentInChildren<Text>();
-                    label.fontSize = 30;
-                    tabViews.Add(new TabView { image = tabBtn.GetComponent<Image>(), text = label });
+                    Debug.LogError("[ShopStall] " + name + ": prefab " + panelPrefab.name + " ขาดช่อง " + missing + " ใช้หน้าตาเริ่มต้นแทน", panelPrefab);
+                    Destroy(view.gameObject);
+                    view = null;
                 }
             }
-            viewport.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.25f);
+            if (view == null) view = ShopPanelView.CreateDefault(transform, HasTabs);
 
-            GameObject content = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
-            listContent = content.GetComponent<RectTransform>();
-            listContent.SetParent(vpRect, false);
-            listContent.anchorMin = new Vector2(0f, 1f);
-            listContent.anchorMax = new Vector2(1f, 1f);
-            listContent.pivot = new Vector2(0.5f, 1f);
-            listContent.offsetMin = new Vector2(0f, 0f);
-            listContent.offsetMax = new Vector2(0f, 0f);
+            view.panel.SetActive(false);
+            if (view.templates != null) view.templates.SetActive(false);
+            view.rowTemplate.gameObject.SetActive(false);
+            UiBuild.SetText(view.titleText, shopTitle);
+            if (view.exitButton != null) view.exitButton.onClick.AddListener(Close);
 
-            VerticalLayoutGroup vlg = content.GetComponent<VerticalLayoutGroup>();
-            vlg.spacing = 8f;
-            vlg.padding = new RectOffset(8, 8, 8, 8);
-            vlg.childControlWidth = true;
-            vlg.childControlHeight = false;
-            vlg.childForceExpandWidth = true;
-            vlg.childForceExpandHeight = false;
-            content.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            ScrollRect scroll = viewport.GetComponent<ScrollRect>();
-            scroll.viewport = vpRect;
-            scroll.content = listContent;
-            scroll.horizontal = false;
-            scroll.vertical = true;
-            scroll.movementType = ScrollRect.MovementType.Clamped;
-            scroll.scrollSensitivity = 30f;
-
-            emptyText = CreateText(vpRect, "EmptyText", "No items yet", 34, FontStyle.Italic, new Color(0.65f, 0.7f, 0.85f, 1f), TextAnchor.MiddleCenter);
-            Stretch(emptyText.rectTransform);
-
-            RectTransform exit = CreateButton(panelRect, "ExitButton", "EXIT", new Vector2(260f, 70f), new Color(1f, 0.2f, 0.45f, 1f), Close);
-            exit.anchorMin = exit.anchorMax = new Vector2(0.5f, 0f);
-            exit.pivot = new Vector2(0.5f, 0f);
-            exit.anchoredPosition = new Vector2(0f, 28f);
+            BuildTabs();
         }
 
+        /// <summary>ก๊อปปุ่มแท็บต้นแบบ 1 ปุ่มต่อ 1 แท็บ (ร้านที่ไม่มีแท็บ = ซ่อนแถบแท็บ)</summary>
+        private void BuildTabs()
+        {
+            tabButtons.Clear();
+            if (view.tabTemplate != null) view.tabTemplate.gameObject.SetActive(false);
+            if (view.tabBar != null) view.tabBar.gameObject.SetActive(HasTabs);
+            if (!HasTabs) return;
+
+            if (view.tabBar == null || view.tabTemplate == null)
+            {
+                Debug.LogWarning("[ShopStall] " + name + ": ร้านนี้มีแท็บ แต่ prefab หน้าซื้อไม่มี Tab Bar / Tab Template เลยไม่แสดงแท็บ", this);
+                return;
+            }
+
+            for (int i = 0; i < tabs.Count; i++)
+            {
+                int tabIndex = i;
+                Button tab = SpawnTab(view, tabs[i]);
+                tab.onClick.AddListener(() => SelectTab(tabIndex));
+                tabButtons.Add(tab);
+            }
+        }
+
+        /// <summary>ก๊อปแถวต้นแบบ 1 แถวต่อสินค้า 1 ชิ้นในแท็บที่เปิดอยู่</summary>
         private void BuildRows()
         {
-            if (listContent == null) return;
+            if (view == null) return;
 
-            for (int i = listContent.childCount - 1; i >= 0; i--)
+            for (int i = 0; i < rows.Count; i++)
             {
-                Destroy(listContent.GetChild(i).gameObject);
+                if (rows[i] == null) continue;
+                rows[i].gameObject.SetActive(false); // ซ่อนทันที (Destroy จริงตอนจบเฟรม)
+                Destroy(rows[i].gameObject);
             }
             rows.Clear();
             rowItemIndex.Clear();
@@ -515,62 +445,28 @@ namespace GI351.KitchenGame
             {
                 int index = i;
                 ShopItemData it = items[i];
-                if (!InCurrentTab(it)) continue;
+                if (!IsItemInTab(it, currentTab)) continue;
 
-                GameObject row = new GameObject("Row_" + i, typeof(RectTransform), typeof(Image), typeof(LayoutElement));
-                RectTransform rowRect = row.GetComponent<RectTransform>();
-                rowRect.SetParent(listContent, false);
-                row.GetComponent<Image>().color = new Color(0.12f, 0.14f, 0.22f, 1f);
-                row.GetComponent<LayoutElement>().preferredHeight = 84f;
-
-                bool hasDesc = it.IsLeveled || !string.IsNullOrEmpty(it.description);
-                Text name = CreateText(rowRect, "Name", it.itemName, 30, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft);
-                Place(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(18f, hasDesc ? 14f : 0f), new Vector2(400f, 40f), new Vector2(0f, 0.5f));
-
-                Text desc = null;
-                if (hasDesc)
-                {
-                    desc = CreateText(rowRect, "Desc", it.description ?? "", 20, FontStyle.Normal, new Color(0.7f, 0.76f, 0.9f, 1f), TextAnchor.MiddleLeft);
-                    Place(desc.rectTransform, new Vector2(0f, 0.5f), new Vector2(18f, -18f), new Vector2(400f, 28f), new Vector2(0f, 0.5f));
-                }
-
-                // ราคาอยู่กลางช่อง (เยื้องขวานิดหน่อยให้พ้นคำอธิบายยาวๆ ทางซ้าย)
-                Text price = CreateText(rowRect, "Price", "$" + it.price, 34, FontStyle.Bold, new Color(1f, 0.92f, 0.3f, 1f), TextAnchor.MiddleCenter);
-                Place(price.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(40f, 0f), new Vector2(150f, 40f), new Vector2(0.5f, 0.5f));
-
-                RectTransform buy = CreateButton(rowRect, "BuyButton", "BUY", new Vector2(150f, 56f), new Color(0.2f, 0.7f, 1f, 1f), () => TryBuy(index));
-                buy.anchorMin = buy.anchorMax = new Vector2(1f, 0.5f);
-                buy.pivot = new Vector2(1f, 0.5f);
-                buy.anchoredPosition = new Vector2(-16f, 0f);
-
+                ShopRowView row = SpawnRow(view, it, i);
+                row.buyButton.onClick.AddListener(() => TryBuy(index));
                 rowItemIndex.Add(index);
-                rows.Add(new RowView
-                {
-                    name = name,
-                    desc = desc,
-                    price = price,
-                    buyText = buy.GetComponentInChildren<Text>(),
-                    buyImage = buy.GetComponent<Image>(),
-                    buyButton = buy.GetComponent<Button>()
-                });
+                rows.Add(row);
             }
 
-            if (emptyText != null)
+            if (view.emptyText != null)
             {
-                emptyText.text = HasTabs ? emptyTabText : "No items yet";
-                emptyText.gameObject.SetActive(rows.Count == 0);
+                view.emptyText.text = HasTabs ? emptyTabText : "No items yet";
+                view.emptyText.gameObject.SetActive(rows.Count == 0);
             }
             RefreshTabs();
         }
 
-        /// <summary>แท็บที่เลือกอยู่เป็นสีฟ้าสว่าง ที่เหลือเป็นสีเข้ม</summary>
         private void RefreshTabs()
         {
-            for (int i = 0; i < tabViews.Count; i++)
+            int selected = Mathf.Clamp(currentTab, 0, tabs.Count - 1);
+            for (int i = 0; i < tabButtons.Count; i++)
             {
-                bool selected = i == Mathf.Clamp(currentTab, 0, tabs.Count - 1);
-                tabViews[i].image.color = selected ? new Color(0.2f, 0.7f, 1f, 1f) : new Color(0.16f, 0.18f, 0.28f, 1f);
-                tabViews[i].text.color = selected ? Color.white : new Color(0.65f, 0.7f, 0.85f, 1f);
+                ApplyTabState(view, tabButtons[i], i == selected);
             }
         }
 
@@ -578,161 +474,128 @@ namespace GI351.KitchenGame
         {
             int money = CurrentMoney;
             lastMoney = money;
-            if (moneyText != null) moneyText.text = "$" + money;
+            if (view == null) return;
+            UiBuild.SetText(view.moneyText, "$" + money);
 
             for (int i = 0; i < rows.Count && i < rowItemIndex.Count; i++)
             {
-                ShopItemData it = items[rowItemIndex[i]];
-                RowView v = rows[i];
-                bool soldOut = it.stock > 0 && it.sold >= it.stock;
-                bool afford = money >= it.price;
-
-                if (it.locked)
-                {
-                    // ยังไม่เปิดขาย: ปุ่มเทา กดไม่ได้
-                    v.buyButton.interactable = false;
-                    v.buyImage.color = new Color(0.3f, 0.3f, 0.35f, 1f);
-                    v.buyText.text = string.IsNullOrEmpty(it.lockedText) ? "SOON" : it.lockedText;
-                    v.buyText.fontSize = 30;
-                    v.price.text = "$" + it.price;
-                    v.price.color = new Color(0.6f, 0.6f, 0.68f, 1f);
-                    continue;
-                }
-
-                if (it.IsLeveled)
-                {
-                    RefreshLeveledRow(it, v, money);
-                    continue;
-                }
-
-                v.buyButton.interactable = !soldOut && afford;
-                v.buyImage.color = soldOut ? new Color(0.3f, 0.3f, 0.35f, 1f) : (afford ? new Color(0.2f, 0.7f, 1f, 1f) : new Color(0.25f, 0.3f, 0.45f, 1f));
-                v.buyText.text = soldOut ? (string.IsNullOrEmpty(it.soldOutText) ? "SOLD OUT" : it.soldOutText) : "BUY";
-                v.buyText.fontSize = soldOut ? 22 : 36;
-                v.price.text = it.stock > 1 && !soldOut ? "$" + it.price + "  x" + (it.stock - it.sold) : "$" + it.price;
-                v.price.color = afford || soldOut ? new Color(1f, 0.92f, 0.3f, 1f) : new Color(1f, 0.45f, 0.45f, 1f);
+                ApplyRowState(view, rows[i], items[rowItemIndex[i]], money);
             }
         }
 
+        // ---------------- ใช้ร่วมกันระหว่างตอนเล่น และตัวอย่างตอนแก้ prefab ----------------
+
+        /// <summary>ก๊อปปุ่มแท็บต้นแบบลง Tab Bar แล้วใส่ชื่อแท็บ</summary>
+        public static Button SpawnTab(ShopPanelView v, string tabName)
+        {
+            Button tab = Instantiate(v.tabTemplate, v.tabBar, false);
+            tab.name = "Tab_" + tabName;
+            tab.gameObject.SetActive(true);
+            UiBuild.SetText(tab.GetComponentInChildren<Text>(true), tabName.ToUpperInvariant());
+            return tab;
+        }
+
+        /// <summary>แท็บที่เลือกอยู่ใช้สี Tab Selected ที่เหลือใช้สี Tab Normal (ตั้งสีได้ที่ prefab หน้าซื้อ)</summary>
+        public static void ApplyTabState(ShopPanelView v, Button tab, bool selected)
+        {
+            Image image = tab.targetGraphic as Image;
+            if (image == null) image = tab.GetComponent<Image>();
+            if (image != null) image.color = selected ? v.tabSelectedColor : v.tabNormalColor;
+            Text label = tab.GetComponentInChildren<Text>(true);
+            if (label != null) label.color = selected ? v.tabSelectedTextColor : v.tabNormalTextColor;
+        }
+
+        /// <summary>ก๊อปแถวต้นแบบลง List Content แล้วใส่ชื่อ/คำอธิบาย/ราคาของสินค้า</summary>
+        public static ShopRowView SpawnRow(ShopPanelView v, ShopItemData it, int itemIndex)
+        {
+            ShopRowView row = Instantiate(v.rowTemplate, v.listContent, false);
+            row.name = "Row_" + itemIndex;
+            row.gameObject.SetActive(true);
+
+            row.nameText.text = it.itemName;
+            if (row.descText != null)
+            {
+                bool hasDesc = it.IsLeveled || !string.IsNullOrEmpty(it.description);
+                row.descText.text = it.description ?? "";
+                row.descText.gameObject.SetActive(hasDesc);
+            }
+            row.priceText.text = "$" + it.price;
+            return row;
+        }
+
+        /// <summary>ข้อความ/สีปุ่มซื้อ และสีราคาของแถว ตามสถานะสินค้าและเงินที่มี</summary>
+        public static void ApplyRowState(ShopPanelView view, ShopRowView v, ShopItemData it, int money)
+        {
+            if (it.locked)
+            {
+                // ยังไม่เปิดขาย: ปุ่มเทา กดไม่ได้
+                SetButton(v, false, view.disabledColor, string.IsNullOrEmpty(it.lockedText) ? "SOON" : it.lockedText);
+                v.priceText.text = "$" + it.price;
+                v.priceText.color = view.priceLockedColor;
+                return;
+            }
+
+            if (it.IsLeveled)
+            {
+                ApplyLeveledRowState(view, v, it, money);
+                return;
+            }
+
+            bool soldOut = it.stock > 0 && it.sold >= it.stock;
+            bool afford = money >= it.price;
+            string soldOutLabel = string.IsNullOrEmpty(it.soldOutText) ? "SOLD OUT" : it.soldOutText;
+            SetButton(v, !soldOut && afford,
+                soldOut ? view.disabledColor : (afford ? view.buyColor : view.cantAffordColor),
+                soldOut ? soldOutLabel : view.buyLabel);
+            v.priceText.text = it.stock > 1 && !soldOut ? "$" + it.price + "  x" + (it.stock - it.sold) : "$" + it.price;
+            v.priceText.color = afford || soldOut ? view.priceColor : view.priceTooExpensiveColor;
+        }
+
+        private static void SetButton(ShopRowView v, bool interactable, Color color, string label)
+        {
+            v.buyButton.interactable = interactable;
+            if (v.buyImage != null) v.buyImage.color = color;
+            UiBuild.SetText(v.buyText, label);
+        }
+
         /// <summary>แถวสินค้าแบบอัปเลเวล: "ชื่อ Lv2 → Lv3" / "Damage 30 → 40" / ราคา / ปุ่ม UPGRADE (MAX = ปุ่มเทา กดไม่ได้)</summary>
-        private void RefreshLeveledRow(ShopItemData it, RowView v, int money)
+        private static void ApplyLeveledRowState(ShopPanelView view, ShopRowView v, ShopItemData it, int money)
         {
             string label = string.IsNullOrEmpty(it.valueLabel) ? "" : it.valueLabel + " ";
+            Font font = v.nameText.font;
+            string arrow = font != null && font.HasCharacter('→') ? "→" : ">";
 
             if (it.IsMaxLevel)
             {
-                v.name.text = it.itemName + "  Lv" + it.Level + " MAX";
-                if (v.desc != null) v.desc.text = label + FormatValue(it.CurrentValue);
-                v.price.text = "";
-                v.buyButton.interactable = false;
-                v.buyImage.color = new Color(0.22f, 0.22f, 0.26f, 1f);
-                v.buyText.text = "MAX";
-                v.buyText.fontSize = 32;
+                v.nameText.text = it.itemName + "  Lv" + it.Level + " " + view.maxLabel;
+                UiBuild.SetText(v.descText, label + FormatValue(it.CurrentValue));
+                v.priceText.text = "";
+                SetButton(v, false, view.maxColor, view.maxLabel);
                 return;
             }
 
             if (it.IsAtLevelCap)
             {
                 // เลเวลถัดไปเตรียมไว้แล้วแต่ยังไม่เปิดขาย
-                v.name.text = it.itemName + "  Lv" + it.Level;
-                if (v.desc != null) v.desc.text = label + FormatValue(it.CurrentValue);
-                v.price.text = "";
-                v.buyButton.interactable = false;
-                v.buyImage.color = new Color(0.3f, 0.3f, 0.35f, 1f);
-                v.buyText.text = string.IsNullOrEmpty(it.lockedText) ? "SOON" : it.lockedText;
-                v.buyText.fontSize = 30;
+                v.nameText.text = it.itemName + "  Lv" + it.Level;
+                UiBuild.SetText(v.descText, label + FormatValue(it.CurrentValue));
+                v.priceText.text = "";
+                SetButton(v, false, view.disabledColor, string.IsNullOrEmpty(it.lockedText) ? "SOON" : it.lockedText);
                 return;
             }
 
             int cost = it.NextPrice;
             bool afford = money >= cost;
-            v.name.text = it.itemName + "  Lv" + it.Level + " " + arrowText + " Lv" + (it.Level + 1);
-            if (v.desc != null) v.desc.text = label + FormatValue(it.CurrentValue) + " " + arrowText + " " + FormatValue(it.NextValue);
-            v.price.text = "$" + cost;
-            v.price.color = afford ? new Color(1f, 0.92f, 0.3f, 1f) : new Color(1f, 0.45f, 0.45f, 1f);
-            v.buyButton.interactable = afford;
-            v.buyImage.color = afford ? new Color(0.2f, 0.7f, 1f, 1f) : new Color(0.3f, 0.3f, 0.35f, 1f);
-            v.buyText.text = "UPGRADE";
-            v.buyText.fontSize = 24;
+            v.nameText.text = it.itemName + "  Lv" + it.Level + " " + arrow + " Lv" + (it.Level + 1);
+            UiBuild.SetText(v.descText, label + FormatValue(it.CurrentValue) + " " + arrow + " " + FormatValue(it.NextValue));
+            v.priceText.text = "$" + cost;
+            v.priceText.color = afford ? view.priceColor : view.priceTooExpensiveColor;
+            SetButton(v, afford, afford ? view.buyColor : view.disabledColor, view.upgradeLabel);
         }
 
         private static string FormatValue(float value)
         {
             return value.ToString("0.##", CultureInfo.InvariantCulture);
-        }
-
-        // ---------------- UI helpers ----------------
-
-        private static void EnsureEventSystem()
-        {
-            if (EventSystem.current != null || FindAnyObjectByType<EventSystem>() != null) return;
-
-            GameObject es = new GameObject("EventSystem", typeof(EventSystem));
-#if ENABLE_INPUT_SYSTEM
-            InputSystemUIInputModule module = es.AddComponent<InputSystemUIInputModule>();
-            module.AssignDefaultActions();
-#else
-            es.AddComponent<StandaloneInputModule>();
-#endif
-        }
-
-        private static void Stretch(RectTransform rt)
-        {
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-        }
-
-        private static void Place(RectTransform rt, Vector2 anchor, Vector2 pos, Vector2 size, Vector2 pivot)
-        {
-            rt.anchorMin = rt.anchorMax = anchor;
-            rt.pivot = pivot;
-            rt.anchoredPosition = pos;
-            rt.sizeDelta = size;
-        }
-
-        private static Text CreateText(RectTransform parent, string name, string content, int size, FontStyle style, Color color, TextAnchor align)
-        {
-            GameObject go = new GameObject(name, typeof(RectTransform), typeof(Text), typeof(Outline));
-            RectTransform rt = go.GetComponent<RectTransform>();
-            rt.SetParent(parent, false);
-
-            Text t = go.GetComponent<Text>();
-            t.font = uiFont;
-            t.text = content;
-            t.fontSize = size;
-            t.fontStyle = style;
-            t.color = color;
-            t.alignment = align;
-            t.horizontalOverflow = HorizontalWrapMode.Wrap;
-            t.verticalOverflow = VerticalWrapMode.Overflow;
-            t.raycastTarget = false;
-
-            Outline outline = go.GetComponent<Outline>();
-            outline.effectColor = new Color(0f, 0f, 0f, 0.85f);
-            outline.effectDistance = new Vector2(1.5f, -1.5f);
-            return t;
-        }
-
-        private static RectTransform CreateButton(RectTransform parent, string name, string text, Vector2 size, Color color, Action onClick)
-        {
-            GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
-            RectTransform rt = go.GetComponent<RectTransform>();
-            rt.SetParent(parent, false);
-            rt.sizeDelta = size;
-
-            Image img = go.GetComponent<Image>();
-            img.color = color;
-
-            Button btn = go.GetComponent<Button>();
-            btn.targetGraphic = img;
-            btn.transition = Selectable.Transition.None;
-            btn.onClick.AddListener(() => onClick());
-
-            Text t = CreateText(rt, "Text", text, 36, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
-            Stretch(t.rectTransform);
-            return rt;
         }
 
         private void OnDrawGizmos()

@@ -484,6 +484,7 @@ MonoBehaviour:
     value: 1.5
   hideWhenNoLevels: 1
   closeDelay: 0.35
+  panelPrefab: {fileID: 3462974317853058906, guid: 7b791d977f437a744bb3261c9699bc6b, type: 3}
   onUpgraded:
     m_PersistentCalls:
       m_Calls: []

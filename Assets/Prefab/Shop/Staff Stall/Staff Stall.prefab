@@ -242,6 +242,7 @@ MonoBehaviour:
   ringRenderer: {fileID: 8950130758743770233}
   ringColor: {r: 1, g: 0.85, b: 0.2, a: 0.95}
   ringActiveColor: {r: 0.4, g: 1, b: 0.6, a: 0.95}
+  panelPrefab: {fileID: 6467536734763364714, guid: a0b009501d4af3b4b95c34caa4af90d0, type: 3}
   onOpened:
     m_PersistentCalls:
       m_Calls: []

@@ -2,12 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
-
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem.UI;
-#endif
 
 namespace GI351.KitchenGame
 {
@@ -26,6 +20,7 @@ namespace GI351.KitchenGame
     /// แผงอัปเกรดของเครื่องทำอาหาร (หม้อ): เดินเข้าวงยืนของหม้อ -> แผงด้านล่างจอเด้งขึ้นมา
     /// มี 2 แถว: ราคาอาหาร (Product Price) และความเร็วการทำ (Production Speed) แต่ละหม้ออัปเกรดแยกกัน
     /// ลิสต์เลเวลเริ่มต้นว่างไว้ ใส่ราคา/ค่าเองใน Inspector (ว่างทั้งคู่ = แผงจะไม่เด้ง)
+    /// หน้าตาแผงอยู่ใน prefab ช่อง Panel Prefab (Prefab/UI/Pot Upgrade Panel) แก้ใน Hierarchy ได้
     /// </summary>
     [RequireComponent(typeof(CookingPot))]
     public class PotUpgrade : MonoBehaviour
@@ -52,18 +47,12 @@ namespace GI351.KitchenGame
         [Min(0f)]
         [SerializeField] private float closeDelay = 0.35f;
 
+        [Tooltip("prefab แผงอัปเกรด (Prefab/UI/Pot Upgrade Panel) ดับเบิลคลิก prefab เพื่อแก้หน้าตาใน Hierarchy\nปล่อยว่าง = สร้างหน้าตาเริ่มต้นด้วยโค้ด")]
+        [SerializeField] private PotUpgradePanelView panelPrefab;
+
         [Header("Events")]
         [Tooltip("ยิงเมื่ออัปเกรดสำเร็จ")]
         public UnityEvent onUpgraded;
-
-        private class RowView
-        {
-            public Text level;
-            public Text values;
-            public Image buttonImage;
-            public Button button;
-            public Text buttonText;
-        }
 
         private CookingPot pot;
         private int priceLevel;
@@ -72,28 +61,15 @@ namespace GI351.KitchenGame
         private int basePrice;
         private bool baseCaptured;
 
-        private GameObject canvasObject;
-        private GameObject panel;
-        private Text titleText;
-        private Text moneyText;
-        private RowView priceRow;
-        private RowView speedRow;
+        private PotUpgradePanelView view;
         private bool isOpen;
         private float lastInRangeTime;
         private int lastMoney = int.MinValue;
         private bool builtUI;
 
-        private static Font uiFont;
-
         public int PriceLevel => priceLevel;
         public int SpeedLevel => speedLevel;
         public bool IsOpen => isOpen;
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics()
-        {
-            uiFont = null;
-        }
 
         private void Awake()
         {
@@ -126,7 +102,7 @@ namespace GI351.KitchenGame
 
         private void OnDisable()
         {
-            if (panel != null) panel.SetActive(false);
+            if (view != null && view.panel != null) view.panel.SetActive(false);
             isOpen = false;
         }
 
@@ -198,192 +174,86 @@ namespace GI351.KitchenGame
             {
                 CaptureBase();
                 if (!builtUI) BuildUI();
-                panel.SetActive(true);
+                view.panel.SetActive(true);
                 Refresh();
             }
-            else if (panel != null)
+            else if (view != null && view.panel != null)
             {
-                panel.SetActive(false);
+                view.panel.SetActive(false);
             }
         }
 
         // ---------------- UI ----------------
 
+        /// <summary>สร้างแผงจาก prefab (หรือหน้าตาเริ่มต้นถ้าไม่ได้ใส่ prefab) แล้วผูกปุ่ม</summary>
         private void BuildUI()
         {
             builtUI = true;
-            EnsureEventSystem();
-            if (uiFont == null) uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            UiBuild.EnsureEventSystem();
 
-            canvasObject = new GameObject("PotUpgradeCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-            canvasObject.transform.SetParent(transform, false);
-            Canvas canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 80;
-            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
-            RectTransform canvasRect = canvasObject.GetComponent<RectTransform>();
+            if (panelPrefab != null)
+            {
+                view = Instantiate(panelPrefab, transform, false);
+                view.name = panelPrefab.name;
+                string missing = view.FindMissingPart();
+                if (missing != null)
+                {
+                    Debug.LogError("[PotUpgrade] " + name + ": prefab " + panelPrefab.name + " ขาดช่อง " + missing + " ใช้หน้าตาเริ่มต้นแทน", panelPrefab);
+                    Destroy(view.gameObject);
+                    view = null;
+                }
+            }
+            if (view == null) view = PotUpgradePanelView.CreateDefault(transform);
 
-            panel = new GameObject("Panel", typeof(RectTransform), typeof(Image));
-            RectTransform panelRect = panel.GetComponent<RectTransform>();
-            panelRect.SetParent(canvasRect, false);
-            panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0f);
-            panelRect.pivot = new Vector2(0.5f, 0f);
-            panelRect.sizeDelta = new Vector2(980f, 400f);
-            panelRect.anchoredPosition = new Vector2(0f, 20f);
-            panel.GetComponent<Image>().color = new Color(0.1f, 0.08f, 0.16f, 0.95f);
-
-            titleText = CreateText(panelRect, "Title", "", 44, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft);
-            Place(titleText.rectTransform, new Vector2(0f, 1f), new Vector2(30f, -44f), new Vector2(560f, 60f), new Vector2(0f, 0.5f));
-
-            moneyText = CreateText(panelRect, "Money", "$0", 40, FontStyle.Bold, new Color(1f, 0.85f, 0.2f, 1f), TextAnchor.MiddleRight);
-            Place(moneyText.rectTransform, new Vector2(1f, 1f), new Vector2(-30f, -44f), new Vector2(300f, 60f), new Vector2(1f, 0.5f));
-
-            priceRow = BuildRow(panelRect, priceLabel, new Vector2(0f, -100f), () => TryUpgrade(true));
-            speedRow = BuildRow(panelRect, speedLabel, new Vector2(0f, -250f), () => TryUpgrade(false));
-        }
-
-        private RowView BuildRow(RectTransform parent, string label, Vector2 pos, Action onClick)
-        {
-            GameObject row = new GameObject("Row_" + label, typeof(RectTransform), typeof(Image));
-            RectTransform rowRect = row.GetComponent<RectTransform>();
-            rowRect.SetParent(parent, false);
-            rowRect.anchorMin = rowRect.anchorMax = new Vector2(0.5f, 1f);
-            rowRect.pivot = new Vector2(0.5f, 1f);
-            rowRect.sizeDelta = new Vector2(920f, 130f);
-            rowRect.anchoredPosition = pos;
-            row.GetComponent<Image>().color = new Color(0.18f, 0.15f, 0.28f, 1f);
-
-            Text name = CreateText(rowRect, "Name", label, 34, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft);
-            Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(24f, -28f), new Vector2(460f, 44f), new Vector2(0f, 0.5f));
-
-            Text level = CreateText(rowRect, "Level", "LV 1", 26, FontStyle.Bold, new Color(0.6f, 0.9f, 1f, 1f), TextAnchor.MiddleLeft);
-            Place(level.rectTransform, new Vector2(0f, 1f), new Vector2(24f, -70f), new Vector2(120f, 36f), new Vector2(0f, 0.5f));
-
-            Text values = CreateText(rowRect, "Values", "", 30, FontStyle.Bold, new Color(1f, 0.92f, 0.3f, 1f), TextAnchor.MiddleLeft);
-            Place(values.rectTransform, new Vector2(0f, 1f), new Vector2(150f, -70f), new Vector2(420f, 40f), new Vector2(0f, 0.5f));
-
-            GameObject btnGo = new GameObject("Button", typeof(RectTransform), typeof(Image), typeof(Button));
-            RectTransform btnRect = btnGo.GetComponent<RectTransform>();
-            btnRect.SetParent(rowRect, false);
-            btnRect.anchorMin = btnRect.anchorMax = new Vector2(1f, 0.5f);
-            btnRect.pivot = new Vector2(1f, 0.5f);
-            btnRect.sizeDelta = new Vector2(280f, 90f);
-            btnRect.anchoredPosition = new Vector2(-20f, 0f);
-            Image img = btnGo.GetComponent<Image>();
-            Button btn = btnGo.GetComponent<Button>();
-            btn.targetGraphic = img;
-            btn.transition = Selectable.Transition.None;
-            btn.onClick.AddListener(() => onClick());
-            Text btnText = CreateText(btnRect, "Text", "", 38, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
-            Stretch(btnText.rectTransform);
-
-            return new RowView { level = level, values = values, buttonImage = img, button = btn, buttonText = btnText };
+            view.panel.SetActive(false);
+            UiBuild.SetText(view.priceRow.nameText, priceLabel);
+            UiBuild.SetText(view.speedRow.nameText, speedLabel);
+            view.priceRow.button.onClick.AddListener(() => TryUpgrade(true));
+            view.speedRow.button.onClick.AddListener(() => TryUpgrade(false));
         }
 
         private void Refresh()
         {
             int money = CurrentMoney;
             lastMoney = money;
-            if (titleText != null) titleText.text = pot.PotName.ToUpper();
-            if (moneyText != null) moneyText.text = "$" + money;
+            if (view == null) return;
+            UiBuild.SetText(view.titleText, pot.PotName.ToUpper());
+            UiBuild.SetText(view.moneyText, "$" + money);
 
-            RefreshRow(priceRow, priceLevels, priceLevel, true, money);
-            RefreshRow(speedRow, speedLevels, speedLevel, false, money);
+            RefreshRow(view.priceRow, priceLevels, priceLevel, true, money);
+            RefreshRow(view.speedRow, speedLevels, speedLevel, false, money);
         }
 
-        private void RefreshRow(RowView row, List<PotUpgradeLevel> levels, int level, bool isPrice, int money)
+        private void RefreshRow(PotUpgradePanelView.Row row, List<PotUpgradeLevel> levels, int level, bool isPrice, int money)
         {
-            if (row == null) return;
-            row.level.text = "LV " + (level + 1);
+            row.levelText.text = "LV " + (level + 1);
 
             float current = isPrice ? CurrentPriceValue : CurrentSpeedValue;
             string cur = isPrice ? "$" + Mathf.RoundToInt(current) : current.ToString("0.##") + "s";
 
-            if (levels.Count == 0)
+            if (levels.Count == 0 || level >= levels.Count)
             {
-                row.values.text = cur;
-                row.button.interactable = false;
-                row.buttonImage.color = new Color(0.3f, 0.3f, 0.35f, 1f);
-                row.buttonText.text = "-";
-                return;
-            }
-
-            if (level >= levels.Count)
-            {
-                row.values.text = cur;
-                row.button.interactable = false;
-                row.buttonImage.color = new Color(0.3f, 0.3f, 0.35f, 1f);
-                row.buttonText.text = "MAX";
+                // ไม่มีเลเวลให้อัป หรืออัปจนเต็มแล้ว
+                row.valuesText.text = cur;
+                SetButton(row, false, view.disabledColor, levels.Count == 0 ? view.noLevelsLabel : view.maxLabel, view.buttonTextColor);
                 return;
             }
 
             PotUpgradeLevel next = levels[level];
             string nxt = isPrice ? "$" + Mathf.RoundToInt(next.value) : next.value.ToString("0.##") + "s";
-            row.values.text = cur + "  ->  " + nxt;
+            row.valuesText.text = cur + "  ->  " + nxt;
 
             bool afford = money >= next.cost;
-            row.button.interactable = afford;
-            row.buttonImage.color = afford ? new Color(0.25f, 0.75f, 0.35f, 1f) : new Color(0.3f, 0.3f, 0.35f, 1f);
-            row.buttonText.text = "$" + next.cost;
-            row.buttonText.color = afford ? Color.white : new Color(1f, 0.5f, 0.5f, 1f);
+            SetButton(row, afford, afford ? view.affordColor : view.disabledColor, "$" + next.cost,
+                afford ? view.buttonTextColor : view.buttonTextTooExpensiveColor);
         }
 
-        // ---------------- UI helpers ----------------
-
-        private static void EnsureEventSystem()
+        private static void SetButton(PotUpgradePanelView.Row row, bool interactable, Color color, string label, Color textColor)
         {
-            if (EventSystem.current != null || FindAnyObjectByType<EventSystem>() != null) return;
-
-            GameObject es = new GameObject("EventSystem", typeof(EventSystem));
-#if ENABLE_INPUT_SYSTEM
-            InputSystemUIInputModule module = es.AddComponent<InputSystemUIInputModule>();
-            module.AssignDefaultActions();
-#else
-            es.AddComponent<StandaloneInputModule>();
-#endif
-        }
-
-        private static void Stretch(RectTransform rt)
-        {
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-        }
-
-        private static void Place(RectTransform rt, Vector2 anchor, Vector2 pos, Vector2 size, Vector2 pivot)
-        {
-            rt.anchorMin = rt.anchorMax = anchor;
-            rt.pivot = pivot;
-            rt.anchoredPosition = pos;
-            rt.sizeDelta = size;
-        }
-
-        private static Text CreateText(RectTransform parent, string name, string content, int size, FontStyle style, Color color, TextAnchor align)
-        {
-            GameObject go = new GameObject(name, typeof(RectTransform), typeof(Text), typeof(Outline));
-            RectTransform rt = go.GetComponent<RectTransform>();
-            rt.SetParent(parent, false);
-
-            Text t = go.GetComponent<Text>();
-            t.font = uiFont;
-            t.text = content;
-            t.fontSize = size;
-            t.fontStyle = style;
-            t.color = color;
-            t.alignment = align;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
-            t.verticalOverflow = VerticalWrapMode.Overflow;
-            t.raycastTarget = false;
-
-            Outline outline = go.GetComponent<Outline>();
-            outline.effectColor = new Color(0f, 0f, 0f, 0.85f);
-            outline.effectDistance = new Vector2(1.5f, -1.5f);
-            return t;
+            row.button.interactable = interactable;
+            if (row.buttonImage != null) row.buttonImage.color = color;
+            row.buttonText.text = label;
+            row.buttonText.color = textColor;
         }
     }
 }

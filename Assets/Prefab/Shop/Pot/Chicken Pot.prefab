@@ -153,18 +153,14 @@ MonoBehaviour:
   showIngredientsOnPot: 0
   ingredientIcon: {fileID: 21300000, guid: 12403a3a07d2a2941a0ce2917e15c79f, type: 3}
   dishIcon: {fileID: 0}
-  showCountBadge: 1
-  countBadgeOffset: {x: -1.05, y: 0.85}
-  countBadgeSize: {x: 0.95, y: 0.5}
-  countBadgeColor: {r: 1, g: 0.8, b: 0.28, a: 1}
-  countBadgeOutlineColor: {r: 0.42, g: 0.26, b: 0.12, a: 1}
-  countTextColor: {r: 0.25, g: 0.15, b: 0.08, a: 1}
   showRecipeSign: 1
   recipeSignOffset: {x: 0, y: 1.55}
-  recipeSignSize: {x: 1.5, y: 0.6}
+  potSignSize: {x: 1.9, y: 0.7}
   recipeSignColor: {r: 0.98, g: 0.9, b: 0.72, a: 1}
   recipeSignOutlineColor: {r: 0.55, g: 0.36, b: 0.2, a: 1}
   recipeArrowColor: {r: 0.62, g: 0.4, b: 0.55, a: 1}
+  countTextColor: {r: 0.25, g: 0.15, b: 0.08, a: 1}
+  signProgressColor: {r: 0.6, g: 0.88, b: 0.42, a: 1}
   requireKeyPressToBuy: 0
   purchaseSuccessSound: {fileID: 0}
   potName: Chicken Boiling Pot
@@ -209,11 +205,6 @@ MonoBehaviour:
   ingredientSpacing: {x: 0.22, y: 0.1}
   ingredientWidth: 0.4
   maxVisibleIngredients: 8
-  showProgressBar: 1
-  progressBarOffset: {x: 0, y: -1.15}
-  progressBarSize: {x: 1.6, y: 0.16}
-  progressBarBackColor: {r: 0, g: 0, b: 0, a: 0.6}
-  progressBarFillColor: {r: 0.35, g: 0.95, b: 0.45, a: 1}
   zoneGizmoColor: {r: 0.2, g: 0.8, b: 1, a: 0.25}
   onPotPurchased:
     m_PersistentCalls:
@@ -306,6 +297,7 @@ MonoBehaviour:
     value: 1.5
   hideWhenNoLevels: 1
   closeDelay: 0.35
+  panelPrefab: {fileID: 3462974317853058906, guid: 7b791d977f437a744bb3261c9699bc6b, type: 3}
   onUpgraded:
     m_PersistentCalls:
       m_Calls: []
