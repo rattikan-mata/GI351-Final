@@ -231,6 +231,18 @@ namespace GI351.KitchenGame
         }
 
         /// <summary>
+        /// เล่นเสียง ณ ตำแหน่งในโลกแบบมีระยะเสมอ (เว้นแต่จะบังคับเป็น Global ใน Inspector)
+        /// เหมาะสำหรับ NPC/พนักงานที่ใช้เสียงเดียวกับผู้เล่น แต่ไม่ควรดังเต็มตอนผู้เล่นอยู่ไกล
+        /// </summary>
+        public static void PlayAt(SoundId id, Vector3 position)
+        {
+            if (Instance != null)
+            {
+                Instance.PlayInternal(id, null, position, true, forcePositionalWhenAuto: true);
+            }
+        }
+
+        /// <summary>
         /// เล่นเสียงรัวๆ ทีละชิ้นแบบเสียงเก็บของ Minecraft (ใช้ตอนโยนเนื้อหลายชิ้นเข้าหม้อ หรือวางอาหารหลายจานลงโต๊ะในเฟรมเดียว)
         /// </summary>
         public static void PlayBurst(SoundId id, int count, float interval = 0.06f, AudioClip fallback = null, Vector3 position = default, float pitchStep = 0.04f)
@@ -402,14 +414,14 @@ namespace GI351.KitchenGame
             return listener != null ? (Vector2)listener.transform.position : Vector2.zero;
         }
 
-        private void PlayInternal(SoundId id, AudioClip fallback, Vector3 position, bool hasPosition, float pitchOffset = 0f, bool ignoreInterval = false)
+        private void PlayInternal(SoundId id, AudioClip fallback, Vector3 position, bool hasPosition, float pitchOffset = 0f, bool ignoreInterval = false, bool forcePositionalWhenAuto = false)
         {
             if (mute) return;
 
             AudioClip clip = null;
             float volume = 1f;
             Vector2 pitch = new Vector2(0.95f, 1.05f);
-            bool positional = hasPosition && DefaultPositional(id);
+            bool positional = hasPosition && (forcePositionalWhenAuto || DefaultPositional(id));
             float minDist = 3f;
             float maxDist = 12f;
 

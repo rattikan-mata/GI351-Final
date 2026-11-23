@@ -147,6 +147,7 @@ namespace GI351.KitchenGame
                 dish.SetCarriedState(true);
                 dish.transform.SetParent(transform, true);
                 carried.Add(dish);
+                AudioManager.PlayAt(SoundId.ItemPickup, transform.position);
                 return;
             }
 
@@ -193,6 +194,7 @@ namespace GI351.KitchenGame
 
                     carried.RemoveAt(i);
                     targetShelf.PlaceFoodOnCounter(dish);
+                    AudioManager.PlayAt(SoundId.FoodPlace, targetShelf.transform.position);
                     return;
                 }
             }
