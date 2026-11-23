@@ -245,6 +245,7 @@ namespace GI351.KitchenGame
 
             carriedItems.Add(item);
             item.SetCarriedState(true);
+            AudioManager.Play(SoundId.ItemPickup);
 
             // กองกำลังเด้งอยู่: คืนสเกลก่อน ไม่งั้นชิ้นใหม่จะถูกจำขนาดผิด (เล็กลงถาวร)
             if (stackPunch != null)

@@ -559,6 +559,7 @@ namespace GI351.KitchenGame
             }
 
             ShowExclamationMark();
+            AudioManager.Play(SoundId.ThiefAlert);
             currentState = CustomerState.ThiefFleeing;
             Debug.Log("[CustomerAI] โจรฉกอาหารไปแล้ว! วิ่งหนีเร็ว!");
         }
@@ -631,6 +632,7 @@ namespace GI351.KitchenGame
                     isAngry = true;
                     LostCustomers++;
                     ShowAngry();
+                    AudioManager.Play(SoundId.CustomerAngry);
                     LeaveCounterAndExit();
                 }
             }
@@ -653,6 +655,7 @@ namespace GI351.KitchenGame
                 {
                     isAngry = true;
                     ShowAngry();
+                    AudioManager.Play(SoundId.CustomerAngry);
                     LeaveCounterAndExit();
                     Debug.Log("[CustomerAI] โจรรอนานเกินไป ไม่มีอาหารให้ขโมย เดินกลับมือเปล่า");
                 }
@@ -916,6 +919,7 @@ namespace GI351.KitchenGame
 
             HideExclamationMark();
             ShowDizzyIndicator();
+            AudioManager.Play(SoundId.ThiefKnockout, null, transform.position);
 
             // พลิกตัวนอนราบลงกับพื้น
             transform.rotation = Quaternion.Euler(0f, 0f, 90f);

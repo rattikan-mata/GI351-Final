@@ -140,10 +140,7 @@ namespace GI351.KitchenGame
                 angryIndicator.SetActive(true);
             }
 
-            if (oinkSound != null)
-            {
-                AudioSource.PlayClipAtPoint(oinkSound, transform.position);
-            }
+            AudioManager.Play(SoundId.PigOink, oinkSound, transform.position);
         }
 
         /// <summary>
@@ -240,10 +237,7 @@ namespace GI351.KitchenGame
                 // ส่งทั้งดาเมจและแรงผลักให้ PlayerHealth จัดการกระเด็นและการกระพริบ
                 playerHealth.TakeDamage(collisionDamage, pushDir, ramKnockbackForce);
 
-                if (oinkSound != null)
-                {
-                    AudioSource.PlayClipAtPoint(oinkSound, transform.position);
-                }
+                AudioManager.Play(SoundId.PigOink, oinkSound, transform.position);
             }
         }
 

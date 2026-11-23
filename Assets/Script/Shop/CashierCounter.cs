@@ -361,10 +361,7 @@ namespace GI351.KitchenGame
                 }
             }
 
-            if (paySound != null)
-            {
-                AudioSource.PlayClipAtPoint(paySound, transform.position);
-            }
+            AudioManager.Play(SoundId.CustomerPay, paySound, transform.position);
 
             LeaveQueue(customer);
             onPaid?.Invoke(total);

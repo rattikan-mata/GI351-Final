@@ -146,8 +146,16 @@ namespace GI351.KitchenGame
             if (level >= levels.Count || MoneyManager.Instance == null) return false;
 
             PotUpgradeLevel next = levels[level];
-            if (MoneyManager.Instance.CurrentMoney < next.cost) return false;
-            if (!MoneyManager.Instance.SpendMoney(next.cost)) return false;
+            if (MoneyManager.Instance.CurrentMoney < next.cost)
+            {
+                AudioManager.Play(SoundId.PurchaseFail);
+                return false;
+            }
+            if (!MoneyManager.Instance.SpendMoney(next.cost))
+            {
+                AudioManager.Play(SoundId.PurchaseFail);
+                return false;
+            }
 
             if (isPrice)
             {
@@ -161,6 +169,7 @@ namespace GI351.KitchenGame
             }
 
             Debug.Log("[PotUpgrade] " + pot.PotName + " " + (isPrice ? "price" : "speed") + " -> Lv" + ((isPrice ? priceLevel : speedLevel) + 1) + " (" + next.value.ToString("0.##") + ")");
+            AudioManager.Play(SoundId.PurchaseSuccess);
             onUpgraded?.Invoke();
             if (isOpen) Refresh();
             return true;

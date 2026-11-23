@@ -464,6 +464,7 @@ namespace GI351.KitchenGame
         {
             // ท่าก่อนหน้าเพิ่งปลดล็อกในเฟรมนี้ (PlayerAim อ่านเมาส์ไปก่อนแล้วตอนยังล็อก) ให้อ่านเมาส์ใหม่ ไม่งั้นตีรัวๆ จะติดฝั่งเดิม
             UnlockFacing();
+            AudioManager.Play(SoundId.Attack);
             if (playerAim != null) playerAim.RefreshFacing();
             swingSide = CurrentFacingSign();
             phase = SwingPhase.Windup;
@@ -601,6 +602,7 @@ namespace GI351.KitchenGame
 
                 swingHits.Add(damageable);
                 damageable.TakeDamage(damage);
+                AudioManager.Play(SoundId.WeaponHit);
                 ApplyKnockbackTo(col, pivot);
             }
         }

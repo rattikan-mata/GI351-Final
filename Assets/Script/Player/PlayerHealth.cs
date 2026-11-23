@@ -177,6 +177,10 @@ namespace GI351.KitchenGame
             {
                 Die();
             }
+            else
+            {
+                AudioManager.Play(SoundId.PlayerHurt);
+            }
         }
 
         private IEnumerator DamageBlinkRoutine()
@@ -220,6 +224,7 @@ namespace GI351.KitchenGame
         {
             if (isDead) return;
             isDead = true;
+            AudioManager.Play(SoundId.PlayerDie);
 
             if (blinkCoroutine != null)
             {

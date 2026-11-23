@@ -139,10 +139,7 @@ namespace GI351.KitchenGame
                 MoneyManager.Instance.AddMoney(coinValue);
             }
 
-            if (pickupSound != null)
-            {
-                AudioSource.PlayClipAtPoint(pickupSound, transform.position);
-            }
+            AudioManager.Play(SoundId.MoneyReceive, pickupSound, transform.position);
 
             Destroy(gameObject);
         }

@@ -241,6 +241,7 @@ namespace GI351.KitchenGame
             if (isUnlocked) return;
             isUnlocked = true;
             paid = price;
+            AudioManager.Play(SoundId.PurchaseSuccess);
 
             // เปิดทางทันที: ปิด Collider ของสิ่งกีดขวาง
             if (barrierRoot != null)

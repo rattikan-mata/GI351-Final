@@ -818,10 +818,7 @@ namespace GI351.KitchenGame
                     depositedCount++;
                     PlaceFoodOnCounter(cookedItem);
 
-                    if (depositSound != null)
-                    {
-                        AudioSource.PlayClipAtPoint(depositSound, transform.position);
-                    }
+                    AudioManager.Play(SoundId.FoodPlace, depositSound, transform.position);
                 }
                 else
                 {
@@ -1051,9 +1048,9 @@ namespace GI351.KitchenGame
         {
             Item selectedDish = RemoveDishForCustomer(preferredType);
 
-            if (selectedDish != null && depositSound != null)
+            if (selectedDish != null)
             {
-                AudioSource.PlayClipAtPoint(depositSound, transform.position);
+                AudioManager.Play(SoundId.FoodPlace, depositSound, transform.position);
             }
 
             return selectedDish;

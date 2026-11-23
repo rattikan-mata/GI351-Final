@@ -301,8 +301,16 @@ namespace GI351.KitchenGame
 
             // เช็คเงินก่อน ถ้าไม่พอจะไม่หักเงิน
             int cost = leveled ? it.NextPrice : it.price;
-            if (MoneyManager.Instance.CurrentMoney < cost) return false;
-            if (!MoneyManager.Instance.SpendMoney(cost)) return false;
+            if (MoneyManager.Instance.CurrentMoney < cost)
+            {
+                AudioManager.Play(SoundId.PurchaseFail);
+                return false;
+            }
+            if (!MoneyManager.Instance.SpendMoney(cost))
+            {
+                AudioManager.Play(SoundId.PurchaseFail);
+                return false;
+            }
 
             it.sold++;
             if (leveled)
@@ -314,6 +322,7 @@ namespace GI351.KitchenGame
             {
                 Debug.Log("[ShopStall] Bought " + it.itemName + " ($" + it.price + ")");
             }
+            AudioManager.Play(SoundId.PurchaseSuccess);
             it.onPurchased?.Invoke();
             ItemPurchased?.Invoke(it);
             if (isOpen) Refresh();

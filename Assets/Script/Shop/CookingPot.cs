@@ -390,6 +390,7 @@ namespace GI351.KitchenGame
         private void OnDisable()
         {
             AllPots.Remove(this);
+            AudioManager.StopLoop(this);
         }
 
         private void OnValidate()
@@ -782,6 +783,7 @@ namespace GI351.KitchenGame
 
             // อัปเดตเวลาการต้มอาหารทีละ 1 ชิ้นตามคิว (ถาดเต็ม = หยุดรอ)
             UpdateCookingQueue();
+            AudioManager.SetLoop(this, SoundId.PotCooking, isCurrentlyCooking && !IsTrayFull, transform.position);
             UpdateTrayCollect();
 
             // วัตถุดิบลอยไปเรียงบนหม้อ + ป้ายบนหม้อ (จำนวน + หลอดความคืบหน้าในป้าย)
@@ -894,10 +896,7 @@ namespace GI351.KitchenGame
             if (isUnlocked) return;
             isUnlocked = true;
 
-            if (purchaseSuccessSound != null)
-            {
-                AudioSource.PlayClipAtPoint(purchaseSuccessSound, transform.position);
-            }
+            AudioManager.Play(SoundId.PurchaseSuccess, purchaseSuccessSound, transform.position);
 
             ApplyUnlockedState();
             onPotPurchased?.Invoke();
@@ -1016,10 +1015,7 @@ namespace GI351.KitchenGame
 
                 onCookingFinished?.Invoke();
 
-                if (foodDoneSound != null)
-                {
-                    AudioSource.PlayClipAtPoint(foodDoneSound, transform.position);
-                }
+                AudioManager.Play(SoundId.FoodDone, foodDoneSound, transform.position);
 
                 // ตรวจสอบคิวชิ้นถัดไป (จานพิเศษหรือจานธรรมดา)
                 if (queuedSpecialDishCount > 0)
@@ -1111,10 +1107,7 @@ namespace GI351.KitchenGame
             UpdateVisuals();
             onIngredientAdded?.Invoke();
 
-            if (ingredientDropSound != null)
-            {
-                AudioSource.PlayClipAtPoint(ingredientDropSound, transform.position);
-            }
+            AudioManager.Play(SoundId.PotDrop, ingredientDropSound, transform.position);
         }
 
         // ========================== วัตถุดิบลอยไปเรียงบนหม้อ ==========================
@@ -1302,10 +1295,7 @@ namespace GI351.KitchenGame
             UpdateVisuals();
             onIngredientAdded?.Invoke();
 
-            if (ingredientDropSound != null)
-            {
-                AudioSource.PlayClipAtPoint(ingredientDropSound, transform.position);
-            }
+            AudioManager.Play(SoundId.PotDrop, ingredientDropSound, transform.position);
         }
 
         private void SpawnCookedDishAtOutput()

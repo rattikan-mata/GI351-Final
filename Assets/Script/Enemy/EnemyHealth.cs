@@ -96,6 +96,39 @@ namespace GI351.KitchenGame
             knockbackTimer = knockbackDuration;
         }
 
+        private float nextBuffaloMooTime;
+
+        private void Update()
+        {
+            if (isDead) return;
+
+            // เสียงควายร้องเองเป็นระยะ (เพราะ Buffalo.prefab ใช้ EnemyHealth + EnemyWander โดยไม่มีสคริปต์แยก)
+            if (gameObject.name.IndexOf("buffalo", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                if (nextBuffaloMooTime <= 0f)
+                {
+                    nextBuffaloMooTime = Time.time + Random.Range(5f, 12f);
+                }
+                else if (Time.time >= nextBuffaloMooTime)
+                {
+                    nextBuffaloMooTime = Time.time + Random.Range(6f, 14f);
+                    AudioManager.Play(SoundId.BuffaloMoo, null, transform.position);
+                }
+            }
+        }
+
+        /// <summary>สัตว์ร้องตอนโดนตี ตามชนิดสัตว์ (ไก่/หมู/ควาย)</summary>
+        private void PlayHurtSound()
+        {
+            SoundId id;
+            if (GetComponent<ChickenEnemy>() != null) id = SoundId.ChickenHurt;
+            else if (GetComponent<PigEnemy>() != null) id = SoundId.PigHurt;
+            else if (gameObject.name.IndexOf("buffalo", System.StringComparison.OrdinalIgnoreCase) >= 0) id = SoundId.BuffaloHurt;
+            else return;
+
+            AudioManager.Play(id, null, transform.position);
+        }
+
         public void TakeDamage(int damage)
         {
             if (isDead) return;
@@ -113,6 +146,14 @@ namespace GI351.KitchenGame
             }
 
             bool lethal = currentHealth <= 0;
+            if (lethal)
+            {
+                AudioManager.Play(SoundId.EnemyDie, null, transform.position);
+            }
+            else
+            {
+                PlayHurtSound();
+            }
             PlayHitJuice(lethal);
 
             if (lethal)

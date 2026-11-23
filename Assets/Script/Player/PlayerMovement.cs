@@ -12,6 +12,9 @@ namespace GI351.KitchenGame
         [Tooltip("ความเร็วในการเดินของผู้เล่น")]
         [SerializeField] private float moveSpeed = 5f;
 
+        [Tooltip("ช่วงเวลาระหว่างก้าวแต่ละก้าวของเสียงเดิน (วินาที)")]
+        [SerializeField] private float stepInterval = 0.32f;
+
         [Header("Visual Settings")]
         [Tooltip("SpriteRenderer ของ Player สำหรับกลับด้านซ้าย-ขวา")]
         [SerializeField] private SpriteRenderer spriteRenderer;
@@ -52,11 +55,32 @@ namespace GI351.KitchenGame
             }
 
             ReadInput();
+            UpdateFootsteps();
 
             // ถ้ามี PlayerAim ให้หันตามเมาส์แทนทิศที่เดิน
             if (playerAim == null)
             {
                 HandleFacingDirection();
+            }
+        }
+
+        private float stepTimer;
+
+        /// <summary>เล่นเสียงเดินเป็นจังหวะขณะผู้เล่นเคลื่อนที่</summary>
+        private void UpdateFootsteps()
+        {
+            if (movementInput.sqrMagnitude > 0.01f && knockbackTimer <= 0f)
+            {
+                stepTimer -= Time.deltaTime;
+                if (stepTimer <= 0f)
+                {
+                    AudioManager.Play(SoundId.Footstep);
+                    stepTimer = stepInterval;
+                }
+            }
+            else
+            {
+                stepTimer = 0f;
             }
         }
 
