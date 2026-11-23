@@ -45,6 +45,9 @@ namespace GI351.KitchenGame
         private readonly List<GameObject> activeSpawns = new List<GameObject>();
         private float spawnTimer;
 
+        /// <summary>Prefab สัตว์ที่จุดเกิดนี้ปล่อยออกมา</summary>
+        public GameObject SpawnPrefab => prefabToSpawn;
+
         public int CurrentAliveCount => GetActiveCount();
         public int MaxCount => maxConcurrentCount;
         public Vector2 BoundaryCenter => (Vector2)transform.position + boundaryOffset;

@@ -48,6 +48,9 @@ namespace GI351.KitchenGame
         private float knockbackTimer;
         private EnemyJuice enemyJuice;
 
+        /// <summary>Prefab เนื้อที่ดรอปตอนตาย (null = ไม่ดรอป)</summary>
+        public GameObject MeatDropPrefab => meatDropPrefab;
+
         public int MaxHealth => maxHealth;
         public int CurrentHealth => currentHealth;
         public bool IsDead => isDead;

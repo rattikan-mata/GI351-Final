@@ -48,6 +48,16 @@ namespace GI351.KitchenGame
         public AreaGate Gate => gate;
         public bool IsOpen => gate == null || gate.IsUnlocked;
 
+        /// <summary>สัตว์ของโซนนี้ดรอปเนื้อชนิดนี้ไหม (อ่านจาก Prefab สัตว์ของจุดเกิด)</summary>
+        public bool DropsMeat(ItemType meat)
+        {
+            if (spawner == null || spawner.SpawnPrefab == null) return false;
+            EnemyHealth animal = spawner.SpawnPrefab.GetComponentInChildren<EnemyHealth>(true);
+            if (animal == null || animal.MeatDropPrefab == null) return false;
+            Item drop = animal.MeatDropPrefab.GetComponentInChildren<Item>(true);
+            return drop != null && drop.Type == meat;
+        }
+
         private void Awake()
         {
             if (spawner != null)

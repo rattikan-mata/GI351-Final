@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>รายการ Art ที่ยังขาด</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  /* layout: ชีตสั่งงานแนวยาว การ์ดละ 1 รายการ ภาพซ้าย สเปกขวา; สีเขียวหญ้าของเกมเป็นสีหลัก */
+  --bg:#F1F4EC; --surface:#FFFFFF; --ink:#1B2A1E; --muted:#58695B; --line:#D6DFD0;
+  --accent:#2F7D46; --accent-ink:#FFFFFF; --stage:#C0D570;
+  --p1:#B83A26; --p1-bg:#FBE9E5; --p2:#8F5F10; --p2-bg:#FBF0DA; --p3:#35598F; --p3-bg:#E5EDF8;
+  --font-body:'IBM Plex Sans Thai','Sarabun','Noto Sans Thai',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111A13; --surface:#19251C; --ink:#E6EEE5; --muted:#9BAF9E; --line:#2B3B2E;
+  --accent:#6CC283; --accent-ink:#0E1A11;
+  --p1:#FF9C86; --p1-bg:#3A1F1A; --p2:#E9B867; --p2-bg:#35290F; --p3:#9DBBEA; --p3-bg:#1B2A42; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111A13; --surface:#19251C; --ink:#E6EEE5; --muted:#9BAF9E; --line:#2B3B2E;
+  --accent:#6CC283; --accent-ink:#0E1A11;
+  --p1:#FF9C86; --p1-bg:#3A1F1A; --p2:#E9B867; --p2-bg:#35290F; --p3:#9DBBEA; --p3-bg:#1B2A42; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.65;font-size:15px;
+  padding-block:0 4rem;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1080px;margin:0 auto}
+h1,h2,h3{line-height:1.25;text-wrap:balance;margin:0}
+a{color:var(--accent)}
+.top{padding-block:2.2rem 1.4rem;display:grid;gap:1.1rem}
+.kicker{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.06em;color:var(--muted);margin:0}
+h1{font-size:clamp(1.7rem,4.5vw,2.5rem);font-weight:700;letter-spacing:-.01em}
+.lead{max-width:62ch;margin:0;color:var(--muted)}
+.counts{display:flex;flex-wrap:wrap;gap:.5rem}
+.chip{display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:.28rem .8rem;text-decoration:none;color:var(--ink);font-size:.92rem}
+.chip b{font-family:var(--font-mono);font-weight:500}
+.chip:focus-visible,.copy:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dot{width:.6rem;height:.6rem;border-radius:50%}
+.dot.p1{background:var(--p1)}.dot.p2{background:var(--p2)}.dot.p3{background:var(--p3)}.dot.pn{background:var(--muted)}
+.guide{display:grid;gap:1rem;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:start;margin-top:.4rem}
+.guide .shot{margin:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:1rem 1.15rem}
+.panel h2{font-size:1.02rem;margin-bottom:.5rem}
+.panel ul{margin:0;padding-left:1.15rem}
+.panel li{margin:.2rem 0}
+nav.sticky{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-block:1px solid var(--line);padding-block:.55rem;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px))}
+nav.sticky .in{max-width:1080px;margin:0 auto;display:flex;gap:.5rem;flex-wrap:wrap}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+.tier{padding-top:2.2rem}
+.thead{display:grid;grid-template-columns:auto 1fr;column-gap:.8rem;align-items:center;margin-bottom:1rem}
+.thead h2{font-size:1.5rem}
+.thead .sub{grid-column:1 / -1;margin:.2rem 0 0;color:var(--muted)}
+.badge{min-width:2.4rem;height:2.1rem;padding-inline:.4rem;border-radius:8px;display:grid;place-items:center;font-family:var(--font-mono);font-weight:500;font-size:.95rem}
+.badge.p1{background:var(--p1-bg);color:var(--p1)}.badge.p2{background:var(--p2-bg);color:var(--p2)}.badge.p3{background:var(--p3-bg);color:var(--p3)}
+.thead{counter-reset:none}
+.group{font-size:.82rem;letter-spacing:.04em;color:var(--muted);font-weight:600;margin:1.6rem 0 .6rem;padding-bottom:.35rem;border-bottom:1px solid var(--line)}
+.group:empty{display:none}
+.card{display:grid;gap:1rem;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1rem;margin-bottom:1rem}
+@media (min-width:780px){.card{grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:1.4rem;padding:1.2rem}}
+.media{display:grid;gap:.6rem;align-content:start}
+.media.multi{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+@media (min-width:780px){.media.multi{grid-template-columns:repeat(2,minmax(0,1fr))}.media.multi .shot:first-child:nth-last-child(odd){grid-column:1 / -1}}
+.shot{margin:0;background:var(--stage);border-radius:8px;overflow:hidden}
+.shot img{display:block;width:100%;height:auto;max-width:100%}
+.shot figcaption{font-size:.78rem;line-height:1.4;padding:.4rem .55rem;background:rgba(20,30,15,.78);color:#F1F6E8}
+.chead{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .7rem;margin-bottom:.7rem}
+.chead h3{font-size:1.2rem}
+.en{font-family:var(--font-mono);font-size:.82rem;color:var(--muted)}
+.spec{margin:0;display:grid;gap:.1rem}
+.row{display:grid;grid-template-columns:7.2rem minmax(0,1fr);gap:.2rem .8rem;padding:.42rem 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0;padding-top:0}
+dt{color:var(--muted);font-size:.86rem}
+dd{margin:0;min-width:0;overflow-wrap:anywhere}
+@media (max-width:520px){.row{grid-template-columns:minmax(0,1fr)}}
+.num{font-variant-numeric:tabular-nums;font-family:var(--font-mono);font-size:.92rem}
+.unit{font-family:var(--font-body);color:var(--muted);font-size:.85rem}
+.mono{font-family:var(--font-mono);font-size:.85rem}
+.needs{margin:0;padding-left:1.1rem}.needs li{margin:.15rem 0}
+.actions{display:flex;align-items:center;gap:.8rem;margin-top:.9rem;flex-wrap:wrap}
+.copy{font:inherit;font-weight:600;background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:.5rem .95rem;cursor:pointer}
+.copy:hover{filter:brightness(1.07)}
+.status{color:var(--accent);font-size:.88rem}
+details.brief{margin-top:.6rem}
+summary{cursor:pointer;color:var(--muted);font-size:.86rem}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.7rem .85rem;font-family:var(--font-body);font-size:.88rem;margin:.5rem 0 0}
+.plain{padding-top:2.2rem}
+.refs{display:grid;gap:.7rem;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;display:grid;gap:1rem}
+@media (min-width:780px){.note{grid-template-columns:minmax(0,320px) minmax(0,1fr)}}
+footer{margin-top:2.4rem;color:var(--muted);font-size:.85rem}
+@media (prefers-reduced-motion:no-preference){.copy{transition:filter .15s}}
+</style>
+</head><body>
+<div class="wrap">
+<header class="top">
+  <p class="kicker">GI351 FINAL · เกมล่าสัตว์ทำอาหารขายลูกค้า · 23 พ.ย. 2026</p>
+  <h1>รายการ Art ที่ยังขาด</h1>
+  <p class="lead">ภาพทุกภาพแคปจากตัวเกมจริง พื้นเขียวคือสีพื้นของเกม ใช้ภาพ "ตอนนี้" เทียบกับสเปกด้านข้าง แล้วกดคัดลอกข้อความสั่งงานของแต่ละรายการส่งให้เพื่อนได้เลย</p>
+  <div class="counts">
+    <a class="chip" href="#p1"><span class="dot p1"></span>ต้องมีก่อน <b>18</b> ชิ้น</a>
+    <a class="chip" href="#p2"><span class="dot p2"></span>ควรมี <b>1</b> รายการ</a>
+    <a class="chip" href="#p3"><span class="dot p3"></span>ทีหลังได้ <b>3</b> รายการ</a>
+    <a class="chip" href="#later"><span class="dot pn"></span>พักไว้ก่อน <b>2</b> รายการ</a>
+    <a class="chip" href="#skip"><span class="dot pn"></span>ไม่ต้องวาด <b>1</b> รายการ</a>
+    <a class="chip" href="#refs"><span class="dot pn"></span>ของเดิมที่ทีมวาดแล้ว</a>
+  </div>
+  <div class="guide">
+    <figure class="shot"><img src="img/ctx_shop_area.png" alt="โซนร้านตอนนี้" loading="lazy"><figcaption>โซนร้านตอนนี้: เขียวเข้ม = เคาน์เตอร์แคชเชียร์, เหลือง = ร้านอัปเกรด, ฟ้า = ร้านพนักงาน, วงขาว = จุดที่ผู้เล่นต้องไปยืน, หม้อ/โต๊ะ = ภาพของทีมที่ทำแล้ว</figcaption></figure>
+    <div class="panel">
+      <h2>อ่านชีตนี้ยังไง</h2>
+      <ul>
+        <li><b>หน่วย</b> คือหน่วยของ Unity: ผู้เล่นสูง 1.4 หน่วย ลูกค้ากว้าง 1.0 หน่วย</li>
+        <li><b>ขนาดภาพที่แนะนำ</b> คิดที่ 400 พิกเซลต่อ 1 หน่วย ถ้าวาดใหญ่หรือเล็กกว่านี้ก็ได้ ปรับสเกลใน Unity ได้ ขอแค่สัดส่วนกว้าง:สูงเท่ากัน</li>
+        <li>ส่งเป็น <b>PNG พื้นหลังโปร่ง</b> ตัดขอบชิดตัวภาพ ตั้งชื่อตามช่อง "ชื่อไฟล์"</li>
+        <li>สไตล์ให้ดูจากไก่และหมูที่ทีมวาดไว้แล้ว (ล่างสุดของหน้า)</li>
+        <li>ตัวละครและสัตว์วาด <b>หันด้านข้างภาพเดียว</b> เกมพลิกซ้าย-ขวาเอง</li>
+      </ul>
+    </div>
+  </div>
+</header>
+</div>
+<nav class="sticky" aria-label="ข้ามไปหัวข้อ"><div class="in">
+  <a class="chip" href="#p1"><span class="dot p1"></span>ต้องมีก่อน</a>
+  <a class="chip" href="#p2"><span class="dot p2"></span>ควรมี</a>
+  <a class="chip" href="#p3"><span class="dot p3"></span>ทีหลังได้</a>
+  <a class="chip" href="#later"><span class="dot pn"></span>พักไว้ก่อน</a>
+  <a class="chip" href="#skip"><span class="dot pn"></span>ไม่ต้องวาด</a>
+  <a class="chip" href="#refs"><span class="dot pn"></span>แบบอย่างสไตล์</a>
+</div></nav>
+<div class="wrap">
+<section class="tier p1" id="p1">
+  <header class="thead"><span class="badge p1">P1</span><h2>ต้องมีก่อน</h2><p class="sub">เห็นบ่อยที่สุดในเกม และตอนนี้ยังเป็นภาพชั่วคราว ภาพสำเร็จรูป หรือย้อมสีของตัวอื่นอยู่</p></header>
+  <h3 class="group">ตัวละคร</h3><article class="card" id="player">
+  <div class="media"><figure class="shot "><img src="img/player_ingame.png" alt="ตอนนี้ในเกม: แคปซูลขาว + กระบองลอยข้างตัว" loading="lazy"><figcaption>ตอนนี้ในเกม: แคปซูลขาว + กระบองลอยข้างตัว</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>ตัวละครผู้เล่น</h3><span class="en">Player</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>แคปซูลสีขาวล้วน (ภาพสำเร็จรูปของ Unity)</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">0.70 × 1.40 <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">280 × 560 ต่อเฟรม</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>ตัวเอกที่ผู้เล่นคุม มีตัวเลขของที่แบก (0/12) ลอยเหนือหัว และกองของวางซ้อนอยู่บนหลัง</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>ภาพด้านข้างชุดเดียว (เกมพลิกซ้าย-ขวาเอง ไม่มีท่าหันหน้า/หันหลังแล้ว เดินขึ้นลงก็ใช้ท่าข้าง)</li><li>ยืนนิ่ง (idle) 2–4 เฟรม</li><li>เดิน 4–6 เฟรม</li><li>โดนตี 1 เฟรม (เกมทำให้กะพริบแดงเอง)</li><li>ล้ม/ตาย 1–3 เฟรม</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">Player_Idle.png, Player_Walk.png, Player_Hurt.png, Player_Down.png</dd></div>
+      <div class="row"><dt>หมายเหตุ</dt><dd>กระบองเป็นอีกชิ้นหนึ่งที่ลอยข้างตัว ในภาพตัวละครไม่ต้องวาดกระบองหรือเป้</dd></div>
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-player">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-player">[ขอ Art] ตัวละครผู้เล่น (Player)
+ตอนนี้ในเกม: แคปซูลสีขาวล้วน (ภาพสำเร็จรูปของ Unity)
+ขนาดในเกม: 0.70 × 1.40 หน่วย | ขนาดภาพที่แนะนำ: 280 × 560 ต่อเฟรม
+ใช้ที่ไหน: ตัวเอกที่ผู้เล่นคุม มีตัวเลขของที่แบก (0/12) ลอยเหนือหัว และกองของวางซ้อนอยู่บนหลัง
+ต้องวาด:
+- ภาพด้านข้างชุดเดียว (เกมพลิกซ้าย-ขวาเอง ไม่มีท่าหันหน้า/หันหลังแล้ว เดินขึ้นลงก็ใช้ท่าข้าง)
+- ยืนนิ่ง (idle) 2–4 เฟรม
+- เดิน 4–6 เฟรม
+- โดนตี 1 เฟรม (เกมทำให้กะพริบแดงเอง)
+- ล้ม/ตาย 1–3 เฟรม
+ชื่อไฟล์: Player_Idle.png, Player_Walk.png, Player_Hurt.png, Player_Down.png
+หมายเหตุ: กระบองเป็นอีกชิ้นหนึ่งที่ลอยข้างตัว ในภาพตัวละครไม่ต้องวาดกระบองหรือเป้
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><article class="card" id="club">
+  <div class="media"><figure class="shot "><img src="img/club_ingame.png" alt="ตอนนี้ในเกม: แท่งสี่เหลี่ยมสีขาว" loading="lazy"><figcaption>ตอนนี้ในเกม: แท่งสี่เหลี่ยมสีขาว</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>กระบอง</h3><span class="en">Club (อาวุธ)</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>แท่งสี่เหลี่ยมสีขาว (ภาพสำเร็จรูปของ Unity)</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">1.12 × 0.16 (ยาว × หนา) <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">450 × 65 ขึ้นไป (ใหญ่กว่านี้ได้ถ้าสัดส่วนเท่าเดิม)</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>อาวุธของผู้เล่น ลอยข้างตัวตอนถือ ง้างขึ้นเหนือหัวแล้วฟาดลงตอนตี</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>วาดแนวนอน หัวกระบองอยู่ทางขวา ด้ามอยู่ทางซ้าย (เกมหมุนและพลิกให้เอง)</li><li>หัวกระบองต้องอ่านออกชัดแม้ตัวเล็กและหมุนเร็ว (ฟาดใช้เวลา 0.1 วินาที)</li><li>อัปเกรดได้ถึง Lv5 ถ้ามีเวลาให้วาด Lv1–Lv5 (ตอนนี้ทุกเลเวลใช้รูปเดียว)</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">Club_Lv1.png … Club_Lv5.png</dd></div>
+      <div class="row"><dt>หมายเหตุ</dt><dd>ไม่ต้องวาดเงา เกมสร้างให้เอง</dd></div>
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-club">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-club">[ขอ Art] กระบอง (Club (อาวุธ))
+ตอนนี้ในเกม: แท่งสี่เหลี่ยมสีขาว (ภาพสำเร็จรูปของ Unity)
+ขนาดในเกม: 1.12 × 0.16 (ยาว × หนา) หน่วย | ขนาดภาพที่แนะนำ: 450 × 65 ขึ้นไป (ใหญ่กว่านี้ได้ถ้าสัดส่วนเท่าเดิม)
+ใช้ที่ไหน: อาวุธของผู้เล่น ลอยข้างตัวตอนถือ ง้างขึ้นเหนือหัวแล้วฟาดลงตอนตี
+ต้องวาด:
+- วาดแนวนอน หัวกระบองอยู่ทางขวา ด้ามอยู่ทางซ้าย (เกมหมุนและพลิกให้เอง)
+- หัวกระบองต้องอ่านออกชัดแม้ตัวเล็กและหมุนเร็ว (ฟาดใช้เวลา 0.1 วินาที)
+- อัปเกรดได้ถึง Lv5 ถ้ามีเวลาให้วาด Lv1–Lv5 (ตอนนี้ทุกเลเวลใช้รูปเดียว)
+ชื่อไฟล์: Club_Lv1.png … Club_Lv5.png
+หมายเหตุ: ไม่ต้องวาดเงา เกมสร้างให้เอง
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><article class="card" id="customer">
+  <div class="media"><figure class="shot "><img src="img/customer.png" alt="ตอนนี้: วงกลมสีขาว" loading="lazy"><figcaption>ตอนนี้: วงกลมสีขาว</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>ลูกค้า</h3><span class="en">Customer</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>วงกลมสีขาว (ภาพสำเร็จรูปของ Unity)</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">1.0 × 1.0 <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">400 × 400 ต่อเฟรม</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>เดินมายืนต่อคิว หยิบอาหารจากโต๊ะ แล้วไปจ่ายเงินที่แคชเชียร์ มีหลายคนพร้อมกัน</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>ภาพด้านข้าง เดิน 4–6 เฟรม</li><li>ยืนรอ (idle)</li><li>หน้ายิ้มตอนได้ของ / หน้างอตอนรอนาน (ถ้ามีเวลา)</li><li>อยากได้ 3–4 แบบ (ต่างผม/เสื้อ) ไม่ให้ทั้งคิวหน้าซ้ำกัน</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">Customer_A_Idle.png, Customer_A_Walk.png, Customer_B_…</dd></div>
+      <div class="row"><dt>หมายเหตุ</dt><dd>ตัวเล็กกว่าผู้เล่นเล็กน้อยก็ได้ ดูเป็นคนในหมู่บ้านเดียวกับผู้เล่น</dd></div>
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-customer">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-customer">[ขอ Art] ลูกค้า (Customer)
+ตอนนี้ในเกม: วงกลมสีขาว (ภาพสำเร็จรูปของ Unity)
+ขนาดในเกม: 1.0 × 1.0 หน่วย | ขนาดภาพที่แนะนำ: 400 × 400 ต่อเฟรม
+ใช้ที่ไหน: เดินมายืนต่อคิว หยิบอาหารจากโต๊ะ แล้วไปจ่ายเงินที่แคชเชียร์ มีหลายคนพร้อมกัน
+ต้องวาด:
+- ภาพด้านข้าง เดิน 4–6 เฟรม
+- ยืนรอ (idle)
+- หน้ายิ้มตอนได้ของ / หน้างอตอนรอนาน (ถ้ามีเวลา)
+- อยากได้ 3–4 แบบ (ต่างผม/เสื้อ) ไม่ให้ทั้งคิวหน้าซ้ำกัน
+ชื่อไฟล์: Customer_A_Idle.png, Customer_A_Walk.png, Customer_B_…
+หมายเหตุ: ตัวเล็กกว่าผู้เล่นเล็กน้อยก็ได้ ดูเป็นคนในหมู่บ้านเดียวกับผู้เล่น
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><article class="card" id="staff_chars">
+  <div class="media multi"><figure class="shot "><img src="img/cashier_staff.png" alt="แคชเชียร์ (ตอนนี้)" loading="lazy"><figcaption>แคชเชียร์ (ตอนนี้)</figcaption></figure><figure class="shot "><img src="img/waiter_staff.png" alt="พนักงานเสิร์ฟ (ตอนนี้ ย้อมฟ้า)" loading="lazy"><figcaption>พนักงานเสิร์ฟ (ตอนนี้ ย้อมฟ้า)</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>ตัวละครพนักงาน (แคชเชียร์ / พนักงานเสิร์ฟ)</h3><span class="en">Cashier / Waiter</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>ใช้ Basic Character ของ Sprout Lands (แพ็กฟรีของคนอื่น) ย้อมสีเอา ตอนนี้ขนาด 3.0 × 3.0 หน่วย ใหญ่กว่าผู้เล่นหลายเท่า</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">0.70 × 1.40 ต่อคน (เท่าผู้เล่น) <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">280 × 560 ต่อเฟรม</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>พนักงานที่จ้างจากร้านพนักงาน: แคชเชียร์เก็บเหรียญให้ พนักงานเสิร์ฟยกอาหารไปวางโต๊ะ</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>ตัวละคร 2 ตัว: แคชเชียร์ และพนักงานเสิร์ฟ ภาพด้านข้างชุดเดียว (เกมพลิกซ้าย-ขวาเอง)</li><li>ยืนนิ่ง (idle) 2–4 เฟรม และเดิน 4–6 เฟรม ของทั้งสองตัว</li><li>แต่งตัวให้ต่างกันชัด ดูออกแม้ตัวเล็ก และต้องต่างจากผู้เล่นกับลูกค้า (เช่น ผ้ากันเปื้อน หมวก ถาด)</li><li>นักล่า (Hunter) ยังไม่ต้องวาด เพราะยังไม่มีในเกม (ปุ่มขึ้นคำว่า SOON)</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">Staff_Cashier_Idle.png, Staff_Cashier_Walk.png, Staff_Waiter_Idle.png, Staff_Waiter_Walk.png</dd></div>
+      <div class="row"><dt>หมายเหตุ</dt><dd>โปรแกรมเมอร์จะลดสเกลในเกมให้พอดีกับภาพใหม่ ภาพปัจจุบันเป็นผลงานคนอื่น เครดิตที่ Assets/Art/Sprout Lands/CREDITS.txt</dd></div>
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-staff_chars">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-staff_chars">[ขอ Art] ตัวละครพนักงาน (แคชเชียร์ / พนักงานเสิร์ฟ) (Cashier / Waiter)
+ตอนนี้ในเกม: ใช้ Basic Character ของ Sprout Lands (แพ็กฟรีของคนอื่น) ย้อมสีเอา ตอนนี้ขนาด 3.0 × 3.0 หน่วย ใหญ่กว่าผู้เล่นหลายเท่า
+ขนาดในเกม: 0.70 × 1.40 ต่อคน (เท่าผู้เล่น) หน่วย | ขนาดภาพที่แนะนำ: 280 × 560 ต่อเฟรม
+ใช้ที่ไหน: พนักงานที่จ้างจากร้านพนักงาน: แคชเชียร์เก็บเหรียญให้ พนักงานเสิร์ฟยกอาหารไปวางโต๊ะ
+ต้องวาด:
+- ตัวละคร 2 ตัว: แคชเชียร์ และพนักงานเสิร์ฟ ภาพด้านข้างชุดเดียว (เกมพลิกซ้าย-ขวาเอง)
+- ยืนนิ่ง (idle) 2–4 เฟรม และเดิน 4–6 เฟรม ของทั้งสองตัว
+- แต่งตัวให้ต่างกันชัด ดูออกแม้ตัวเล็ก และต้องต่างจากผู้เล่นกับลูกค้า (เช่น ผ้ากันเปื้อน หมวก ถาด)
+- นักล่า (Hunter) ยังไม่ต้องวาด เพราะยังไม่มีในเกม (ปุ่มขึ้นคำว่า SOON)
+ชื่อไฟล์: Staff_Cashier_Idle.png, Staff_Cashier_Walk.png, Staff_Waiter_Idle.png, Staff_Waiter_Walk.png
+หมายเหตุ: โปรแกรมเมอร์จะลดสเกลในเกมให้พอดีกับภาพใหม่ ภาพปัจจุบันเป็นผลงานคนอื่น เครดิตที่ Assets/Art/Sprout Lands/CREDITS.txt
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><h3 class="group">ชุดควาย (สัตว์ตัวที่ 3)</h3><article class="card" id="buffalo">
+  <div class="media"><figure class="shot "><img src="img/buffalo.png" alt="ตอนนี้: ภาพหมูย้อมสีน้ำตาล" loading="lazy"><figcaption>ตอนนี้: ภาพหมูย้อมสีน้ำตาล</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>ควาย</h3><span class="en">Buffalo</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>ใช้ภาพหมู (Pig.png) ย้อมสีน้ำตาล</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">1.60 × 1.09 <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">640 × 436 ต่อเฟรม</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>สัตว์ตัวที่ 3 ในป่าลึก (Deep Forest) ผู้เล่นตีเพื่อเอาเนื้อ เลือดมากกว่าหมู</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>ภาพด้านข้าง ยืน/เดิน 4–6 เฟรม</li><li>โดนตี 1 เฟรม</li><li>ใช้ท่าเดินเป็นท่าวิ่งหนีได้ (เกมเร่งความเร็วให้)</li><li>สไตล์เดียวกับไก่และหมูที่ทีมวาดไว้แล้ว (ขอบสีเข้มบาง ตัวกลมอ้วน)</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">Buffalo_Idle.png, Buffalo_Walk.png, Buffalo_Hurt.png</dd></div>
+      
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-buffalo">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-buffalo">[ขอ Art] ควาย (Buffalo)
+ตอนนี้ในเกม: ใช้ภาพหมู (Pig.png) ย้อมสีน้ำตาล
+ขนาดในเกม: 1.60 × 1.09 หน่วย | ขนาดภาพที่แนะนำ: 640 × 436 ต่อเฟรม
+ใช้ที่ไหน: สัตว์ตัวที่ 3 ในป่าลึก (Deep Forest) ผู้เล่นตีเพื่อเอาเนื้อ เลือดมากกว่าหมู
+ต้องวาด:
+- ภาพด้านข้าง ยืน/เดิน 4–6 เฟรม
+- โดนตี 1 เฟรม
+- ใช้ท่าเดินเป็นท่าวิ่งหนีได้ (เกมเร่งความเร็วให้)
+- สไตล์เดียวกับไก่และหมูที่ทีมวาดไว้แล้ว (ขอบสีเข้มบาง ตัวกลมอ้วน)
+ชื่อไฟล์: Buffalo_Idle.png, Buffalo_Walk.png, Buffalo_Hurt.png
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><article class="card" id="buffalo_meat">
+  <div class="media"><figure class="shot "><img src="img/buffalo_meat.png" alt="ตอนนี้: เนื้อไก่ย้อมสีเขียว" loading="lazy"><figcaption>ตอนนี้: เนื้อไก่ย้อมสีเขียว</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>เนื้อควายดิบ</h3><span class="en">Buffalo Meat</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>ใช้เนื้อไก่ (ChickenMeat.png) ย้อมสีเขียว</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">0.57 × 0.60 <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">230 × 240</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>หล่นตอนฆ่าควาย บินเป็นวงโค้งออกจากตัวสัตว์ ผู้เล่นเก็บแล้วซ้อนบนหลัง และเป็นไอคอนบนป้ายหม้อ</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>1 ภาพ สไตล์เดียวกับ ChickenMeat / PorkMeat</li><li>สีแยกจากหมู (ชมพูอ่อน) และไก่ได้ชัดแม้ตัวเล็ก</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">BuffaloMeat.png</dd></div>
+      
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-buffalo_meat">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-buffalo_meat">[ขอ Art] เนื้อควายดิบ (Buffalo Meat)
+ตอนนี้ในเกม: ใช้เนื้อไก่ (ChickenMeat.png) ย้อมสีเขียว
+ขนาดในเกม: 0.57 × 0.60 หน่วย | ขนาดภาพที่แนะนำ: 230 × 240
+ใช้ที่ไหน: หล่นตอนฆ่าควาย บินเป็นวงโค้งออกจากตัวสัตว์ ผู้เล่นเก็บแล้วซ้อนบนหลัง และเป็นไอคอนบนป้ายหม้อ
+ต้องวาด:
+- 1 ภาพ สไตล์เดียวกับ ChickenMeat / PorkMeat
+- สีแยกจากหมู (ชมพูอ่อน) และไก่ได้ชัดแม้ตัวเล็ก
+ชื่อไฟล์: BuffaloMeat.png
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><article class="card" id="buffalo_pot">
+  <div class="media"><figure class="shot "><img src="img/buffalo_pot.png" alt="ตอนนี้: ใช้ภาพหม้อหมูซ้ำ" loading="lazy"><figcaption>ตอนนี้: ใช้ภาพหม้อหมูซ้ำ</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>หม้อต้มเนื้อควาย</h3><span class="en">Buffalo Pot</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>ใช้ภาพหม้อหมู (PigPot) ซ้ำ ทั้งตอนรอและตอนต้ม</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">2.60 × 2.19 (ตัวหม้อ ไม่รวมวง) <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">1040 × 876</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>หม้อต้มเนื้อควาย ผู้เล่นยืนในวงขาวเพื่อใส่เนื้อ รอแล้วไปเก็บอาหารที่วงเหลือง</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>ภาพตอนรอ (Idle) 1 ภาพ และตอนต้ม (Cooking) 1 ภาพ เหมือน ChickenPot_Idle / ChickenPot_Cooking</li><li>ป้ายไอคอนเนื้อที่ติดหม้อ เปลี่ยนเป็นไอคอนเนื้อควาย</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">BuffaloPot_Idle.png, BuffaloPot_Cooking.png</dd></div>
+      
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-buffalo_pot">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-buffalo_pot">[ขอ Art] หม้อต้มเนื้อควาย (Buffalo Pot)
+ตอนนี้ในเกม: ใช้ภาพหม้อหมู (PigPot) ซ้ำ ทั้งตอนรอและตอนต้ม
+ขนาดในเกม: 2.60 × 2.19 (ตัวหม้อ ไม่รวมวง) หน่วย | ขนาดภาพที่แนะนำ: 1040 × 876
+ใช้ที่ไหน: หม้อต้มเนื้อควาย ผู้เล่นยืนในวงขาวเพื่อใส่เนื้อ รอแล้วไปเก็บอาหารที่วงเหลือง
+ต้องวาด:
+- ภาพตอนรอ (Idle) 1 ภาพ และตอนต้ม (Cooking) 1 ภาพ เหมือน ChickenPot_Idle / ChickenPot_Cooking
+- ป้ายไอคอนเนื้อที่ติดหม้อ เปลี่ยนเป็นไอคอนเนื้อควาย
+ชื่อไฟล์: BuffaloPot_Idle.png, BuffaloPot_Cooking.png
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><article class="card" id="table_buffalo">
+  <div class="media"><figure class="shot "><img src="img/table_frog.png" alt="ตอนนี้: ใช้ Table_Frog.png (ชื่อเก่าตอนสัตว์ตัวที่ 3 ยังเป็นกบ)" loading="lazy"><figcaption>ตอนนี้: ใช้ Table_Frog.png (ชื่อเก่าตอนสัตว์ตัวที่ 3 ยังเป็นกบ)</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>โต๊ะวางจานเนื้อควาย</h3><span class="en">Table Buffalo</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>ใช้ Table_Frog.png ซึ่งเป็นโต๊ะสีเขียวของชุดกบเดิม</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">ขนาดเท่า Table_Chicken <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">908 × 642 (เท่าโต๊ะเดิม)</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>โต๊ะวางอาหารสุกฝั่งควาย ลูกค้ามาหยิบจากโต๊ะ มีป้ายตัวเลขจำนวนจานติดด้านหน้า</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>โต๊ะสีประจำสัตว์ตัวนี้ (โต๊ะไก่ โต๊ะหมู มีสีเฉพาะอยู่แล้ว ดูหน้าเดียวกัน)</li><li>ถ้าเลิกใช้ธีมกบแล้ว ตั้งชื่อไฟล์ใหม่เป็น Table_Buffalo</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">Table_Buffalo.png</dd></div>
+      <div class="row"><dt>หมายเหตุ</dt><dd>Table_Mixed.png (โต๊ะจานผสม) มีไฟล์แล้วแต่ยังไม่ได้ใช้ในฉาก</dd></div>
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-table_buffalo">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-table_buffalo">[ขอ Art] โต๊ะวางจานเนื้อควาย (Table Buffalo)
+ตอนนี้ในเกม: ใช้ Table_Frog.png ซึ่งเป็นโต๊ะสีเขียวของชุดกบเดิม
+ขนาดในเกม: ขนาดเท่า Table_Chicken หน่วย | ขนาดภาพที่แนะนำ: 908 × 642 (เท่าโต๊ะเดิม)
+ใช้ที่ไหน: โต๊ะวางอาหารสุกฝั่งควาย ลูกค้ามาหยิบจากโต๊ะ มีป้ายตัวเลขจำนวนจานติดด้านหน้า
+ต้องวาด:
+- โต๊ะสีประจำสัตว์ตัวนี้ (โต๊ะไก่ โต๊ะหมู มีสีเฉพาะอยู่แล้ว ดูหน้าเดียวกัน)
+- ถ้าเลิกใช้ธีมกบแล้ว ตั้งชื่อไฟล์ใหม่เป็น Table_Buffalo
+ชื่อไฟล์: Table_Buffalo.png
+หมายเหตุ: Table_Mixed.png (โต๊ะจานผสม) มีไฟล์แล้วแต่ยังไม่ได้ใช้ในฉาก
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><h3 class="group">อาหารสุก</h3><article class="card" id="dishes">
+  <div class="media multi"><figure class="shot "><img src="img/dish_fried_chicken.png" alt="ไก่ทอด (เหลือง)" loading="lazy"><figcaption>ไก่ทอด (เหลือง)</figcaption></figure><figure class="shot "><img src="img/dish_pork.png" alt="หมู (ชมพูเข้ม)" loading="lazy"><figcaption>หมู (ชมพูเข้ม)</figcaption></figure><figure class="shot "><img src="img/dish_buffalo.png" alt="เนื้อควาย (เขียว)" loading="lazy"><figcaption>เนื้อควาย (เขียว)</figcaption></figure><figure class="shot "><img src="img/dish_mixed.png" alt="จานผสม (ม่วงอ่อน)" loading="lazy"><figcaption>จานผสม (ม่วงอ่อน)</figcaption></figure><figure class="shot "><img src="img/dish_special.png" alt="จานพิเศษ (แดง)" loading="lazy"><figcaption>จานพิเศษ (แดง)</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>จานอาหารสุก 5 จาน</h3><span class="en">Cooked Dishes</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>หกเหลี่ยมสีล้วนรูปเดียวกัน ย้อมสีต่างกันห้าสี (ภาพสำเร็จรูปของ Unity)</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">1.0 × 0.88 ต่อจาน (ลดสเกลใน Unity ได้) <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">400 × 350 หรือเล็กกว่า</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>อาหารที่หม้อทำเสร็จ ผู้เล่นแบกซ้อนบนหลัง วางลงโต๊ะให้ลูกค้าหยิบ และเป็นไอคอนบนป้ายหม้อ (เนื้อ → จาน)</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>ไก่ทอด, หมู, เนื้อควาย: จานของแต่ละสัตว์</li><li>จานผสม: ได้จากเครื่องผสมเนื้อ 2 ชนิด ราคาสูงกว่าจานธรรมดา</li><li>จานพิเศษ: เมนูพิเศษราคาสูงสุด</li><li>ทุกจานต้องอ่านออกว่าเป็นอะไรแม้ตัวเล็กมาก และวางซ้อนเป็นกองแนวตั้งได้ (ก้นแบน ไม่สูงมาก)</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">Dish_FriedChicken.png, Dish_Pork.png, Dish_Buffalo.png, Dish_Mixed.png, Dish_Special.png</dd></div>
+      <div class="row"><dt>หมายเหตุ</dt><dd>สีที่ย้อมไว้ตอนนี้คือคำใบ้ว่าจานไหนเป็นของอะไร ไม่ต้องยึดตามสีนั้น</dd></div>
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-dishes">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-dishes">[ขอ Art] จานอาหารสุก 5 จาน (Cooked Dishes)
+ตอนนี้ในเกม: หกเหลี่ยมสีล้วนรูปเดียวกัน ย้อมสีต่างกันห้าสี (ภาพสำเร็จรูปของ Unity)
+ขนาดในเกม: 1.0 × 0.88 ต่อจาน (ลดสเกลใน Unity ได้) หน่วย | ขนาดภาพที่แนะนำ: 400 × 350 หรือเล็กกว่า
+ใช้ที่ไหน: อาหารที่หม้อทำเสร็จ ผู้เล่นแบกซ้อนบนหลัง วางลงโต๊ะให้ลูกค้าหยิบ และเป็นไอคอนบนป้ายหม้อ (เนื้อ → จาน)
+ต้องวาด:
+- ไก่ทอด, หมู, เนื้อควาย: จานของแต่ละสัตว์
+- จานผสม: ได้จากเครื่องผสมเนื้อ 2 ชนิด ราคาสูงกว่าจานธรรมดา
+- จานพิเศษ: เมนูพิเศษราคาสูงสุด
+- ทุกจานต้องอ่านออกว่าเป็นอะไรแม้ตัวเล็กมาก และวางซ้อนเป็นกองแนวตั้งได้ (ก้นแบน ไม่สูงมาก)
+ชื่อไฟล์: Dish_FriedChicken.png, Dish_Pork.png, Dish_Buffalo.png, Dish_Mixed.png, Dish_Special.png
+หมายเหตุ: สีที่ย้อมไว้ตอนนี้คือคำใบ้ว่าจานไหนเป็นของอะไร ไม่ต้องยึดตามสีนั้น
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><h3 class="group">ของในร้าน</h3><article class="card" id="cashier">
+  <div class="media"><figure class="shot "><img src="img/cashier_counter.png" alt="ตอนนี้: สี่เหลี่ยมเขียวเข้ม + วงขาว" loading="lazy"><figcaption>ตอนนี้: สี่เหลี่ยมเขียวเข้ม + วงขาว</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>เคาน์เตอร์แคชเชียร์</h3><span class="en">Cashier Counter</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>สี่เหลี่ยมสีเขียวเข้ม มีวงขาวให้ผู้เล่นยืน</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">2.0 × 2.0 (ตัวเคาน์เตอร์ ไม่รวมวง) <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">800 × 800</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>จุดจ่ายเงิน ลูกค้าเอาอาหารมาจ่าย เหรียญหล่นบนเคาน์เตอร์ ผู้เล่นเข้าวงขาวเพื่อเก็บเหรียญ (จ้างแคชเชียร์มาเก็บแทนได้)</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>เคาน์เตอร์หรือเครื่องคิดเงิน มุมมองเฉียงจากด้านบน เหมือนหม้อและโต๊ะ</li><li>เหลือพื้นที่ว่างบนเคาน์เตอร์ให้เหรียญหล่นลงมากองได้</li><li>ถ้าให้พนักงานยืนด้านหลังได้ (พนักงานเป็นอีกชิ้น)</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">Cashier_Counter.png</dd></div>
+      
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-cashier">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-cashier">[ขอ Art] เคาน์เตอร์แคชเชียร์ (Cashier Counter)
+ตอนนี้ในเกม: สี่เหลี่ยมสีเขียวเข้ม มีวงขาวให้ผู้เล่นยืน
+ขนาดในเกม: 2.0 × 2.0 (ตัวเคาน์เตอร์ ไม่รวมวง) หน่วย | ขนาดภาพที่แนะนำ: 800 × 800
+ใช้ที่ไหน: จุดจ่ายเงิน ลูกค้าเอาอาหารมาจ่าย เหรียญหล่นบนเคาน์เตอร์ ผู้เล่นเข้าวงขาวเพื่อเก็บเหรียญ (จ้างแคชเชียร์มาเก็บแทนได้)
+ต้องวาด:
+- เคาน์เตอร์หรือเครื่องคิดเงิน มุมมองเฉียงจากด้านบน เหมือนหม้อและโต๊ะ
+- เหลือพื้นที่ว่างบนเคาน์เตอร์ให้เหรียญหล่นลงมากองได้
+- ถ้าให้พนักงานยืนด้านหลังได้ (พนักงานเป็นอีกชิ้น)
+ชื่อไฟล์: Cashier_Counter.png
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><article class="card" id="shop_stall">
+  <div class="media"><figure class="shot "><img src="img/shop_stall.png" alt="ตอนนี้: บล็อกเหลืองเขียนว่า SHOP" loading="lazy"><figcaption>ตอนนี้: บล็อกเหลืองเขียนว่า SHOP</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>ร้านอัปเกรดนักล่า</h3><span class="en">Shop Stall</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>บล็อกสี่เหลี่ยมสีเหลืองมีตัวหนังสือ SHOP</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">2.0 × 2.0 (ตัวร้าน ไม่รวมวง) <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">800 × 800</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>ร้านอัปเกรดของผู้เล่น (กระบอง กระเป๋า รองเท้า ถุงมือ) เข้าวงเหลืองแล้วหน้าต่างร้านเปิดขึ้น</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>แผงขายอุปกรณ์ล่า ธีมอาวุธ/ของนักล่า</li><li>ดูออกทันทีว่าเป็นคนละร้านกับร้านพนักงาน</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">ShopStall.png</dd></div>
+      
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-shop_stall">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-shop_stall">[ขอ Art] ร้านอัปเกรดนักล่า (Shop Stall)
+ตอนนี้ในเกม: บล็อกสี่เหลี่ยมสีเหลืองมีตัวหนังสือ SHOP
+ขนาดในเกม: 2.0 × 2.0 (ตัวร้าน ไม่รวมวง) หน่วย | ขนาดภาพที่แนะนำ: 800 × 800
+ใช้ที่ไหน: ร้านอัปเกรดของผู้เล่น (กระบอง กระเป๋า รองเท้า ถุงมือ) เข้าวงเหลืองแล้วหน้าต่างร้านเปิดขึ้น
+ต้องวาด:
+- แผงขายอุปกรณ์ล่า ธีมอาวุธ/ของนักล่า
+- ดูออกทันทีว่าเป็นคนละร้านกับร้านพนักงาน
+ชื่อไฟล์: ShopStall.png
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><article class="card" id="staff_stall">
+  <div class="media"><figure class="shot "><img src="img/staff_stall.png" alt="ตอนนี้: บล็อกสีฟ้า" loading="lazy"><figcaption>ตอนนี้: บล็อกสีฟ้า</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>ร้านจ้างพนักงาน</h3><span class="en">Staff Stall</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>บล็อกสี่เหลี่ยมสีฟ้าล้วน</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">2.0 × 2.0 (ตัวร้าน ไม่รวมวง) <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">800 × 800</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>ร้านจ้างพนักงาน (แคชเชียร์ พนักงานเสิร์ฟ และนักล่าที่ยังไม่เปิด)</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>แผงหรือโต๊ะรับสมัครงาน ดูต่างจาก Shop Stall ชัดเจน</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">StaffStall.png</dd></div>
+      
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-staff_stall">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-staff_stall">[ขอ Art] ร้านจ้างพนักงาน (Staff Stall)
+ตอนนี้ในเกม: บล็อกสี่เหลี่ยมสีฟ้าล้วน
+ขนาดในเกม: 2.0 × 2.0 (ตัวร้าน ไม่รวมวง) หน่วย | ขนาดภาพที่แนะนำ: 800 × 800
+ใช้ที่ไหน: ร้านจ้างพนักงาน (แคชเชียร์ พนักงานเสิร์ฟ และนักล่าที่ยังไม่เปิด)
+ต้องวาด:
+- แผงหรือโต๊ะรับสมัครงาน ดูต่างจาก Shop Stall ชัดเจน
+ชื่อไฟล์: StaffStall.png
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><article class="card" id="coin">
+  <div class="media"><figure class="shot "><img src="img/coin.png" alt="ตอนนี้: เหรียญทองสร้างชั่วคราว 128 px" loading="lazy"><figcaption>ตอนนี้: เหรียญทองสร้างชั่วคราว 128 px</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>เหรียญ</h3><span class="en">Coin</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>เหรียญทองที่สร้างชั่วคราว (128 × 128 px) ไม่เข้ากับสไตล์ทีม</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">0.45 × 0.45 <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">180 × 180</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>ลูกค้าจ่ายแล้วเหรียญหล่นบนเคาน์เตอร์ ผู้เล่นเก็บแล้วลอยเข้าตัว</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>เหรียญ 1 ภาพ สไตล์เดียวกับของทีม (ใช้ทั้งตอนหล่นบนเคาน์เตอร์และตอนลอยเข้าตัวผู้เล่น)</li><li>ไอคอนเหรียญเล็กสำหรับ HUD และปุ่มซื้อ (ชิ้นเดียวกับที่ชุด UI ขอไว้)</li><li>หมุน 4–6 เฟรม (ถ้ามีเวลา)</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">Coin.png, Icon_Coin.png</dd></div>
+      
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-coin">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-coin">[ขอ Art] เหรียญ (Coin)
+ตอนนี้ในเกม: เหรียญทองที่สร้างชั่วคราว (128 × 128 px) ไม่เข้ากับสไตล์ทีม
+ขนาดในเกม: 0.45 × 0.45 หน่วย | ขนาดภาพที่แนะนำ: 180 × 180
+ใช้ที่ไหน: ลูกค้าจ่ายแล้วเหรียญหล่นบนเคาน์เตอร์ ผู้เล่นเก็บแล้วลอยเข้าตัว
+ต้องวาด:
+- เหรียญ 1 ภาพ สไตล์เดียวกับของทีม (ใช้ทั้งตอนหล่นบนเคาน์เตอร์และตอนลอยเข้าตัวผู้เล่น)
+- ไอคอนเหรียญเล็กสำหรับ HUD และปุ่มซื้อ (ชิ้นเดียวกับที่ชุด UI ขอไว้)
+- หมุน 4–6 เฟรม (ถ้ามีเวลา)
+ชื่อไฟล์: Coin.png, Icon_Coin.png
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article>
+</section>
+<section class="tier p2" id="p2">
+  <header class="thead"><span class="badge p2">P2</span><h2>ควรมี</h2><p class="sub">ใช้งานจริงแล้ว แต่รอได้หลังชุดแรก</p></header>
+  <article class="card" id="ui">
+  <div class="media multi"><figure class="shot "><img src="img/ui_shop_panel.png" alt="หน้าต่าง SHOP (แท็บ HUNT / COOK / STORE)" loading="lazy"><figcaption>หน้าต่าง SHOP (แท็บ HUNT / COOK / STORE)</figcaption></figure><figure class="shot "><img src="img/ui_staff_panel.png" alt="หน้าต่าง STAFF" loading="lazy"><figcaption>หน้าต่าง STAFF</figcaption></figure><figure class="shot "><img src="img/hud_money.png" alt="HUD เงินมุมขวาบน" loading="lazy"><figcaption>HUD เงินมุมขวาบน</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>ชุด UI (หน้าต่างร้านและ HUD)</h3><span class="en">UI Kit</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>กล่องสีเรียบ ปุ่มสีทึบ และฟอนต์มาตรฐานของ Unity</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">ปรับตามจอ 1920 × 1080 <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">แล้วแต่ชิ้น</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>หน้าต่างร้านอัปเกรด/ร้านพนักงาน หน้าต่างอัปเกรดหม้อ HUD เงิน และตัวเลขของที่แบกเหนือหัว</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>กรอบหน้าต่างพร้อมแถบหัว แบบยืดได้ (9-slice)</li><li>ปุ่ม 3 สถานะ: ปกติ / กด / ปิดใช้งาน (เทา) และปุ่มปิด EXIT</li><li>แท็บ 2 สถานะ: เลือกอยู่ / ไม่ได้เลือก และพื้นแถวสินค้า</li><li>ไอคอนสินค้า: กระบอง กระเป๋า รองเท้า ถุงมือ</li><li>ไอคอนพนักงาน: แคชเชียร์ พนักงานเสิร์ฟ นักล่า และไอคอนกุญแจล็อก (ตอนนี้ปุ่มเขียนว่า SOON)</li><li>ไอคอนเหรียญข้างตัวเลขเงิน (ใช้ชิ้นเดียวกับรายการ &quot;เหรียญ&quot; ไม่ต้องวาดซ้ำ)</li><li>ฟอนต์พิกเซล มีตัวอังกฤษ ตัวเลข และสัญลักษณ์ $ → ครบ (ข้อความในเกมเป็นอังกฤษเป็นหลัก)</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">UI_Panel.png, UI_Button_*.png, UI_Tab_*.png, Icon_*.png, ไฟล์ .ttf</dd></div>
+      <div class="row"><dt>หมายเหตุ</dt><dd>ถ้าทำฟอนต์ ส่งเป็นไฟล์ .ttf แล้วโปรแกรมเมอร์จะผูกให้ทั้งเกม</dd></div>
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-ui">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-ui">[ขอ Art] ชุด UI (หน้าต่างร้านและ HUD) (UI Kit)
+ตอนนี้ในเกม: กล่องสีเรียบ ปุ่มสีทึบ และฟอนต์มาตรฐานของ Unity
+ขนาดในเกม: ปรับตามจอ 1920 × 1080 หน่วย | ขนาดภาพที่แนะนำ: แล้วแต่ชิ้น
+ใช้ที่ไหน: หน้าต่างร้านอัปเกรด/ร้านพนักงาน หน้าต่างอัปเกรดหม้อ HUD เงิน และตัวเลขของที่แบกเหนือหัว
+ต้องวาด:
+- กรอบหน้าต่างพร้อมแถบหัว แบบยืดได้ (9-slice)
+- ปุ่ม 3 สถานะ: ปกติ / กด / ปิดใช้งาน (เทา) และปุ่มปิด EXIT
+- แท็บ 2 สถานะ: เลือกอยู่ / ไม่ได้เลือก และพื้นแถวสินค้า
+- ไอคอนสินค้า: กระบอง กระเป๋า รองเท้า ถุงมือ
+- ไอคอนพนักงาน: แคชเชียร์ พนักงานเสิร์ฟ นักล่า และไอคอนกุญแจล็อก (ตอนนี้ปุ่มเขียนว่า SOON)
+- ไอคอนเหรียญข้างตัวเลขเงิน (ใช้ชิ้นเดียวกับรายการ &quot;เหรียญ&quot; ไม่ต้องวาดซ้ำ)
+- ฟอนต์พิกเซล มีตัวอังกฤษ ตัวเลข และสัญลักษณ์ $ → ครบ (ข้อความในเกมเป็นอังกฤษเป็นหลัก)
+ชื่อไฟล์: UI_Panel.png, UI_Button_*.png, UI_Tab_*.png, Icon_*.png, ไฟล์ .ttf
+หมายเหตุ: ถ้าทำฟอนต์ ส่งเป็นไฟล์ .ttf แล้วโปรแกรมเมอร์จะผูกให้ทั้งเกม
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article>
+</section>
+<section class="tier p3" id="p3">
+  <header class="thead"><span class="badge p3">P3</span><h2>ทีหลังได้</h2><p class="sub">ของตกแต่งและแอนิเมชัน ทำเมื่อภาพนิ่งครบ</p></header>
+  <article class="card" id="anims">
+  <div class="media multi"><figure class="shot "><img src="img/ref_chicken.png" alt="ไก่ (ภาพนิ่งภาพเดียว)" loading="lazy"><figcaption>ไก่ (ภาพนิ่งภาพเดียว)</figcaption></figure><figure class="shot "><img src="img/ref_pig.png" alt="หมู (ภาพนิ่งภาพเดียว)" loading="lazy"><figcaption>หมู (ภาพนิ่งภาพเดียว)</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>แอนิเมชันเดิน/โดนตี</h3><span class="en">Animations</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>ทุกตัวเป็นภาพนิ่งภาพเดียว ยังไม่มีแอนิเมชันเลยในเกม</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">เท่าภาพเดิม <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">เท่าภาพเดิม</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>ไก่ หมู ควาย ผู้เล่น ลูกค้า พนักงาน และหม้อ</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>สัตว์ (ไก่ หมู ควาย): เดิน 4 เฟรม และโดนตี 1 เฟรม (ตอนตายเกมทำให้ยุบหายเองได้ ไม่ต้องวาด)</li><li>ผู้เล่น ลูกค้า พนักงาน: idle และเดิน 4–6 เฟรม (พนักงานระบุไว้ในรายการของตัวมันแล้ว)</li><li>หม้อ: ตอนต้มให้มีหลายเฟรม เช่น ไอน้ำลอย</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">ชื่อ_Walk_01.png, ชื่อ_Walk_02.png … หรือสไปรต์ชีต 1 แถว</dd></div>
+      <div class="row"><dt>หมายเหตุ</dt><dd>ทำหลังจากภาพนิ่งครบแล้วค่อยทำก็ได้</dd></div>
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-anims">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-anims">[ขอ Art] แอนิเมชันเดิน/โดนตี (Animations)
+ตอนนี้ในเกม: ทุกตัวเป็นภาพนิ่งภาพเดียว ยังไม่มีแอนิเมชันเลยในเกม
+ขนาดในเกม: เท่าภาพเดิม หน่วย | ขนาดภาพที่แนะนำ: เท่าภาพเดิม
+ใช้ที่ไหน: ไก่ หมู ควาย ผู้เล่น ลูกค้า พนักงาน และหม้อ
+ต้องวาด:
+- สัตว์ (ไก่ หมู ควาย): เดิน 4 เฟรม และโดนตี 1 เฟรม (ตอนตายเกมทำให้ยุบหายเองได้ ไม่ต้องวาด)
+- ผู้เล่น ลูกค้า พนักงาน: idle และเดิน 4–6 เฟรม (พนักงานระบุไว้ในรายการของตัวมันแล้ว)
+- หม้อ: ตอนต้มให้มีหลายเฟรม เช่น ไอน้ำลอย
+ชื่อไฟล์: ชื่อ_Walk_01.png, ชื่อ_Walk_02.png … หรือสไปรต์ชีต 1 แถว
+หมายเหตุ: ทำหลังจากภาพนิ่งครบแล้วค่อยทำก็ได้
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><article class="card" id="fx">
+  <div class="media"><figure class="shot "><img src="img/ctx_shop_area.png" alt="ตัวอย่างฉากตอนนี้ (เอฟเฟกต์ทั้งหมดสร้างด้วยโค้ด)" loading="lazy"><figcaption>ตัวอย่างฉากตอนนี้ (เอฟเฟกต์ทั้งหมดสร้างด้วยโค้ด)</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>เอฟเฟกต์</h3><span class="en">FX</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>เกมสร้างเองด้วยโค้ดทั้งหมด (เงาเนื้อ รอยกวาดกระบอง หลอดเลือด) ยังไม่มีภาพเอฟเฟกต์วาดมือ</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">ตามชิ้น <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">ตามชิ้น</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>ตอนตีโดน ตอนสัตว์ตาย ตอนรับเงิน</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>ประกายตอนตีโดน 3–5 เฟรม</li><li>ควันหรือฝุ่นตอนสัตว์ตาย</li><li>ประกายเหรียญตอนรับเงิน</li><li>รอยกวาดกระบอง (ตอนนี้เป็นเส้นโค้งขาวจางๆ ที่โค้ดสร้าง)</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">FX_Hit.png, FX_Smoke.png, FX_Sparkle.png, FX_Swoosh.png</dd></div>
+      
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-fx">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-fx">[ขอ Art] เอฟเฟกต์ (FX)
+ตอนนี้ในเกม: เกมสร้างเองด้วยโค้ดทั้งหมด (เงาเนื้อ รอยกวาดกระบอง หลอดเลือด) ยังไม่มีภาพเอฟเฟกต์วาดมือ
+ขนาดในเกม: ตามชิ้น หน่วย | ขนาดภาพที่แนะนำ: ตามชิ้น
+ใช้ที่ไหน: ตอนตีโดน ตอนสัตว์ตาย ตอนรับเงิน
+ต้องวาด:
+- ประกายตอนตีโดน 3–5 เฟรม
+- ควันหรือฝุ่นตอนสัตว์ตาย
+- ประกายเหรียญตอนรับเงิน
+- รอยกวาดกระบอง (ตอนนี้เป็นเส้นโค้งขาวจางๆ ที่โค้ดสร้าง)
+ชื่อไฟล์: FX_Hit.png, FX_Smoke.png, FX_Sparkle.png, FX_Swoosh.png
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article><article class="card" id="rings">
+  <div class="media"><figure class="shot "><img src="img/rings.png" alt="ตอนนี้: วงขาว (จุดยืนผู้เล่น) และวงเหลือง (จุดรับของ/จุดซื้อ)" loading="lazy"><figcaption>ตอนนี้: วงขาว (จุดยืนผู้เล่น) และวงเหลือง (จุดรับของ/จุดซื้อ)</figcaption></figure></div>
+  <div class="body">
+    <header class="chead"><h3>วงบอกจุดยืน</h3><span class="en">Stand Rings</span></header>
+    <dl class="spec">
+      <div class="row"><dt>ตอนนี้</dt><dd>วงแหวนที่โค้ดสร้างขึ้น ใช้ได้อยู่ ไม่ได้ขัดสไตล์มาก</dd></div>
+      <div class="row"><dt>ขนาดในเกม</dt><dd class="num">1.0 × 1.0 <span class="unit">หน่วย</span></dd></div>
+      <div class="row"><dt>ขนาดภาพที่แนะนำ</dt><dd class="num">400 × 400</dd></div>
+      <div class="row"><dt>ใช้ที่ไหน</dt><dd>บอกจุดที่ต้องไปยืน (หม้อ เคาน์เตอร์ ร้านค้า ประตูด่าน)</dd></div>
+      <div class="row"><dt>ต้องวาด</dt><dd><ul class="needs"><li>ไม่จำเป็นต้องเปลี่ยน ถ้าจะทำให้เข้าธีม: วงขาว และวงเหลือง ตอนผู้เล่นอยู่ในวงเกมจะเปลี่ยนเป็นสีเขียวเอง</li></ul></dd></div>
+      <div class="row"><dt>ชื่อไฟล์</dt><dd class="mono">Ring_White.png, Ring_Yellow.png</dd></div>
+      
+    </dl>
+    <div class="actions"><button type="button" class="copy" data-target="b-rings">คัดลอกข้อความสั่งงาน</button><span class="status" aria-live="polite"></span></div>
+    <details class="brief"><summary>ดูข้อความที่จะคัดลอก</summary><pre id="b-rings">[ขอ Art] วงบอกจุดยืน (Stand Rings)
+ตอนนี้ในเกม: วงแหวนที่โค้ดสร้างขึ้น ใช้ได้อยู่ ไม่ได้ขัดสไตล์มาก
+ขนาดในเกม: 1.0 × 1.0 หน่วย | ขนาดภาพที่แนะนำ: 400 × 400
+ใช้ที่ไหน: บอกจุดที่ต้องไปยืน (หม้อ เคาน์เตอร์ ร้านค้า ประตูด่าน)
+ต้องวาด:
+- ไม่จำเป็นต้องเปลี่ยน ถ้าจะทำให้เข้าธีม: วงขาว และวงเหลือง ตอนผู้เล่นอยู่ในวงเกมจะเปลี่ยนเป็นสีเขียวเอง
+ชื่อไฟล์: Ring_White.png, Ring_Yellow.png
+ส่งเป็น PNG พื้นหลังโปร่ง สไตล์เดียวกับไก่/หมูที่ทีมวาดไว้แล้ว</pre></details>
+  </div>
+</article>
+</section>
+<section class="plain" id="later">
+  <header class="thead"><span class="badge" style="background:var(--line);color:var(--muted)">⏸</span><h2>พักไว้ก่อน</h2><p class="sub">ยังไม่ต้องวาดตอนนี้ เก็บสเปกไว้ให้ ถ้าถึงรอบหน้าจะย้ายขึ้นไปเป็นรายการสั่งงาน</p></header>
+  <div class="note"><div class="media multi"><figure class="shot "><img src="img/thief.png" alt="ตอนนี้: วงกลมสีเทาน้ำเงิน" loading="lazy"><figcaption>ตอนนี้: วงกลมสีเทาน้ำเงิน</figcaption></figure></div><div><h3 style="font-size:1.1rem;margin-bottom:.4rem">โจร <span class="en">Thief</span></h3><p style="margin:0 0 .5rem">ยังไม่ต้องวาด เกมใช้วงกลมสีเทาน้ำเงินไปก่อน</p><p style="margin:0;color:var(--muted)">ตอนวาด: ขนาดในเกม 1.0 × 1.0 หน่วย (400 × 400 px) เดิน/วิ่ง 4–6 เฟรม หน้าตาต่างจากลูกค้าทันที (หน้ากาก ผ้าคลุม หรือถุงของ) และท่าสลบ 1 ภาพที่ตัวเล็กอ่านง่าย ใช้ตอนถูกแบกซ้อนบนหลังผู้เล่น</p></div></div><div class="note"><div class="media multi"><figure class="shot "><img src="img/meat_mixer.png" alt="ตอนนี้: สี่เหลี่ยมสีม่วง" loading="lazy"><figcaption>ตอนนี้: สี่เหลี่ยมสีม่วง</figcaption></figure></div><div><h3 style="font-size:1.1rem;margin-bottom:.4rem">เครื่องผสมเนื้อ <span class="en">Meat Mixer</span></h3><p style="margin:0 0 .5rem">ยังไม่ต้องวาด เกมยังไม่ได้วางเครื่องนี้ในฉากด้วย</p><p style="margin:0;color:var(--muted)">ตอนวาด: ขนาดในเกม 1.4 × 1.4 หน่วย (560 × 560 px) เป็นเครื่องหรือครกบดเนื้อ มีช่องใส่เนื้อ 2 ช่อง และมีภาพตอนรอกับตอนทำงาน</p></div></div>
+</section>
+<section class="plain" id="skip">
+  <header class="thead"><span class="badge" style="background:var(--line);color:var(--muted)">–</span><h2>ไม่ต้องวาด</h2><p class="sub">ดูเหมือนของที่ยังไม่มีภาพ แต่ไม่ใช่งานของศิลปิน</p></header>
+  <div class="note"><div class="media multi"><figure class="shot "><img src="img/buffalo_spawner_marker.png" alt="Buffalo Spawner: สี่เหลี่ยมเหลือง" loading="lazy"><figcaption>Buffalo Spawner: สี่เหลี่ยมเหลือง</figcaption></figure><figure class="shot "><img src="img/customer_spawner_marker.png" alt="Customer Spawner: สามเหลี่ยมเทา" loading="lazy"><figcaption>Customer Spawner: สามเหลี่ยมเทา</figcaption></figure></div><div><h3 style="font-size:1.1rem;margin-bottom:.4rem">จุดวางสปอนเนอร์ (ไม่ต้องวาด)</h3><p style="margin:0">สองชิ้นนี้คือจุดวางสปอนเนอร์ที่ใช้ตอนทำฉาก ผู้เล่นไม่ควรเห็น ไม่ต้องวาดอะไรทั้งสิ้น แต่ตอนนี้ยังมองเห็นอยู่ในเกม (ป่าลึกและจุดเกิดลูกค้า) โปรแกรมเมอร์ต้องซ่อนให้</p></div></div>
+</section>
+<section class="plain" id="refs">
+  <header class="thead"><span class="badge" style="background:var(--line);color:var(--muted)">✓</span><h2>ของเดิมที่ทีมวาดไว้แล้ว</h2><p class="sub">ใช้เป็นแบบอย่างของสไตล์ เส้นขอบ และความหนาของสี</p></header>
+  <div class="refs"><figure class="shot"><img src="img/ref_chicken.png" alt="ไก่ (Chicken.png)" loading="lazy"><figcaption>ไก่ (Chicken.png)</figcaption></figure><figure class="shot"><img src="img/ref_pig.png" alt="หมู (Pig.png)" loading="lazy"><figcaption>หมู (Pig.png)</figcaption></figure><figure class="shot"><img src="img/ref_chicken_meat.png" alt="เนื้อไก่ (ChickenMeat.png)" loading="lazy"><figcaption>เนื้อไก่ (ChickenMeat.png)</figcaption></figure><figure class="shot"><img src="img/ref_pork_meat.png" alt="เนื้อหมู (PorkMeat.png)" loading="lazy"><figcaption>เนื้อหมู (PorkMeat.png)</figcaption></figure><figure class="shot"><img src="img/ref_chicken_pot.png" alt="หม้อไก่ (ChickenPot_Idle / Cooking)" loading="lazy"><figcaption>หม้อไก่ (ChickenPot_Idle / Cooking)</figcaption></figure><figure class="shot"><img src="img/ref_pig_pot.png" alt="หม้อหมู (PigPot_Idle / Cooking)" loading="lazy"><figcaption>หม้อหมู (PigPot_Idle / Cooking)</figcaption></figure><figure class="shot"><img src="img/table_chicken.png" alt="โต๊ะไก่ (Table_Chicken.png)" loading="lazy"><figcaption>โต๊ะไก่ (Table_Chicken.png)</figcaption></figure><figure class="shot"><img src="img/table_pig.png" alt="โต๊ะหมู (Table_Pig.png)" loading="lazy"><figcaption>โต๊ะหมู (Table_Pig.png)</figcaption></figure></div>
+  <p style="margin:1rem 0 0;color:var(--muted)">พื้น น้ำ ทางเดิน และต้นไม้ในเกมใช้แพ็ก Sprout Lands (พิกเซล 16 px ของคนอื่น) ที่ใส่ไว้แล้ว ไม่ต้องวาดใหม่ ภาพตัวละครกับของในร้านที่วาดเองเป็นภาพละเอียดสูงกว่า ตอนนี้สองสไตล์วางปนกันอยู่</p>
+</section>
+<footer>สร้างจากการสแกน prefab และฉาก SampleScene ในโปรเจกต์ วันที่ 23 พ.ย. 2026 · ภาพแคปจากการเรนเดอร์จริงใน Unity</footer>
+</div>
+<script>
+(function(){
+  function done(btn,msg){var s=btn.parentNode.querySelector('.status');if(s){s.textContent=msg;setTimeout(function(){s.textContent='';},2600);}}
+  function fallback(pre,btn){
+    var d=pre.closest('details');if(d){d.open=true;}
+    try{var r=document.createRange();r.selectNodeContents(pre);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(r);}catch(e){}
+    done(btn,'คัดลอกอัตโนมัติไม่ได้ เลือกข้อความแล้ว กด Ctrl+C ได้เลย');
+  }
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var pre=document.getElementById(btn.getAttribute('data-target'));if(!pre)return;
+      var text=pre.textContent;
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){done(btn,'คัดลอกแล้ว');},function(){fallback(pre,btn);});
+      }else{fallback(pre,btn);}
+    });
+  });
+})();
+</script>
+</body></html>
