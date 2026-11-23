@@ -177,6 +177,7 @@ namespace GI351.KitchenGame
         public void SelectTab(int index)
         {
             if (!HasTabs) return;
+            UiAudioManager.Instance?.PlayClick();
             currentTab = Mathf.Clamp(index, 0, tabs.Count - 1);
             if (builtUI)
             {
@@ -301,17 +302,23 @@ namespace GI351.KitchenGame
 
             // เช็คเงินก่อน ถ้าไม่พอจะไม่หักเงิน
             int cost = leveled ? it.NextPrice : it.price;
-            if (MoneyManager.Instance.CurrentMoney < cost) return false;
+            if (MoneyManager.Instance.CurrentMoney < cost)
+            {
+                UiAudioManager.Instance?.PlayCantAfford();
+                return false;
+            }
             if (!MoneyManager.Instance.SpendMoney(cost)) return false;
 
             it.sold++;
             if (leveled)
             {
                 it.Level = it.Level + 1;
+                UiAudioManager.Instance?.PlayUpgrade();
                 Debug.Log("[ShopStall] Upgraded " + it.itemName + " to Lv" + it.Level + " ($" + cost + ")");
             }
             else
             {
+                UiAudioManager.Instance?.PlayBuyOrUnlockZone();
                 Debug.Log("[ShopStall] Bought " + it.itemName + " ($" + it.price + ")");
             }
             it.onPurchased?.Invoke();
@@ -346,6 +353,7 @@ namespace GI351.KitchenGame
         private void SetOpen(bool open)
         {
             if (open == isOpen) return;
+            if (Application.isPlaying) UiAudioManager.Instance?.PlayPanelToggle();
 
             if (open)
             {
@@ -399,7 +407,14 @@ namespace GI351.KitchenGame
             if (view.templates != null) view.templates.SetActive(false);
             view.rowTemplate.gameObject.SetActive(false);
             UiBuild.SetText(view.titleText, shopTitle);
-            if (view.exitButton != null) view.exitButton.onClick.AddListener(Close);
+            if (view.exitButton != null)
+            {
+                view.exitButton.onClick.AddListener(() =>
+                {
+                    UiAudioManager.Instance?.PlayClick();
+                    Close();
+                });
+            }
 
             BuildTabs();
         }
@@ -544,7 +559,7 @@ namespace GI351.KitchenGame
             bool soldOut = it.stock > 0 && it.sold >= it.stock;
             bool afford = money >= it.price;
             string soldOutLabel = string.IsNullOrEmpty(it.soldOutText) ? "SOLD OUT" : it.soldOutText;
-            SetButton(v, !soldOut && afford,
+            SetButton(v, !soldOut,
                 soldOut ? view.disabledColor : (afford ? view.buyColor : view.cantAffordColor),
                 soldOut ? soldOutLabel : view.buyLabel);
             v.priceText.text = it.stock > 1 && !soldOut ? "$" + it.price + "  x" + (it.stock - it.sold) : "$" + it.price;
@@ -590,7 +605,7 @@ namespace GI351.KitchenGame
             UiBuild.SetText(v.descText, label + FormatValue(it.CurrentValue) + " " + arrow + " " + FormatValue(it.NextValue));
             v.priceText.text = "$" + cost;
             v.priceText.color = afford ? view.priceColor : view.priceTooExpensiveColor;
-            SetButton(v, afford, afford ? view.buyColor : view.disabledColor, view.upgradeLabel);
+            SetButton(v, true, afford ? view.buyColor : view.disabledColor, view.upgradeLabel);
         }
 
         private static string FormatValue(float value)

@@ -278,12 +278,17 @@ namespace GI351.KitchenGame
             if (MoneyManager.Instance == null) return false;
 
             UpgradeNodeData n = nodes[index];
-            if (MoneyManager.Instance.CurrentMoney < n.price) return false;
+            if (MoneyManager.Instance.CurrentMoney < n.price)
+            {
+                UiAudioManager.Instance?.PlayCantAfford();
+                return false;
+            }
             if (!MoneyManager.Instance.SpendMoney(n.price)) return false;
 
             owned.Add(index);
             n.onPurchased?.Invoke();
             Debug.Log("[UpgradeTree] Purchased " + n.label + " ($" + n.price + ")");
+            UiAudioManager.Instance?.PlayUpgrade();
             onNodePurchased?.Invoke(index);
             RefreshAll();
             return true;
@@ -352,12 +357,14 @@ namespace GI351.KitchenGame
                     previousTimeScale = Time.timeScale > 0f ? Time.timeScale : 1f;
                     Time.timeScale = 0f;
                 }
+                if (Application.isPlaying) UiAudioManager.Instance?.PlayPanelToggle();
             }
             else if (!open && isOpen)
             {
                 isOpen = false;
                 anyTreeOpen = false;
                 if (pauseWhileOpen) Time.timeScale = previousTimeScale;
+                if (Application.isPlaying) UiAudioManager.Instance?.PlayPanelToggle();
             }
 
             if (panel != null) panel.SetActive(isOpen);
@@ -489,6 +496,7 @@ namespace GI351.KitchenGame
 
         private void OnNodeClicked(int index)
         {
+            UiAudioManager.Instance?.PlayClick();
             if (TryPurchase(index))
             {
                 UpdateInfo(index);

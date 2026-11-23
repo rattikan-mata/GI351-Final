@@ -41,8 +41,9 @@ namespace GI351.KitchenGame
             if (sfxSource == null)
             {
                 sfxSource = gameObject.AddComponent<AudioSource>();
-                sfxSource.playOnAwake = false;
             }
+            sfxSource.playOnAwake = false;
+            DontDestroyOnLoad(gameObject);
 
             BgmVolume = PlayerPrefs.GetFloat(BgmPrefKey, BgmVolume);
             SfxVolume = PlayerPrefs.GetFloat(SfxPrefKey, SfxVolume);

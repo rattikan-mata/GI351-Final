@@ -131,6 +131,7 @@ namespace GI351.KitchenGame
 
         private void ShowGain(int gained)
         {
+            UiAudioManager.Instance?.PlayCashCollect();
             punchTimer = 0.2f;
 
             if (gainPopupText == null) return;

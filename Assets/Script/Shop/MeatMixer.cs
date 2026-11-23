@@ -167,6 +167,7 @@ namespace GI351.KitchenGame
             if (MoneyManager.Instance != null && MoneyManager.Instance.SpendMoney(purchasePrice))
             {
                 isUnlocked = true;
+                UiAudioManager.Instance?.PlayBuyOrUnlockZone();
                 ApplyUnlockedState();
                 onMixerPurchased?.Invoke();
                 Debug.Log($"[MeatMixer] ซื้อเครื่องผสมเนื้อสำเร็จ ราคา {purchasePrice} เหรียญ");

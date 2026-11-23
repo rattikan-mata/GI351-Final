@@ -146,7 +146,11 @@ namespace GI351.KitchenGame
             if (level >= levels.Count || MoneyManager.Instance == null) return false;
 
             PotUpgradeLevel next = levels[level];
-            if (MoneyManager.Instance.CurrentMoney < next.cost) return false;
+            if (MoneyManager.Instance.CurrentMoney < next.cost)
+            {
+                UiAudioManager.Instance?.PlayCantAfford();
+                return false;
+            }
             if (!MoneyManager.Instance.SpendMoney(next.cost)) return false;
 
             if (isPrice)
@@ -161,6 +165,7 @@ namespace GI351.KitchenGame
             }
 
             Debug.Log("[PotUpgrade] " + pot.PotName + " " + (isPrice ? "price" : "speed") + " -> Lv" + ((isPrice ? priceLevel : speedLevel) + 1) + " (" + next.value.ToString("0.##") + ")");
+            UiAudioManager.Instance?.PlayUpgrade();
             onUpgraded?.Invoke();
             if (isOpen) Refresh();
             return true;
@@ -169,6 +174,7 @@ namespace GI351.KitchenGame
         private void SetOpen(bool open)
         {
             if (open == isOpen) return;
+            if (Application.isPlaying) UiAudioManager.Instance?.PlayPanelToggle();
             isOpen = open;
             if (open)
             {
@@ -244,7 +250,7 @@ namespace GI351.KitchenGame
             row.valuesText.text = cur + "  ->  " + nxt;
 
             bool afford = money >= next.cost;
-            SetButton(row, afford, afford ? view.affordColor : view.disabledColor, "$" + next.cost,
+            SetButton(row, true, afford ? view.affordColor : view.disabledColor, "$" + next.cost,
                 afford ? view.buttonTextColor : view.buttonTextTooExpensiveColor);
         }
 
