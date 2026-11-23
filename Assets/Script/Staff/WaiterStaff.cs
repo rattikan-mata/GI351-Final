@@ -15,6 +15,9 @@ namespace GI351.KitchenGame
         [Tooltip("ความเร็วเดิน (ผู้เล่นเดิน 5)")]
         [SerializeField] private float moveSpeed = 3f;
 
+        [Tooltip("ช่วงเวลาระหว่างก้าวของเสียงเดินพนักงาน (วินาที) ตั้ง 0 เพื่อปิด")]
+        [SerializeField] private float stepInterval = 0.38f;
+
         [Tooltip("ถืออาหารได้ครั้งละกี่จาน")]
         [Min(1)] [SerializeField] private int carryCapacity = 6;
 
@@ -48,6 +51,8 @@ namespace GI351.KitchenGame
         private FoodSellCounter targetShelf;
         private float timer;
         private float loadStartTime;
+        private float stepTimer;
+        private bool movedThisFrame;
 
         /// <summary>จำนวนจานที่ถืออยู่</summary>
         public int CarriedCount => carried.Count;
@@ -77,6 +82,7 @@ namespace GI351.KitchenGame
         {
             UpdateVisual();
             carried.RemoveAll(d => d == null);
+            movedThisFrame = false;
 
             switch (state)
             {
@@ -87,6 +93,7 @@ namespace GI351.KitchenGame
                 case State.Unloading: UpdateUnloading(); break;
             }
 
+            UpdateFootsteps();
             LayoutCarried();
         }
 
@@ -266,7 +273,26 @@ namespace GI351.KitchenGame
             Vector2 step = delta.normalized * (moveSpeed * Time.deltaTime);
             transform.position += new Vector3(step.x, step.y, 0f);
             FaceDirection(delta.x);
+            movedThisFrame = true;
             return false;
+        }
+
+        private void UpdateFootsteps()
+        {
+            if (stepInterval <= 0f) return;
+            if (movedThisFrame)
+            {
+                stepTimer -= Time.deltaTime;
+                if (stepTimer <= 0f)
+                {
+                    AudioManager.PlayAt(SoundId.Footstep, transform.position);
+                    stepTimer = stepInterval;
+                }
+            }
+            else
+            {
+                stepTimer = 0f;
+            }
         }
 
         /// <summary>เรียงจานที่ถือซ้อนกันเหนือหัว</summary>
