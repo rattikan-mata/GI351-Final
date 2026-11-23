@@ -81,8 +81,8 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: b62456a49c3812840ae8019484b4591b, type: 3}
-  m_Color: {r: 0.55, g: 0.92, b: 0.45, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 94aa2b59b72663d4fbbd861ecba40edf, type: 3}
+  m_Color: {r: 0.55, g: 0.42, b: 0.36, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -108,7 +108,7 @@ GameObject:
   - component: {fileID: 8370949968597705460}
   - component: {fileID: 5691464730723614357}
   m_Layer: 3
-  m_Name: Frog
+  m_Name: Buffalo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

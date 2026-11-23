@@ -316,7 +316,7 @@ MonoBehaviour:
       price: 120
     - value: 150
       price: 250
-    levelCap: 4
+    levelCap: 0
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
@@ -420,13 +420,13 @@ MonoBehaviour:
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
-  - itemName: Frog Pot
-    description: Cook frog legs into Frog Soup
+  - itemName: Buffalo Pot
+    description: Cook buffalo meat into Buffalo Stew
     price: 200
     stock: 1
-    id: frog_pot
+    id: buffalo_pot
     tab: Cook
-    locked: 1
+    locked: 0
     lockedText: SOON
     soldOutText: OWNED
     valueLabel: 
@@ -471,13 +471,13 @@ MonoBehaviour:
     levels:
     - value: 12
       price: 0
-    - value: 16
+    - value: 15
       price: 40
-    - value: 22
+    - value: 18
       price: 80
-    - value: 30
+    - value: 21
       price: 150
-    - value: 40
+    - value: 24
       price: 250
     levelCap: 0
     onPurchased:
@@ -500,8 +500,6 @@ MonoBehaviour:
       price: 60
     - value: 3
       price: 150
-    - value: 4
-      price: 300
     levelCap: 0
     onPurchased:
       m_PersistentCalls:
@@ -561,7 +559,7 @@ MonoBehaviour:
   bindings:
   - itemId: pork_pot
     potIngredient: 1
-  - itemId: frog_pot
+  - itemId: buffalo_pot
     potIngredient: 7
 --- !u!114 &1865791447962721318
 MonoBehaviour:

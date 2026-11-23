@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 911767833044347210}
   - component: {fileID: 1414743017962644768}
   m_Layer: 0
-  m_Name: Frog Spawner
+  m_Name: Buffalo Spawner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

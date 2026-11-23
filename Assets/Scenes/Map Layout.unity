@@ -28218,7 +28218,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 571034818372280732, guid: 1fa6ca2fc63a8394196bc80b252459ea, type: 3}
       propertyPath: m_Name
-      value: Frog Spawner
+      value: Buffalo Spawner
       objectReference: {fileID: 0}
     - target: {fileID: 1414743017962644768, guid: 1fa6ca2fc63a8394196bc80b252459ea, type: 3}
       propertyPath: boundarySize.x
@@ -28422,7 +28422,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8989011978872593652, guid: 7c826388d620c024e8e792ab45d5684e, type: 3}
       propertyPath: m_Name
-      value: Frog Shelf
+      value: Buffalo Shelf
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -29392,7 +29392,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7494835787440420298, guid: 84ad3b0405b0609489e619f55f1f820c, type: 3}
       propertyPath: m_Name
-      value: Frog Pot
+      value: Buffalo Pot
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -32,6 +32,9 @@ namespace GI351.KitchenGame
             }
         }
 
+        /// <summary>true ถ้าเมาส์อยู่เหนือ UI (ใช้กันไม่ให้คลิกปุ่ม UI แล้วฟันกระบองไปด้วย)</summary>
+        public static bool IsPointerOverUi => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+
         /// <summary>ปุ่มบน UI กดได้ต้องมี EventSystem ในฉาก สร้างให้ถ้ายังไม่มี</summary>
         public static void EnsureEventSystem()
         {

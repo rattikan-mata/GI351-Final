@@ -12,8 +12,8 @@ namespace GI351.KitchenGame
         UnconsciousThief, // โจรที่สลบ (ยกขึ้นหลังได้ / เอาไปยัดใส่หม้อต้มได้)
         SpecialDish,      // อาหารพิเศษราคาแพง x10 (ทำจากโจรที่สลบ)
         MixedDish,        // อาหารผสมเนื้อจากเครื่องผสมเนื้อ (ราคาเนื้อรวมกัน + 20%) นับเป็นอาหารปรุงสุก
-        FrogMeat,         // เนื้อกบดิบ (สัตว์ตัวที่ 3 โซน Deep Forest)
-        CookedFrog        // อาหารกบ
+        BuffaloMeat,      // เนื้อควายดิบ (สัตว์ตัวที่ 3 โซน Deep Forest)
+        CookedBuffalo     // อาหารควาย
     }
 
     /// <summary>
@@ -34,7 +34,7 @@ namespace GI351.KitchenGame
         {
             new Recipe { raw = ItemType.ChickenMeat, dish = ItemType.CookedChicken, shortName = "Chicken", color = new Color(1f, 0.85f, 0.2f, 1f) },
             new Recipe { raw = ItemType.PigMeat,     dish = ItemType.CookedPig,     shortName = "Pork",    color = new Color(1f, 0.55f, 0.65f, 1f) },
-            new Recipe { raw = ItemType.FrogMeat,    dish = ItemType.CookedFrog,    shortName = "Frog",    color = new Color(0.45f, 0.85f, 0.4f, 1f) },
+            new Recipe { raw = ItemType.BuffaloMeat, dish = ItemType.CookedBuffalo, shortName = "Buffalo", color = new Color(0.75f, 0.5f, 0.3f, 1f) },
         };
 
         /// <summary>เป็นเนื้อดิบจากสัตว์หรือไม่</summary>

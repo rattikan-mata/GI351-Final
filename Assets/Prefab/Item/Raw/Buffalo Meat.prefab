@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 1364571523067871426}
   - component: {fileID: 4268453864685642440}
   m_Layer: 0
-  m_Name: Frog Leg
+  m_Name: Buffalo Meat
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -208,7 +208,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.Item
   itemType: 7
-  itemName: Raw Frog Leg
+  itemName: Raw Buffalo Meat
   sellPrice: 10
   canDespawn: 1
   despawnTime: 30

@@ -1419,6 +1419,21 @@ namespace GI351.KitchenGame
 
         private Vector3 TrayCenter => GetOutputPosition() + new Vector3(trayOffset.x, trayOffset.y, 0f);
 
+        /// <summary>ตำแหน่งกลางถาดอาหาร (ให้พนักงานเสิร์ฟเดินมาหยิบ)</summary>
+        public Vector3 TrayPosition => TrayCenter;
+
+        /// <summary>พนักงานเสิร์ฟหยิบอาหารจากถาด 1 จาน (จานแถวหลังสุดก่อน) คืน null ถ้าถาดว่าง</summary>
+        public Item TakeDishFromTray()
+        {
+            if (!useOutputTray || TrayCount == 0) return null;
+
+            int last = trayItems.Count - 1;
+            Item dish = trayItems[last];
+            trayItems.RemoveAt(last);
+            LayoutTray();
+            return dish;
+        }
+
         /// <summary>วางจานที่ต้มเสร็จลงถาด (เรียงแบน ไม่ซ้อนสูง) แล้วเด้งโผล่</summary>
         private void AddToTray(Item dish)
         {

@@ -369,8 +369,8 @@ namespace GI351.KitchenGame
 
         private void CheckAttackInput()
         {
-            // กดปุ่ม/หน้าจออัปเกรดอยู่ ห้ามฟันกระบอง
-            if (UpgradeTreeUI.IsBlockingGameInput) return;
+            // เมาส์อยู่บน UI (กำลังกดปุ่มร้าน/อัปเกรด) ห้ามฟันกระบอง
+            if (UiBuild.IsPointerOverUi) return;
             bool attackPressed = false;
 
 #if ENABLE_INPUT_SYSTEM

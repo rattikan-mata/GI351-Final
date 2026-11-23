@@ -204,14 +204,14 @@ MonoBehaviour:
       m_PersistentCalls:
         m_Calls: []
   - itemName: Waiter
-    description: 
+    description: Carries cooked food to the shelves
     price: 150
     stock: 1
     id: waiter
     tab: 
-    locked: 1
+    locked: 0
     lockedText: SOON
-    soldOutText: SOLD OUT
+    soldOutText: HIRED
     valueLabel: 
     levels: []
     levelCap: 0
@@ -263,6 +263,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.StaffHirer
   cashierItemId: cashier
   cashierStaffPrefab: {fileID: 5166231996330896409, guid: d2aa524f8d8d8b247a07ed1ec9149fe2, type: 3}
+  waiterItemId: waiter
+  waiterStaffPrefab: {fileID: 5166231996330896409, guid: 2d7005e014774f7c9df964bfea835fb5, type: 3}
 --- !u!1 &6295968039141360220
 GameObject:
   m_ObjectHideFlags: 0

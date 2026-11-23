@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6501181661195830281}
   - component: {fileID: 4663319716975773589}
   m_Layer: 0
-  m_Name: Frog Dish
+  m_Name: Buffalo Dish
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -160,7 +160,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CookedDish
   itemType: 8
-  itemName: Frog Soup
+  itemName: Buffalo Stew
   sellPrice: 50
   canDespawn: 0
   despawnTime: 30

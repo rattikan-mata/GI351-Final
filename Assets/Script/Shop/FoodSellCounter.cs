@@ -252,6 +252,17 @@ namespace GI351.KitchenGame
         }
 
         public int DishesCount => dishesOnCounter.Count;
+
+        /// <summary>ชั้นยังวางอาหารได้อีกกี่จาน (ให้พนักงานเสิร์ฟรู้ว่าควรยกมากี่จาน)</summary>
+        public int FreePlates
+        {
+            get
+            {
+                if (unlimitedFood) return int.MaxValue;
+                dishesOnCounter.RemoveAll(d => d == null);
+                return Mathf.Max(0, MaxPlates - dishesOnCounter.Count);
+            }
+        }
         public int MaxPlates => (plateSlots != null && plateSlots.Length > 0) ? plateSlots.Length : maxPlates;
 
         /// <summary>เปลี่ยนจำนวนอาหารสูงสุดบนแผง (อัปเกรด Shelf Size จากร้าน)</summary>
