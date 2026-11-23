@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -26,13 +27,11 @@ namespace GI351.KitchenGame
         ItemPickup,     // เสียงเก็บของขึ้นหลัง
         PlayerHurt,     // เสียงผู้เล่นโดนตี
         PlayerDie,      // เสียงผู้เล่นตาย
-        FoodPlace,      // เสียงวางอาหารลงโต๊ะขาย
-        PurchaseSuccess,// เสียงซื้อ/ปลดล็อก/อัปเกรดสำเร็จ
-        PurchaseFail,   // เสียงซื้อไม่ได้/เงินไม่พอ
-        ThiefAlert,     // เสียงเตือนโจรฉกของ (!)
-        ThiefKnockout,  // เสียงโจรโดนตีสลบ
-        CustomerAngry,  // เสียงลูกค้าโมโหเดินหนี
-        EnemyDie        // เสียงสัตว์ตาย (ใช้รวมทุกชนิด)
+        FoodPlace = 17,      // เสียงวางอาหารลงโต๊ะขาย
+        ThiefAlert = 20,     // เสียงเตือนโจรฉกของ (!)
+        ThiefKnockout = 21,  // เสียงโจรโดนตีสลบ
+        CustomerAngry = 22,  // เสียงลูกค้าโมโหเดินหนี
+        EnemyDie = 23        // เสียงสัตว์ตาย (ใช้รวมทุกชนิด)
     }
 
     /// <summary>โหมดระยะเสียงของแต่ละเสียง</summary>
@@ -171,6 +170,7 @@ namespace GI351.KitchenGame
         private void OnValidate()
         {
             if (sounds == null) sounds = new List<SoundEntry>();
+            sounds.RemoveAll(s => s == null || !Enum.IsDefined(typeof(SoundId), s.id));
 
             foreach (SoundId id in Enum.GetValues(typeof(SoundId)))
             {
@@ -227,6 +227,33 @@ namespace GI351.KitchenGame
             else if (fallback != null)
             {
                 AudioSource.PlayClipAtPoint(fallback, position);
+            }
+        }
+
+        /// <summary>
+        /// เล่นเสียงรัวๆ ทีละชิ้นแบบเสียงเก็บของ Minecraft (ใช้ตอนโยนเนื้อหลายชิ้นเข้าหม้อ หรือวางอาหารหลายจานลงโต๊ะในเฟรมเดียว)
+        /// </summary>
+        public static void PlayBurst(SoundId id, int count, float interval = 0.06f, AudioClip fallback = null, Vector3 position = default, float pitchStep = 0.04f)
+        {
+            if (count <= 0) return;
+            if (count == 1 || Instance == null)
+            {
+                Play(id, fallback, position);
+                return;
+            }
+            Instance.StartCoroutine(Instance.PlayBurstRoutine(id, Mathf.Min(count, 12), Mathf.Max(0.02f, interval), fallback, position, pitchStep));
+        }
+
+        private IEnumerator PlayBurstRoutine(SoundId id, int count, float interval, AudioClip fallback, Vector3 position, float pitchStep)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                float pitchOffset = Mathf.Min(i * pitchStep, 0.36f);
+                PlayInternal(id, fallback, position, true, pitchOffset, ignoreInterval: true);
+                if (i + 1 < count)
+                {
+                    yield return new WaitForSeconds(interval);
+                }
             }
         }
 
@@ -375,7 +402,7 @@ namespace GI351.KitchenGame
             return listener != null ? (Vector2)listener.transform.position : Vector2.zero;
         }
 
-        private void PlayInternal(SoundId id, AudioClip fallback, Vector3 position, bool hasPosition)
+        private void PlayInternal(SoundId id, AudioClip fallback, Vector3 position, bool hasPosition, float pitchOffset = 0f, bool ignoreInterval = false)
         {
             if (mute) return;
 
@@ -388,7 +415,7 @@ namespace GI351.KitchenGame
 
             if (lookup.TryGetValue(id, out var entry))
             {
-                if (entry.minInterval > 0f && Time.unscaledTime - entry.lastPlayTime < entry.minInterval) return;
+                if (!ignoreInterval && entry.minInterval > 0f && Time.unscaledTime - entry.lastPlayTime < entry.minInterval) return;
 
                 if (entry.clips != null && entry.clips.Length > 0)
                 {
@@ -422,7 +449,7 @@ namespace GI351.KitchenGame
             var src = pool[nextSource];
             nextSource = (nextSource + 1) % pool.Length;
 
-            src.pitch = UnityEngine.Random.Range(Mathf.Min(pitch.x, pitch.y), Mathf.Max(pitch.x, pitch.y));
+            src.pitch = Mathf.Clamp(UnityEngine.Random.Range(Mathf.Min(pitch.x, pitch.y), Mathf.Max(pitch.x, pitch.y)) + pitchOffset, 0.25f, 3f);
             src.PlayOneShot(clip, volume * masterVolume);
         }
     }

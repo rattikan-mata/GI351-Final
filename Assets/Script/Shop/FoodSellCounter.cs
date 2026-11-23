@@ -817,13 +817,16 @@ namespace GI351.KitchenGame
                 {
                     depositedCount++;
                     PlaceFoodOnCounter(cookedItem);
-
-                    AudioManager.Play(SoundId.FoodPlace, depositSound, transform.position);
                 }
                 else
                 {
                     break;
                 }
+            }
+
+            if (depositedCount > 0)
+            {
+                AudioManager.PlayBurst(SoundId.FoodPlace, depositedCount, 0.06f, depositSound, transform.position, 0.04f);
             }
 
             return depositedCount;

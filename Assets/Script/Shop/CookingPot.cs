@@ -896,7 +896,10 @@ namespace GI351.KitchenGame
             if (isUnlocked) return;
             isUnlocked = true;
 
-            AudioManager.Play(SoundId.PurchaseSuccess, purchaseSuccessSound, transform.position);
+            if (purchaseSuccessSound != null)
+            {
+                AudioSource.PlayClipAtPoint(purchaseSuccessSound, transform.position);
+            }
 
             ApplyUnlockedState();
             onPotPurchased?.Invoke();
@@ -1083,6 +1086,11 @@ namespace GI351.KitchenGame
                 }
             }
 
+            if (fedCount > 0)
+            {
+                AudioManager.PlayBurst(SoundId.PotDrop, fedCount, 0.06f, ingredientDropSound, transform.position, 0.04f);
+            }
+
             return fedCount;
         }
 
@@ -1106,8 +1114,6 @@ namespace GI351.KitchenGame
 
             UpdateVisuals();
             onIngredientAdded?.Invoke();
-
-            AudioManager.Play(SoundId.PotDrop, ingredientDropSound, transform.position);
         }
 
         // ========================== วัตถุดิบลอยไปเรียงบนหม้อ ==========================
@@ -1294,8 +1300,6 @@ namespace GI351.KitchenGame
 
             UpdateVisuals();
             onIngredientAdded?.Invoke();
-
-            AudioManager.Play(SoundId.PotDrop, ingredientDropSound, transform.position);
         }
 
         private void SpawnCookedDishAtOutput()

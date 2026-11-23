@@ -43,6 +43,9 @@ namespace GI351.KitchenGame
         [Tooltip("เสียงร้องเฉพาะของหมู (เช่น ตอนโกรธ หรือตอนชน)")]
         [SerializeField] private AudioClip oinkSound;
 
+        [Tooltip("หมูร้องเองเป็นระยะเวลาเดินปกติ (วินาที ต่ำสุด-สูงสุด) ตั้ง 0 เพื่อปิด")]
+        [SerializeField] private Vector2 oinkInterval = new Vector2(5f, 12f);
+
         [Tooltip("GameObject แสดงสถานะโกรธ (เช่น ไอคอนโกรธ ถ้ามี)")]
         [SerializeField] private GameObject angryIndicator;
 
@@ -54,6 +57,7 @@ namespace GI351.KitchenGame
         private Transform targetPlayer;
         private bool isEnraged;
         private float nextDamageTime;
+        private float nextOinkTime;
         private Color initialColor = Color.white;
 
         public EnemyHealth Health => health;
@@ -87,11 +91,26 @@ namespace GI351.KitchenGame
 
         private void Start()
         {
+            if (oinkInterval.y > 0f)
+            {
+                nextOinkTime = Time.time + Random.Range(Mathf.Min(oinkInterval.x, oinkInterval.y), Mathf.Max(oinkInterval.x, oinkInterval.y));
+            }
+
             // ฟัง Event เมื่อหมูโดนโจมตี จะทำให้หมูโกรธและเริ่มวิ่งไล่ล่า Player (เฉพาะโหมด Charge)
             if (health != null && onHitReaction == HitReaction.Charge)
             {
                 health.onDamaged.AddListener(Enrage);
             }
+        }
+
+        private void Update()
+        {
+            if (oinkInterval.y <= 0f) return;
+            if (health != null && health.IsDead) return;
+            if (Time.time < nextOinkTime) return;
+
+            nextOinkTime = Time.time + Random.Range(Mathf.Min(oinkInterval.x, oinkInterval.y), Mathf.Max(oinkInterval.x, oinkInterval.y));
+            AudioManager.Play(SoundId.PigOink, oinkSound, transform.position);
         }
 
         private void OnDestroy()

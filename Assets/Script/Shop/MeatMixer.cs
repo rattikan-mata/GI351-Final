@@ -168,7 +168,6 @@ namespace GI351.KitchenGame
             {
                 isUnlocked = true;
                 ApplyUnlockedState();
-                AudioManager.Play(SoundId.PurchaseSuccess);
                 onMixerPurchased?.Invoke();
                 Debug.Log($"[MeatMixer] ซื้อเครื่องผสมเนื้อสำเร็จ ราคา {purchasePrice} เหรียญ");
                 return true;
