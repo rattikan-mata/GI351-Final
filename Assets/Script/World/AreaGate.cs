@@ -1,12 +1,15 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 namespace GI351.KitchenGame
 {
     /// <summary>
     /// ประตูปลดล็อกพื้นที่: มีสิ่งกีดขวาง (ต้นไม้/รั้ว) ปิดทางเดินอยู่ ผู้เล่นยืนในวงแหวนทองหน้าประตู
-    /// เงินจะไหลออกจากกระเป๋าเข้าประตูทีละน้อย (ตัวเลขราคากลางวงนับถอยหลัง) ครบราคาแล้วสิ่งกีดขวางจางหาย
+    /// เงินจะไหลออกจากกระเป๋าเข้าประตู ครบภายใน Pay Duration วินาที มีเหรียญลอยเข้าวง หลอดในวงเติมตามเข็มนาฬิกา
+    /// (ตัวเลขราคากลางวงนับถอยหลัง) ครบราคาแล้วสิ่งกีดขวางจางหาย
     /// เปิดทางให้เดินผ่านได้ พร้อมเปิดของที่ต้องโผล่ (เช่น จุดเกิดสัตว์ หม้อ) และปิดของที่ต้องซ่อน
     /// ถ้าเงินในกระเป๋าไม่ถึงราคาประตู จะไม่เก็บเงินเลย (เปิดตัวเลือก Require Full Price ไว้)
     /// </summary>
@@ -16,8 +19,11 @@ namespace GI351.KitchenGame
         [Tooltip("ราคาที่ต้องจ่ายเพื่อเปิดประตู (เหรียญ)")]
         [SerializeField] private int price = 150;
 
-        [Tooltip("ความเร็วที่เงินไหลออกจากกระเป๋าตอนยืนในวง (เหรียญต่อวินาที)")]
+        [Tooltip("ความเร็วขั้นต่ำที่เงินไหลออกจากกระเป๋าตอนยืนในวง (เหรียญต่อวินาที)")]
         [SerializeField] private float drainPerSecond = 60f;
+
+        [Tooltip("จ่ายครบราคาภายในกี่วินาที (ประตูแพงเงินก็ไหลเร็วขึ้นเอง ไม่ต้องยืนรอนาน)")]
+        [Min(0.5f)] [SerializeField] private float payDuration = 4f;
 
         [Tooltip("ต้องมีเงินในกระเป๋าถึงราคาประตูก่อน ถึงจะเริ่มเก็บเงิน (ไม่ถึง = ไม่เก็บเลย ไม่จ่ายแบบผ่อน) ปิดตัวเลือกนี้ = เก็บเท่าที่มีทีละน้อยจนครบ")]
         [SerializeField] private bool requireFullPrice = true;
@@ -55,6 +61,25 @@ namespace GI351.KitchenGame
         [SerializeField] private Color ringColor = new Color(1f, 0.85f, 0.2f, 0.95f);
         [SerializeField] private Color ringPayingColor = new Color(0.4f, 1f, 0.6f, 0.95f);
         [SerializeField] private Color ringBrokeColor = new Color(1f, 0.4f, 0.4f, 0.9f);
+
+        [Header("Pay Fill (หลอดจ่ายเงินในวง)")]
+        [Tooltip("สีหลอดที่เติมในวงตามเงินที่จ่ายไปแล้ว (เติมตามเข็มนาฬิกาจากด้านบน)")]
+        [SerializeField] private Color fillColor = new Color(0.16f, 0.62f, 0.27f, 0.9f);
+
+        [Tooltip("ขนาดหลอดเทียบกับวง (1 = เต็มวง)")]
+        [Range(0.5f, 1f)] [SerializeField] private float fillScale = 0.9f;
+
+        [Tooltip("รูปเหรียญที่ลอยจากผู้เล่นเข้าวงตอนจ่าย (ว่าง = วงกลมสีทอง)")]
+        [SerializeField] private Sprite coinSprite;
+
+        [Tooltip("ขนาดเหรียญที่ลอย (เมตร)")]
+        [SerializeField] private float coinSize = 0.3f;
+
+        [Tooltip("ปล่อยเหรียญลอย 1 อันทุกกี่วินาทีตอนจ่าย")]
+        [Min(0.02f)] [SerializeField] private float coinInterval = 0.05f;
+
+        [Tooltip("เวลาที่เหรียญลอยจากผู้เล่นเข้าวง (วินาที)")]
+        [Min(0.05f)] [SerializeField] private float coinFlyTime = 0.3f;
 
         [Header("On Unlock (เมื่อเปิดประตูสำเร็จ)")]
         [Tooltip("ของที่ซ่อนอยู่ แล้วจะถูกเปิดเมื่อประตูเปิด (เช่น จุดเกิดสัตว์ หม้อ ของตกแต่งโซนใหม่)")]
@@ -147,6 +172,7 @@ namespace GI351.KitchenGame
 
         private void Start()
         {
+            BuildFill();
             RefreshVisuals();
         }
 
@@ -192,7 +218,15 @@ namespace GI351.KitchenGame
 
             if (available && isBuyerInside && Remaining > 0 && canPay)
             {
-                drainBuffer += drainPerSecond * Time.deltaTime;
+                // จ่ายครบภายใน payDuration วินาทีเสมอ (ประตูแพง = ไหลเร็ว) แต่ไม่ช้ากว่า drainPerSecond
+                float rate = Mathf.Max(drainPerSecond, price / Mathf.Max(0.5f, payDuration));
+                drainBuffer += rate * Time.deltaTime;
+                coinTimer -= Time.deltaTime;
+                if (coinTimer <= 0f)
+                {
+                    coinTimer = coinInterval;
+                    LaunchCoin(GetBuyer());
+                }
                 int units = Mathf.FloorToInt(drainBuffer);
                 if (units > 0)
                 {
@@ -207,6 +241,8 @@ namespace GI351.KitchenGame
             }
 
             UpdateRing(money);
+            UpdateFill();
+            UpdateCoins();
         }
 
         private void LateUpdate()
@@ -252,6 +288,7 @@ namespace GI351.KitchenGame
                 foreach (Collider2D c in barrierRoot.GetComponentsInChildren<Collider2D>(true)) c.enabled = false;
             }
             if (payRing != null) payRing.gameObject.SetActive(false);
+            ClearCoins();
 
             if (revealOnUnlock != null)
                 foreach (GameObject go in revealOnUnlock) if (go != null) go.SetActive(true);
@@ -263,6 +300,163 @@ namespace GI351.KitchenGame
 
             StartCoroutine(FadeBarrier());
             if (panCameraOnUnlock) StartCoroutine(PanCamera());
+        }
+
+        // ---------------- Pay fill (หลอดในวง) + เหรียญลอย ----------------
+
+        private Image fillImage;
+        private float shownFill;
+        private float coinTimer;
+
+        private struct FlyingCoin
+        {
+            public Transform t;
+            public Vector3 from;
+            public float start;
+        }
+
+        private readonly List<FlyingCoin> coins = new List<FlyingCoin>();
+        private readonly Stack<Transform> freeCoins = new Stack<Transform>();
+        private static Sprite discSprite;
+
+        /// <summary>สร้างหลอดเติมแบบวงกลม (เติมตามเข็มนาฬิกา) ไว้ในวงจ่ายเงิน</summary>
+        private void BuildFill()
+        {
+            if (payRing == null || fillImage != null) return;
+
+            var go = new GameObject("Pay Fill", typeof(RectTransform), typeof(Canvas), typeof(Image));
+            var rt = go.GetComponent<RectTransform>();
+            rt.SetParent(payRing, false);
+            rt.localPosition = Vector3.zero;
+            rt.localRotation = Quaternion.identity;
+            rt.sizeDelta = new Vector2(100f, 100f);
+            float lossy = Mathf.Max(0.0001f, Mathf.Abs(payRing.lossyScale.x));
+            rt.localScale = Vector3.one * (payRadius * 2f * fillScale / 100f / lossy);
+
+            var canvas = go.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            int order = 0;
+            if (ringRenderer != null)
+            {
+                canvas.sortingLayerID = ringRenderer.sortingLayerID;
+                order = ringRenderer.sortingOrder;
+                ringRenderer.sortingOrder = order + 1;   // ขอบวงอยู่บนหลอด
+            }
+            canvas.sortingOrder = order;
+            if (priceText != null)
+            {
+                var mr = priceText.GetComponent<MeshRenderer>();
+                if (mr != null)
+                {
+                    if (ringRenderer != null) mr.sortingLayerID = ringRenderer.sortingLayerID;
+                    mr.sortingOrder = Mathf.Max(mr.sortingOrder, order + 2);   // ตัวเลขราคาอยู่บนสุด
+                }
+            }
+
+            fillImage = go.GetComponent<Image>();
+            fillImage.sprite = GetDiscSprite();
+            fillImage.type = Image.Type.Filled;
+            fillImage.fillMethod = Image.FillMethod.Radial360;
+            fillImage.fillOrigin = (int)Image.Origin360.Top;
+            fillImage.fillClockwise = true;
+            fillImage.fillAmount = 0f;
+            fillImage.color = fillColor;
+            fillImage.raycastTarget = false;
+        }
+
+        private void UpdateFill()
+        {
+            if (fillImage == null) return;
+            // ไหลตามจำนวนที่จ่ายจริงแบบนุ่มๆ
+            shownFill = Mathf.MoveTowards(shownFill, Progress, Time.deltaTime * 3f);
+            if (Progress - shownFill > 0.25f) shownFill = Progress - 0.25f;
+            fillImage.fillAmount = shownFill;
+            bool show = shownFill > 0.001f;
+            if (fillImage.enabled != show) fillImage.enabled = show;
+        }
+
+        /// <summary>ปล่อยเหรียญ 1 อันลอยจากผู้เล่นเข้ากลางวง</summary>
+        private void LaunchCoin(Transform buyer)
+        {
+            if (buyer == null || payRing == null) return;
+            Transform t;
+            if (freeCoins.Count > 0)
+            {
+                t = freeCoins.Pop();
+                t.gameObject.SetActive(true);
+            }
+            else
+            {
+                var go = new GameObject("Pay Coin");
+                var sr = go.AddComponent<SpriteRenderer>();
+                sr.sprite = coinSprite != null ? coinSprite : GetDiscSprite();
+                if (coinSprite == null) sr.color = new Color(1f, 0.84f, 0.2f, 1f);
+                if (ringRenderer != null)
+                {
+                    sr.sortingLayerID = ringRenderer.sortingLayerID;
+                    sr.sortingOrder = ringRenderer.sortingOrder + 5;
+                }
+                t = go.transform;
+                t.SetParent(transform, true);
+            }
+            var r = t.GetComponent<SpriteRenderer>();
+            float h = r.sprite != null ? Mathf.Max(0.0001f, r.sprite.bounds.size.y) : 1f;
+            t.localScale = Vector3.one * (coinSize / h / Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.x)));
+            Vector3 from = buyer.position + new Vector3(Random.Range(-0.15f, 0.15f), 0.6f, 0f);
+            t.position = from;
+            coins.Add(new FlyingCoin { t = t, from = from, start = Time.time });
+        }
+
+        private void UpdateCoins()
+        {
+            if (coins.Count == 0 || payRing == null) return;
+            Vector3 to = payRing.position;
+            for (int i = coins.Count - 1; i >= 0; i--)
+            {
+                FlyingCoin c = coins[i];
+                if (c.t == null) { coins.RemoveAt(i); continue; }
+                float k = Mathf.Clamp01((Time.time - c.start) / coinFlyTime);
+                float e = k * k;   // เร่งเข้าหาวง
+                Vector3 p = Vector3.Lerp(c.from, to, e) + Vector3.up * (Mathf.Sin(k * Mathf.PI) * 0.6f);
+                c.t.position = new Vector3(p.x, p.y, to.z);
+                if (k >= 1f)
+                {
+                    c.t.gameObject.SetActive(false);
+                    freeCoins.Push(c.t);
+                    coins.RemoveAt(i);
+                }
+            }
+        }
+
+        private void ClearCoins()
+        {
+            foreach (FlyingCoin c in coins) if (c.t != null) c.t.gameObject.SetActive(false);
+            coins.Clear();
+        }
+
+        /// <summary>วงกลมทึบขาว (สร้างครั้งเดียว) ใช้ทำหลอดและเหรียญสำรอง</summary>
+        private static Sprite GetDiscSprite()
+        {
+            if (discSprite != null) return discSprite;
+            const int size = 128;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.wrapMode = TextureWrapMode.Clamp;
+            float r = size * 0.5f;
+            var px = new Color32[size * size];
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float d = Mathf.Sqrt((x + 0.5f - r) * (x + 0.5f - r) + (y + 0.5f - r) * (y + 0.5f - r));
+                    byte a = (byte)(Mathf.Clamp01(r - d) * 255f);   // ขอบเนียน 1 พิกเซล
+                    px[y * size + x] = new Color32(255, 255, 255, a);
+                }
+            }
+            tex.SetPixels32(px);
+            tex.Apply();
+            discSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+            discSprite.name = "Pay Disc";
+            return discSprite;
         }
 
         // ---------------- Internals ----------------

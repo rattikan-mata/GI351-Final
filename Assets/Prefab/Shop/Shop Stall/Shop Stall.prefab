@@ -409,7 +409,7 @@ MonoBehaviour:
     price: 0
     stock: 0
     id: shelf_size
-    tab: Cook
+    tab: Store
     locked: 0
     lockedText: SOON
     soldOutText: SOLD OUT
@@ -469,7 +469,6 @@ MonoBehaviour:
         m_Calls: []
   tabs:
   - Hunt
-  - Cook
   - Store
   emptyTabText: Coming soon
   zoneCenter: {fileID: 3278608873617845483}

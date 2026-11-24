@@ -192,6 +192,8 @@ namespace GI351.KitchenGame
             bool carriesFood = player.HasAnyCookedFood();
             bool potBusy = chickenPot != null && (chickenPot.CookingItemsCount > 0 || chickenPot.TrayCount > 0);
             bool shelfHasFood = chickenShelf != null && chickenShelf.DishesCount > 0;
+            // วางจานลงแผงแล้วลูกค้าหยิบไปทันที (แผงว่างอีกรอบ) ก็นับว่าวางแล้ว: ไปขั้นคิดเงินเลย
+            if (!shelfHasFood && !carriesFood && step <= Step.Shelf && step >= Step.Collect) shelfHasFood = CustomerHoldsFood();
             int money = MoneyManager.Instance != null ? MoneyManager.Instance.CurrentMoney : 0;
             if (money > lastMoney) earned = true;
             lastMoney = money;
@@ -291,6 +293,16 @@ namespace GI351.KitchenGame
             return true;
         }
 
+        /// <summary>มีลูกค้าปกติถืออาหารอยู่ (หยิบจากแผงแล้ว กำลังเดินไป/รอจ่ายเงิน)</summary>
+        private static bool CustomerHoldsFood()
+        {
+            foreach (CustomerAI c in FindObjectsByType<CustomerAI>())
+            {
+                if (c != null && !c.IsThief && c.CarriedDishCount > 0) return true;
+            }
+            return false;
+        }
+
         private int CountCarried(ItemType type)
         {
             int n = 0;
@@ -298,7 +310,21 @@ namespace GI351.KitchenGame
             return n;
         }
 
+        private Transform cachedChicken;
+        private float nextChickenSearch;
+
+        // หาไก่ใหม่ทุก 0.25 วินาที (ค้นหาวัตถุทั้งฉากทุกเฟรมแล้วเปลือง)
         private Transform NearestChicken()
+        {
+            bool stale = cachedChicken == null || !cachedChicken.gameObject.activeInHierarchy
+                || (cachedChicken.TryGetComponent(out EnemyHealth h) && h.IsDead);
+            if (!stale && Time.time < nextChickenSearch) return cachedChicken;
+            nextChickenSearch = Time.time + 0.25f;
+            cachedChicken = SearchNearestChicken();
+            return cachedChicken;
+        }
+
+        private Transform SearchNearestChicken()
         {
             Transform best = null;
             float bestD = float.MaxValue;

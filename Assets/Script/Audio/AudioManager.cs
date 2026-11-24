@@ -134,6 +134,22 @@ namespace GI351.KitchenGame
 
             BuildLookup();
             BuildPool();
+            PreloadClips();
+        }
+
+        /// <summary>
+        /// โหลดเสียงทุกไฟล์ไว้ตั้งแต่เริ่ม ไม่ให้ไปโหลดตอนเล่นครั้งแรกกลางเกม (เกมกระตุกตอนหม้อเริ่มต้มครั้งแรก)
+        /// </summary>
+        private void PreloadClips()
+        {
+            foreach (var s in sounds)
+            {
+                if (s == null || s.clips == null) continue;
+                foreach (AudioClip clip in s.clips)
+                {
+                    if (clip != null && clip.loadState == AudioDataLoadState.Unloaded) clip.LoadAudioData();
+                }
+            }
         }
 
         private void OnDestroy()

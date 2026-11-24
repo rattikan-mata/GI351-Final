@@ -161,7 +161,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CookedDish
   itemType: 8
   itemName: Buffalo Stew
-  sellPrice: 50
+  sellPrice: 60
   canDespawn: 0
   despawnTime: 30
   blinkBeforeDespawn: 1

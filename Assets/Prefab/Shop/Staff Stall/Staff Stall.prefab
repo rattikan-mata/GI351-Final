@@ -235,7 +235,7 @@ MonoBehaviour:
         m_Calls: []
   - itemName: Pig Hunter
     description: Hunts pigs for the pork pot
-    price: 180
+    price: 240
     stock: 1
     id: hunter_pig
     tab: 
@@ -250,7 +250,7 @@ MonoBehaviour:
         m_Calls: []
   - itemName: Buffalo Hunter
     description: Hunts buffalo for the buffalo pot
-    price: 300
+    price: 500
     stock: 1
     id: hunter_buffalo
     tab: 

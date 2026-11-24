@@ -11,6 +11,9 @@ namespace GI351.KitchenGame
         [Tooltip("เงินเริ่มต้นของผู้เล่น")]
         [SerializeField] private int startingMoney = 0;
 
+        [Tooltip("เขียน Log ทุกครั้งที่เงินเข้า/ออก (ไว้ดีบัก) ปิดไว้: เหรียญเข้าถี่ๆ แล้ว Log ทำให้เกมหน่วง")]
+        [SerializeField] private bool logChanges = false;
+
         [Header("Events")]
         public UnityEvent<int> onMoneyChanged; // ส่งค่าเงินปัจจุบันกลับไปอัปเดต UI
 
@@ -43,7 +46,7 @@ namespace GI351.KitchenGame
             if (amount <= 0) return;
 
             currentMoney += amount;
-            Debug.Log($"[MoneyManager] Earned +{amount} coins! Current: {currentMoney}");
+            if (logChanges) Debug.Log($"[MoneyManager] Earned +{amount} coins! Current: {currentMoney}");
             onMoneyChanged?.Invoke(currentMoney);
         }
 
@@ -57,12 +60,12 @@ namespace GI351.KitchenGame
             if (currentMoney >= amount)
             {
                 currentMoney -= amount;
-                Debug.Log($"[MoneyManager] Spent -{amount} coins! Current: {currentMoney}");
+                if (logChanges) Debug.Log($"[MoneyManager] Spent -{amount} coins! Current: {currentMoney}");
                 onMoneyChanged?.Invoke(currentMoney);
                 return true;
             }
 
-            Debug.Log("[MoneyManager] Not enough money!");
+            if (logChanges) Debug.Log("[MoneyManager] Not enough money!");
             return false;
         }
 

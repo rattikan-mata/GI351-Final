@@ -10,8 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 5158369031562754024}
   - component: {fileID: 8787444032352683571}
-  - component: {fileID: 6217328291450866997}
   - component: {fileID: 348071396164187168}
+  - component: {fileID: 6514602165636066686}
   m_Layer: 0
   m_Name: Pork
   m_TagString: Untagged
@@ -94,8 +94,28 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
---- !u!60 &6217328291450866997
-PolygonCollider2D:
+--- !u!114 &348071396164187168
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2869220307959938083}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af6ccca836fa0a2458719f1ac65f929d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.Item
+  itemType: 1
+  itemName: Raw Pork
+  sellPrice: 5
+  canDespawn: 1
+  despawnTime: 30
+  blinkBeforeDespawn: 1
+  blinkWarningTime: 5
+  spriteRenderer: {fileID: 0}
+--- !u!58 &6514602165636066686
+CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -129,96 +149,4 @@ PolygonCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 0.61864406, y: 0.6491525}
-    newSize: {x: 1, y: 0.5}
-    adaptiveTilingThreshold: 0.5
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Points:
-    m_Paths:
-    - - {x: -0.13474576, y: -0.21949153}
-      - {x: -0.109322034, y: -0.19915254}
-      - {x: -0.08050847, y: -0.18728814}
-      - {x: -0.03983051, y: -0.17711864}
-      - {x: -0.0025423728, y: -0.17542373}
-      - {x: 0.021186441, y: -0.17711864}
-      - {x: 0.044915255, y: -0.18220338}
-      - {x: 0.0940678, y: -0.20932204}
-      - {x: 0.14491525, y: -0.23983051}
-      - {x: 0.17711864, y: -0.24661016}
-      - {x: 0.19406779, y: -0.23813559}
-      - {x: 0.20254236, y: -0.2279661}
-      - {x: 0.21779661, y: -0.19576271}
-      - {x: 0.23305084, y: -0.15847458}
-      - {x: 0.24322033, y: -0.13644068}
-      - {x: 0.28050846, y: -0.05677966}
-      - {x: 0.30254236, y: -0.009322034}
-      - {x: 0.30423728, y: -0.0025423728}
-      - {x: 0.30423728, y: 0.0059322035}
-      - {x: 0.2855932, y: 0.058474574}
-      - {x: 0.2720339, y: 0.12457627}
-      - {x: 0.27033898, y: 0.17881356}
-      - {x: 0.26864406, y: 0.19915254}
-      - {x: 0.26694915, y: 0.2059322}
-      - {x: 0.2635593, y: 0.21779661}
-      - {x: 0.23983051, y: 0.24152543}
-      - {x: 0.18559322, y: 0.2720339}
-      - {x: 0.16355932, y: 0.2838983}
-      - {x: 0.1279661, y: 0.30084744}
-      - {x: 0.09915254, y: 0.31271186}
-      - {x: 0.08050847, y: 0.31949154}
-      - {x: 0.024576271, y: 0.31949154}
-      - {x: -0.016101696, y: 0.31271186}
-      - {x: -0.0279661, y: 0.30932203}
-      - {x: -0.060169492, y: 0.29745764}
-      - {x: -0.09237288, y: 0.28220338}
-      - {x: -0.12288135, y: 0.2618644}
-      - {x: -0.15677966, y: 0.22627118}
-      - {x: -0.17881356, y: 0.18220338}
-      - {x: -0.18728814, y: 0.16694915}
-      - {x: -0.19406779, y: 0.1398305}
-      - {x: -0.19745763, y: 0.12457627}
-      - {x: -0.19915254, y: 0.11101695}
-      - {x: -0.20084746, y: 0.0720339}
-      - {x: -0.21610169, y: 0.048305083}
-      - {x: -0.24661016, y: 0.012711864}
-      - {x: -0.26864406, y: -0.01779661}
-      - {x: -0.28728813, y: -0.051694915}
-      - {x: -0.30084744, y: -0.10254237}
-      - {x: -0.30254236, y: -0.12457627}
-      - {x: -0.30423728, y: -0.15169491}
-      - {x: -0.30423728, y: -0.17033899}
-      - {x: -0.30254236, y: -0.2059322}
-      - {x: -0.29915255, y: -0.26694915}
-      - {x: -0.2940678, y: -0.29067796}
-      - {x: -0.28050846, y: -0.30932203}
-      - {x: -0.26016948, y: -0.31949154}
-      - {x: -0.22288135, y: -0.31949154}
-      - {x: -0.21440677, y: -0.31440678}
-      - {x: -0.18559322, y: -0.2838983}
-      - {x: -0.15677966, y: -0.24152543}
-  m_UseDelaunayMesh: 1
---- !u!114 &348071396164187168
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2869220307959938083}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: af6ccca836fa0a2458719f1ac65f929d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.Item
-  itemType: 1
-  itemName: Raw Pork
-  sellPrice: 5
-  canDespawn: 1
-  despawnTime: 30
-  blinkBeforeDespawn: 1
-  blinkWarningTime: 5
-  spriteRenderer: {fileID: 0}
+  m_Radius: 0.28754237

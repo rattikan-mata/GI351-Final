@@ -10,8 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 4322058872116632}
   - component: {fileID: 4724191930434283834}
-  - component: {fileID: 1364571523067871426}
   - component: {fileID: 4268453864685642440}
+  - component: {fileID: 984883746437540020}
   m_Layer: 0
   m_Name: Buffalo Meat
   m_TagString: Untagged
@@ -94,8 +94,28 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
---- !u!60 &1364571523067871426
-PolygonCollider2D:
+--- !u!114 &4268453864685642440
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3754125921781682485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af6ccca836fa0a2458719f1ac65f929d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.Item
+  itemType: 7
+  itemName: Raw Buffalo Meat
+  sellPrice: 10
+  canDespawn: 1
+  despawnTime: 30
+  blinkBeforeDespawn: 1
+  blinkWarningTime: 5
+  spriteRenderer: {fileID: 0}
+--- !u!58 &984883746437540020
+CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -129,89 +149,4 @@ PolygonCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 0.5679245, y: 0.6018868}
-    newSize: {x: 1, y: 0.5}
-    adaptiveTilingThreshold: 0.5
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Points:
-    m_Paths:
-    - - {x: -0.06698114, y: -0.13867925}
-      - {x: -0.051886793, y: -0.14622642}
-      - {x: -0.03490566, y: -0.1481132}
-      - {x: -0.014150944, y: -0.13301887}
-      - {x: -0.010377359, y: -0.11792453}
-      - {x: 0.019811321, y: -0.12924528}
-      - {x: 0.08584906, y: -0.1254717}
-      - {x: 0.11226416, y: -0.11792453}
-      - {x: 0.14056604, y: -0.10849057}
-      - {x: 0.15566038, y: -0.10283019}
-      - {x: 0.19528303, y: -0.07641509}
-      - {x: 0.21792454, y: -0.051886793}
-      - {x: 0.25, y: -0.004716981}
-      - {x: 0.26698112, y: 0.025471698}
-      - {x: 0.2745283, y: 0.04811321}
-      - {x: 0.2783019, y: 0.07830189}
-      - {x: 0.2783019, y: 0.11415094}
-      - {x: 0.2745283, y: 0.14433962}
-      - {x: 0.26320755, y: 0.18018869}
-      - {x: 0.24245283, y: 0.21037737}
-      - {x: 0.2254717, y: 0.22924529}
-      - {x: 0.18962264, y: 0.26132077}
-      - {x: 0.15, y: 0.28584906}
-      - {x: 0.10660377, y: 0.29528302}
-      - {x: 0.05754717, y: 0.29528302}
-      - {x: 0.03490566, y: 0.29150945}
-      - {x: 0.008490566, y: 0.28207546}
-      - {x: -0.019811321, y: 0.26886794}
-      - {x: -0.053773586, y: 0.24622642}
-      - {x: -0.0990566, y: 0.19905661}
-      - {x: -0.11226416, y: 0.18207547}
-      - {x: -0.13490567, y: 0.12924528}
-      - {x: -0.14245284, y: 0.07641509}
-      - {x: -0.13679245, y: 0.010377359}
-      - {x: -0.12358491, y: -0.014150944}
-      - {x: -0.13679245, y: -0.021698114}
-      - {x: -0.1481132, y: -0.031132076}
-      - {x: -0.15377359, y: -0.05566038}
-      - {x: -0.13679245, y: -0.07830189}
-      - {x: -0.14056604, y: -0.09150943}
-      - {x: -0.19150944, y: -0.1481132}
-      - {x: -0.22735849, y: -0.18396227}
-      - {x: -0.25943395, y: -0.19905661}
-      - {x: -0.2783019, y: -0.22169812}
-      - {x: -0.2783019, y: -0.24622642}
-      - {x: -0.26509434, y: -0.26509434}
-      - {x: -0.25, y: -0.27075472}
-      - {x: -0.23679246, y: -0.29150945}
-      - {x: -0.22924529, y: -0.29528302}
-      - {x: -0.20660378, y: -0.29528302}
-      - {x: -0.19716981, y: -0.29339623}
-      - {x: -0.18207547, y: -0.2745283}
-      - {x: -0.15754718, y: -0.2254717}
-      - {x: -0.08584906, y: -0.14433962}
-  m_UseDelaunayMesh: 1
---- !u!114 &4268453864685642440
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3754125921781682485}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: af6ccca836fa0a2458719f1ac65f929d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.Item
-  itemType: 7
-  itemName: Raw Buffalo Meat
-  sellPrice: 10
-  canDespawn: 1
-  despawnTime: 30
-  blinkBeforeDespawn: 1
-  blinkWarningTime: 5
-  spriteRenderer: {fileID: 0}
+  m_Radius: 0.2657547

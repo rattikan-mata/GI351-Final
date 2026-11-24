@@ -124,6 +124,26 @@ namespace GI351.KitchenGame
         private Transform playerTarget;
         private Vector2 lastFleeDir;
         private float fleeStuckTimer;
+        private float fleeRethinkTimer;
+        private Vector2 cachedClearDir;
+        private const float fleeRethinkInterval = 0.15f;
+
+        // ฆ่าทีเดียวสัตว์รอบๆ ตกใจหนีพร้อมกันเป็นสิบตัว: จำกัดให้คิดทิศใหม่ได้ไม่เกิน MaxRethinksPerStep ตัวต่อเฟรมฟิสิกส์ ตัวที่เหลือใช้ทิศเดิมไปก่อน
+        private const int MaxRethinksPerStep = 3;
+        private static float rethinkStepTime = -1f;
+        private static int rethinksThisStep;
+
+        private static bool TakeRethinkBudget()
+        {
+            if (!Mathf.Approximately(rethinkStepTime, Time.fixedTime))
+            {
+                rethinkStepTime = Time.fixedTime;
+                rethinksThisStep = 0;
+            }
+            if (rethinksThisStep >= MaxRethinksPerStep) return false;
+            rethinksThisStep++;
+            return true;
+        }
 
         // วิ่งหนีข้ามโซน
         private HuntArea homeArea;
@@ -132,7 +152,7 @@ namespace GI351.KitchenGame
         private bool crossPassedLink;
         private HuntArea crossFrom;
         private static readonly RaycastHit2D[] wallHits = new RaycastHit2D[8];
-        private const int FleeDirections = 16;
+        private const int FleeDirections = 12;
         private static readonly ContactFilter2D WallFilter = new ContactFilter2D { useTriggers = false };
 
         // ตกใจตามตัวอื่น (รอดีเลย์ก่อนเริ่มหนี)
@@ -612,6 +632,8 @@ namespace GI351.KitchenGame
             {
                 lastFleeDir = Vector2.zero;
                 fleeStuckTimer = 0f;
+                fleeRethinkTimer = 0f;
+                cachedClearDir = Vector2.zero;
                 ChooseCrossing();
                 RefreshAnimalCollisions();
             }
@@ -716,10 +738,21 @@ namespace GI351.KitchenGame
                 fleeStuckTimer = 0f;
                 isCrossing = false;
                 lastFleeDir = -lastFleeDir;
+                fleeRethinkTimer = 0f;   // ติด: คิดทิศใหม่ทันที
+            }
+
+            // เลือกทิศที่โล่งใหม่ทุก fleeRethinkInterval วินาที (ยิงตรวจกำแพง 17 ทิศต่อครั้ง ทำทุกเฟรมฟิสิกส์แล้วเกมกระตุกตอนสัตว์หนีพร้อมกันหลายตัว)
+            // ระหว่างนั้นใช้ทิศเดิม / เพิ่งติดกำแพง (fleeStuckTimer รีเซ็ต) คิดใหม่ทันที
+            fleeRethinkTimer -= Time.fixedDeltaTime;
+            if (cachedClearDir.sqrMagnitude < 0.0001f) cachedClearDir = goal;   // เพิ่งเริ่มหนี: วิ่งออกห่างไปก่อน รอคิวคิดทิศที่โล่ง
+            if (fleeRethinkTimer <= 0f && TakeRethinkBudget())
+            {
+                fleeRethinkTimer = fleeRethinkInterval + Random.Range(0f, 0.04f);   // สุ่มนิดหน่อยไม่ให้ทุกตัวคิดเฟรมเดียวกัน
+                cachedClearDir = ChooseClearDirection(pos, goal);
             }
 
             // หนีแล้วก็ยังเว้นระยะกับตัวอื่น ไม่วิ่งไปกองรวมกันที่มุม
-            Vector2 clear = ChooseClearDirection(pos, goal);
+            Vector2 clear = cachedClearDir;
             Vector2 dir = ApplyAvoidance(pos, clear, 0.6f);
             lastFleeDir = dir;
             rb.linearVelocity = dir * fleeSpeed;
