@@ -7,7 +7,7 @@ namespace GI351.KitchenGame.EditorTools
 {
     public static class GameplayUiSetup
     {
-        private const string ScenePath = "Assets/Scenes/SampleScene.unity";
+        private const string ScenePath = "Assets/Scenes/Map Layout.unity";
         private const string HudPrefabPath = "Assets/Prefab/UI/HUD Extras Canvas.prefab";
         private const string PausePrefabPath = "Assets/Prefab/UI/Pause Menu Panel.prefab";
 

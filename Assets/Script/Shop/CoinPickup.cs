@@ -139,7 +139,7 @@ namespace GI351.KitchenGame
                 MoneyManager.Instance.AddMoney(coinValue);
             }
 
-            AudioManager.Play(SoundId.MoneyReceive, pickupSound, transform.position);
+            // เสียงเก็บเหรียญ: MoneyUI เล่นเสียงเครื่องคิดเงิน (UiAudioManager) ตอนเงินเพิ่ม ไม่เล่นซ้อนที่นี่
 
             Destroy(gameObject);
         }

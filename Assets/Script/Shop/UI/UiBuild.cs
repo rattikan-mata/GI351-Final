@@ -35,6 +35,14 @@ namespace GI351.KitchenGame
         /// <summary>true ถ้าเมาส์อยู่เหนือ UI (ใช้กันไม่ให้คลิกปุ่ม UI แล้วฟันกระบองไปด้วย)</summary>
         public static bool IsPointerOverUi => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
 
+        private static int escapeUsedFrame = -1;
+
+        /// <summary>หน้าต่างที่ปิดด้วย ESC เรียกตัวนี้ ให้เมนูหยุดเกมรู้ว่าเฟรมนี้ ESC ถูกใช้ไปแล้ว (กดครั้งเดียวไม่ให้ปิดร้านแล้วหยุดเกมพร้อมกัน)</summary>
+        public static void MarkEscapeUsed() => escapeUsedFrame = Time.frameCount;
+
+        /// <summary>true ถ้า ESC เฟรมนี้ถูกหน้าต่างอื่นใช้ไปแล้ว</summary>
+        public static bool EscapeUsedThisFrame => escapeUsedFrame == Time.frameCount;
+
         /// <summary>ปุ่มบน UI กดได้ต้องมี EventSystem ในฉาก สร้างให้ถ้ายังไม่มี</summary>
         public static void EnsureEventSystem()
         {

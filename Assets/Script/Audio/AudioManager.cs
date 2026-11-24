@@ -348,7 +348,7 @@ namespace GI351.KitchenGame
                 }
             }
 
-            return volume * masterVolume;
+            return volume * masterVolume * UiAudioManager.SfxVolume;
         }
 
         private void StartOrUpdateLoop(object owner, SoundId id, Vector3 position)
@@ -462,7 +462,7 @@ namespace GI351.KitchenGame
             nextSource = (nextSource + 1) % pool.Length;
 
             src.pitch = Mathf.Clamp(UnityEngine.Random.Range(Mathf.Min(pitch.x, pitch.y), Mathf.Max(pitch.x, pitch.y)) + pitchOffset, 0.25f, 3f);
-            src.PlayOneShot(clip, volume * masterVolume);
+            src.PlayOneShot(clip, volume * masterVolume * UiAudioManager.SfxVolume);
         }
     }
 }

@@ -559,7 +559,7 @@ namespace GI351.KitchenGame
             }
 
             ShowExclamationMark();
-            AudioManager.Play(SoundId.ThiefAlert);
+            // เสียงเตือนโจร: เล่นจากแถบเตือนบน HUD (UiAudioManager) ที่เดียว ไม่ซ้อนกับ AudioManager
             currentState = CustomerState.ThiefFleeing;
             if (stolenDish != null)
             {

@@ -14,7 +14,7 @@ namespace GI351.KitchenGame
 
         [Header("Mode")]
         public MenuMode mode = MenuMode.MainMenu;
-        public string gameplaySceneName = "SampleScene";
+        public string gameplaySceneName = "Map Layout";
         public string mainMenuSceneName = "MainMenu";
 
         [Header("Parts")]
@@ -101,7 +101,8 @@ namespace GI351.KitchenGame
             }
         }
 
-        private void Update()
+        // ใช้ LateUpdate: ให้ร้านค้าปิดตัวเองด้วย ESC ก่อน (Update) แล้วค่อยเช็คว่า ESC ถูกใช้ไปหรือยัง
+        private void LateUpdate()
         {
             if (mode != MenuMode.PauseMenu) return;
 
@@ -113,7 +114,7 @@ namespace GI351.KitchenGame
             if (Input.GetKeyDown(KeyCode.Escape))
                 escPressed = true;
 #endif
-            if (escPressed && !UpgradeTreeUI.IsBlockingGameInput)
+            if (escPressed && !UiBuild.EscapeUsedThisFrame)
             {
                 SetPaused(!isPaused);
             }
@@ -137,7 +138,7 @@ namespace GI351.KitchenGame
             canvasRect.GetComponent<GraphicRaycaster>().ignoreReversedGraphics = true;
             GameMenuPanelsView view = canvasRect.gameObject.AddComponent<GameMenuPanelsView>();
             view.mode = menuMode;
-            view.gameplaySceneName = "SampleScene";
+            view.gameplaySceneName = "Map Layout";
             view.mainMenuSceneName = "MainMenu";
 
             RectTransform overlay = UiBuild.CreateRect(canvasRect, "Panel", typeof(Image));

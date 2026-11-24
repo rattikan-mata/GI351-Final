@@ -261,8 +261,8 @@ MonoBehaviour:
   buttonClick: {fileID: 8300000, guid: 2cdef247d73aabe43b76e180f6a02785, type: 3}
   panelToggle: {fileID: 8300000, guid: 877738604a7c31d4dba583d52e490c05, type: 3}
   upgradeSuccess: {fileID: 8300000, guid: 6855e58c002de334ba960c0ec295821a, type: 3}
-  buyUnlockItem: {fileID: 8300000, guid: 3bc2c62b7711ae843881ec4a4a1ecc7d, type: 3}
-  cantAfford: {fileID: 8300000, guid: 4eee84cff62796d43ba8baa6351c7e3a, type: 3}
+  buyUnlockItem: {fileID: 8300000, guid: ec0534e466c68c74fbf1d88daaa1fa1c, type: 3}
+  cantAfford: {fileID: 8300000, guid: 1d2738b95296c2a4f9cb9d6d3cfa6c95, type: 3}
   cashCollect: {fileID: 8300000, guid: 88b1df3fbd8bbf44ebdef68ac808ae70, type: 3}
   thiefAlert: {fileID: 8300000, guid: 26eb52f0fb773ce45b8b1f6934c93717, type: 3}
   pitchVariance: 0.06
@@ -1384,7 +1384,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7039877198742421654, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
       propertyPath: m_Text
-      value: 351 Final
+      value: Wild meat-baww
       objectReference: {fileID: 0}
     - target: {fileID: 7039877198742421654, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
       propertyPath: m_FontData.m_MaxSize

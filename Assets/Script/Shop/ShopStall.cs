@@ -228,9 +228,9 @@ namespace GI351.KitchenGame
             if (isOpen)
             {
 #if ENABLE_INPUT_SYSTEM
-                if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) Close();
+                if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) { UiBuild.MarkEscapeUsed(); Close(); }
 #else
-                if (Input.GetKeyDown(KeyCode.Escape)) Close();
+                if (Input.GetKeyDown(KeyCode.Escape)) { UiBuild.MarkEscapeUsed(); Close(); }
 #endif
                 int money = CurrentMoney;
                 if (money != lastMoney) Refresh();

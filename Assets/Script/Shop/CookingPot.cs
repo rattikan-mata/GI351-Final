@@ -405,7 +405,8 @@ namespace GI351.KitchenGame
             {
                 UnityEditor.EditorApplication.delayCall += () =>
                 {
-                    if (this == null || !Application.isPlaying) return;
+                    // ข้ามตัว Prefab ในโฟลเดอร์ (ไม่ได้อยู่ในฉาก) ไม่งั้นจะสร้างวงแหวนหลงมาโผล่ในฉากตอนเล่น
+                    if (this == null || !Application.isPlaying || !gameObject.scene.IsValid()) return;
                     if (isUnlocked)
                     {
                         SetupStandZoneAndRing();

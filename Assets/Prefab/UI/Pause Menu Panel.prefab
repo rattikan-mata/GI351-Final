@@ -583,7 +583,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.GameMenuPanelsView
   mode: 1
-  gameplaySceneName: SampleScene
+  gameplaySceneName: Map Layout
   mainMenuSceneName: MainMenu
   panel: {fileID: 559564858206195432}
   titleText: {fileID: 6581601265251243722}
