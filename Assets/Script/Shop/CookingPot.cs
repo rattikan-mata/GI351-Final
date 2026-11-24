@@ -1159,6 +1159,20 @@ namespace GI351.KitchenGame
             return fedCount;
         }
 
+        /// <summary>
+        /// ใส่เนื้อ 1 ชิ้นลงหม้อจากพนักงาน (HunterStaff) คืน false ถ้าหม้อยังล็อก/เต็ม หรือเนื้อไม่ตรงกับหม้อ
+        /// </summary>
+        public bool TryFeedItem(Item meat)
+        {
+            if (!isUnlocked || meat == null || meat.Type != requiredIngredient) return false;
+            if (CookingItemsCount >= maxCookingCapacity) return false;
+
+            AddIngredientVisual(meat);
+            AddIngredientToQueue();
+            AudioManager.PlayBurst(SoundId.PotDrop, 1, 0.06f, ingredientDropSound, transform.position, 0.04f);
+            return true;
+        }
+
         private void AddIngredientToQueue()
         {
             if (!isUnlocked) return;

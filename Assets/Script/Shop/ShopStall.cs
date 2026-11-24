@@ -488,6 +488,12 @@ namespace GI351.KitchenGame
             }
         }
 
+        /// <summary>วาดรายการสินค้าใหม่ถ้าร้านเปิดอยู่ (เช่น สินค้าเพิ่งปลดล็อก)</summary>
+        public void RefreshIfOpen()
+        {
+            if (isOpen) Refresh();
+        }
+
         private void Refresh()
         {
             int money = CurrentMoney;

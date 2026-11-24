@@ -129,9 +129,27 @@ namespace GI351.KitchenGame
             AudioManager.Play(id, null, transform.position);
         }
 
+        /// <summary>ครั้งล่าสุดที่โดนตี เป็นลูกจ้างล่าสัตว์ตีหรือไม่ (หมูใช้เช็คว่าจะโกรธไล่ผู้เล่นไหม)</summary>
+        public bool LastHitByStaff { get; private set; }
+
         public void TakeDamage(int damage)
         {
+            TakeDamage(damage, false);
+        }
+
+        /// <summary>
+        /// ลูกจ้างล่าสัตว์ตี: ไม่หยุดเวลา (hit stop) ไม่สั่นกล้อง (ลูกจ้างอาจอยู่นอกจอ) และหมูไม่โกรธไล่ผู้เล่น
+        /// </summary>
+        public void TakeDamageFromStaff(int damage)
+        {
+            TakeDamage(damage, true);
+        }
+
+        private void TakeDamage(int damage, bool fromStaff)
+        {
             if (isDead) return;
+            LastHitByStaff = fromStaff;
+            bool screenFeedback = !fromStaff;
 
             currentHealth -= damage;
             onHealthChanged?.Invoke(currentHealth, maxHealth);
@@ -154,7 +172,7 @@ namespace GI351.KitchenGame
             {
                 PlayHurtSound();
             }
-            PlayHitJuice(lethal);
+            PlayHitJuice(lethal, screenFeedback);
 
             if (lethal)
             {
@@ -165,16 +183,16 @@ namespace GI351.KitchenGame
         /// <summary>
         /// hit stop + กล้องสั่น + squash ตอนโดนตี (ตอนตายใช้ค่าที่แรง/นานกว่า และข้าม squash เพราะ death pop มาแทน)
         /// </summary>
-        private void PlayHitJuice(bool lethal)
+        private void PlayHitJuice(bool lethal, bool screenFeedback = true)
         {
             JuiceConfig cfg = JuiceDirector.Resolve(juice);
 
-            if (cfg.hitStopEnabled)
+            if (screenFeedback && cfg.hitStopEnabled)
             {
                 JuiceDirector.HitStop(lethal ? cfg.hitStopOnKill : cfg.hitStopOnHit);
             }
 
-            if (cfg.shakeEnabled)
+            if (screenFeedback && cfg.shakeEnabled)
             {
                 if (lethal)
                 {

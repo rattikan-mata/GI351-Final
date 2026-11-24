@@ -218,15 +218,45 @@ MonoBehaviour:
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
-  - itemName: Hunter
-    description: 
-    price: 250
+  - itemName: Chicken Hunter
+    description: Hunts chickens for the chicken pot
+    price: 120
     stock: 1
     id: hunter
     tab: 
-    locked: 1
-    lockedText: SOON
-    soldOutText: SOLD OUT
+    locked: 0
+    lockedText: OPEN ZONE
+    soldOutText: HIRED
+    valueLabel: 
+    levels: []
+    levelCap: 0
+    onPurchased:
+      m_PersistentCalls:
+        m_Calls: []
+  - itemName: Pig Hunter
+    description: Hunts pigs for the pork pot
+    price: 180
+    stock: 1
+    id: hunter_pig
+    tab: 
+    locked: 0
+    lockedText: OPEN ZONE
+    soldOutText: HIRED
+    valueLabel: 
+    levels: []
+    levelCap: 0
+    onPurchased:
+      m_PersistentCalls:
+        m_Calls: []
+  - itemName: Buffalo Hunter
+    description: Hunts buffalo for the buffalo pot
+    price: 300
+    stock: 1
+    id: hunter_buffalo
+    tab: 
+    locked: 0
+    lockedText: OPEN ZONE
+    soldOutText: HIRED
     valueLabel: 
     levels: []
     levelCap: 0
@@ -265,6 +295,23 @@ MonoBehaviour:
   cashierStaffPrefab: {fileID: 5166231996330896409, guid: d2aa524f8d8d8b247a07ed1ec9149fe2, type: 3}
   waiterItemId: waiter
   waiterStaffPrefab: {fileID: 5166231996330896409, guid: 2d7005e014774f7c9df964bfea835fb5, type: 3}
+  waiterSpawnOffset: {x: 0, y: -1}
+  hunterSlots:
+  - itemId: hunter
+    meat: 0
+    carryCapacity: 4
+    damage: 30
+  - itemId: hunter_pig
+    meat: 1
+    carryCapacity: 12
+    damage: 100
+  - itemId: hunter_buffalo
+    meat: 7
+    carryCapacity: 8
+    damage: 150
+  hunterStaffPrefab: {fileID: 3219910164869969977, guid: e810eb6f2d8abc2418fa5144a41e683c, type: 3}
+  hunterSpawnOffset: {x: 0, y: -1}
+  zoneLockedText: OPEN ZONE
 --- !u!1 &6295968039141360220
 GameObject:
   m_ObjectHideFlags: 0

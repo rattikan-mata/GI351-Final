@@ -99,8 +99,15 @@ namespace GI351.KitchenGame
             // ฟัง Event เมื่อหมูโดนโจมตี จะทำให้หมูโกรธและเริ่มวิ่งไล่ล่า Player (เฉพาะโหมด Charge)
             if (health != null && onHitReaction == HitReaction.Charge)
             {
-                health.onDamaged.AddListener(Enrage);
+                health.onDamaged.AddListener(OnDamaged);
             }
+        }
+
+        // โกรธเฉพาะตอนผู้เล่นตี (ลูกจ้างล่าสัตว์ตีแล้วไม่วิ่งไปไล่ชนผู้เล่น)
+        private void OnDamaged()
+        {
+            if (health != null && health.LastHitByStaff) return;
+            Enrage();
         }
 
         private void Update()
@@ -117,7 +124,7 @@ namespace GI351.KitchenGame
         {
             if (health != null)
             {
-                health.onDamaged.RemoveListener(Enrage);
+                health.onDamaged.RemoveListener(OnDamaged);
             }
         }
 

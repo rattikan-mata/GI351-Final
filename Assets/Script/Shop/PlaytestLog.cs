@@ -31,7 +31,9 @@ namespace GI351.KitchenGame
             public float avgStock;
             public int maxStock;
             public float emptyShelfRatio;
-            public float customersPerMinute;
+            public float customersPerMinute;   // ค่าพื้นฐานจากร้าน (Customers)
+            public float realRatePerMinute;    // ความถี่จริงเฉลี่ย หลังปรับตามของบนแผง
+            public int arrived;                // ลูกค้าที่เกิดจริงในนาทีนั้น
         }
 
         private readonly List<MinuteRow> rows = new List<MinuteRow>();
@@ -52,6 +54,8 @@ namespace GI351.KitchenGame
         private int lostAtMinuteStart;
         private float stockSum;
         private int stockSamples, emptySamples, maxStock;
+        private float rateSum;
+        private int rateSamples, spawnedAtMinuteStart;
         private float firstSaleTime = -1f;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -68,6 +72,7 @@ namespace GI351.KitchenGame
             startTime = Time.time;
             minuteStart = startTime;
             lostAtMinuteStart = CustomerAI.LostCustomers;
+            spawnedAtMinuteStart = CustomerSpawner.SpawnedTotal;
 
             string dir = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? ".", "Logs", "Playtest");
             Directory.CreateDirectory(dir);
@@ -163,6 +168,15 @@ namespace GI351.KitchenGame
 
         private void SampleStock()
         {
+            // ความถี่ลูกค้าจริงตอนนี้ (ค่าพื้นฐาน x ตัวคูณตามของบนแผง)
+            foreach (CustomerSpawner s in CustomerSpawner.All)
+            {
+                if (s == null) continue;
+                rateSum += s.CustomersPerMinute * s.CurrentRateMultiplier;
+                rateSamples++;
+                break;
+            }
+
             int stock = 0;
             bool anyOpen = false, anyEmpty = false;
             foreach (FoodSellCounter c in FoodSellCounter.All)
@@ -198,12 +212,17 @@ namespace GI351.KitchenGame
                 avgStock = stockSamples > 0 ? stockSum / stockSamples : 0f,
                 maxStock = maxStock,
                 emptyShelfRatio = stockSamples > 0 ? (float)emptySamples / stockSamples : 0f,
-                customersPerMinute = cpm
+                customersPerMinute = cpm,
+                realRatePerMinute = rateSamples > 0 ? rateSum / rateSamples : cpm,
+                arrived = CustomerSpawner.SpawnedTotal - spawnedAtMinuteStart
             });
 
             earned = spent = paid = 0;
             stockSum = 0f;
             stockSamples = emptySamples = maxStock = 0;
+            rateSum = 0f;
+            rateSamples = 0;
+            spawnedAtMinuteStart = CustomerSpawner.SpawnedTotal;
             lostAtMinuteStart = CustomerAI.LostCustomers;
             minuteStart = Time.time;
         }
@@ -227,7 +246,8 @@ namespace GI351.KitchenGame
             sb.AppendLine("(money cheats F1-F3 count as earned)");
             sb.AppendLine();
             sb.AppendLine("PER MINUTE");
-            sb.AppendLine("min  earned  spent  money  paid  lost  avgStock  maxStock  shelfEmpty%  customers/min");
+            sb.AppendLine("(base/min = Customers level in the shop, real/min = average after the shelf-stock speed-up/slow-down, arrived = customers that actually came)");
+            sb.AppendLine("min  earned  spent  money  paid  lost  avgStock  maxStock  shelfEmpty%  base/min  real/min  arrived");
             foreach (MinuteRow r in rows)
             {
                 sb.AppendLine(
@@ -240,7 +260,9 @@ namespace GI351.KitchenGame
                     r.avgStock.ToString("0.0", CultureInfo.InvariantCulture).PadLeft(8) + "  " +
                     r.maxStock.ToString().PadLeft(8) + "  " +
                     Mathf.RoundToInt(r.emptyShelfRatio * 100f).ToString().PadLeft(10) + "%  " +
-                    r.customersPerMinute.ToString("0.#", CultureInfo.InvariantCulture).PadLeft(13));
+                    r.customersPerMinute.ToString("0.#", CultureInfo.InvariantCulture).PadLeft(8) + "  " +
+                    r.realRatePerMinute.ToString("0.#", CultureInfo.InvariantCulture).PadLeft(8) + "  " +
+                    r.arrived.ToString().PadLeft(7));
             }
             sb.AppendLine();
             sb.AppendLine("EVENTS");

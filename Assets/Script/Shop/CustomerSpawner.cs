@@ -50,7 +50,7 @@ namespace GI351.KitchenGame
         [SerializeField] private FoodSellCounter targetCounter;
 
         [Header("Order Size (ลูกค้าซื้อคนละกี่จาน)")]
-        [Tooltip("ลูกค้าแต่ละคนซื้อสุ่ม 1 ถึงค่านี้")]
+        [Tooltip("ลูกค้าแต่ละคนซื้อสุ่ม 1 ถึงค่านี้ (อัปเกรดได้จากร้าน Big Orders)")]
         [Min(1)] [SerializeField] private int maxDishesPerCustomer = 1;
 
         [Header("Start (เริ่มปล่อยลูกค้า)")]
@@ -64,8 +64,8 @@ namespace GI351.KitchenGame
         [Tooltip("ตัวคูณความถี่ตอนแผงไม่มีของเหลือให้ลูกค้าใหม่ (0.35 = มาช้าลงเหลือราว 1/3)")]
         [Range(0.05f, 1f)] [SerializeField] private float emptyRateMultiplier = 0.35f;
 
-        [Tooltip("ตัวคูณความถี่ตอนแผงมีของเหลือเยอะ (2 = มาถี่ขึ้น 2 เท่า)")]
-        [Range(1f, 4f)] [SerializeField] private float fullRateMultiplier = 2f;
+        [Tooltip("ตัวคูณความถี่ตอนแผงมีของเหลือเยอะ (2.5 = มาถี่ขึ้น 2.5 เท่า)")]
+        [Range(1f, 4f)] [SerializeField] private float fullRateMultiplier = 2.5f;
 
         [Tooltip("ของเหลือกี่จาน (หลังหักจานที่ลูกค้าที่รออยู่จะซื้อ) ถึงจะมาถี่สุด")]
         [Min(2)] [SerializeField] private int busyStock = 6;
@@ -115,6 +115,15 @@ namespace GI351.KitchenGame
 
         /// <summary>ทุกจุดเกิดลูกค้าในฉาก</summary>
         public static readonly List<CustomerSpawner> All = new List<CustomerSpawner>();
+
+        /// <summary>จำนวนลูกค้าที่เกิดทั้งหมดตั้งแต่เริ่มเล่น (รวมโจร) ใช้ใน PlaytestLog</summary>
+        public static int SpawnedTotal { get; private set; }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            SpawnedTotal = 0;
+        }
 
         /// <summary>ระยะเวลาระหว่างลูกค้าแต่ละคน (วินาที)</summary>
         public float SpawnInterval => spawnInterval;
@@ -204,7 +213,7 @@ namespace GI351.KitchenGame
                 {
                     if (c != null && c.DishesCount > 0) { firstFoodSeen = true; break; }
                 }
-                if (!firstFoodSeen) return;
+                if (!firstFoodSeen) { CurrentRateMultiplier = 0f; return; }   // ยังไม่ปล่อยลูกค้า
                 spawnTimer = Mathf.Max(spawnTimer, spawnInterval - 1f);
             }
 
@@ -239,6 +248,7 @@ namespace GI351.KitchenGame
             customerAI.Init(targetCounter, exitPoint, this);
             customerAI.IgnoreCollisionWithOtherCustomers();
             activeCustomers.Add(customerAI);
+            SpawnedTotal++;
             return customerAI;
         }
 
@@ -277,9 +287,11 @@ namespace GI351.KitchenGame
             if (customerObj.TryGetComponent<CustomerAI>(out var customerAI))
             {
                 customerAI.SetAsThief(isThief);
-                customerAI.SetDishesToBuy(1, maxDishesPerCustomer);                customerAI.Init(targetCounter, exitPoint, this);
+                customerAI.SetDishesToBuy(1, maxDishesPerCustomer);
+                customerAI.Init(targetCounter, exitPoint, this);
                 customerAI.IgnoreCollisionWithOtherCustomers();
                 activeCustomers.Add(customerAI);
+                SpawnedTotal++;
 
                 if (isThief)
                 {

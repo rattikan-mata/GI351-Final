@@ -4,7 +4,7 @@ namespace GI351.KitchenGame
 {
     /// <summary>
     /// อยู่คู่กับร้าน STAFF (ShopStall): เมื่อซื้อสินค้าที่ id ตรงกัน จะจ้างพนักงานมาทำงาน
-    /// ตอนนี้มีพนักงานแคชเชียร์ (ยืนคิดเงิน) และพนักงานเสิร์ฟ (ยกอาหารจากหม้อไปวางชั้น)  Hunter ยังล็อกไว้ในร้าน
+    /// มีพนักงานแคชเชียร์ (ยืนคิดเงิน) พนักงานเสิร์ฟ (ยกอาหารจากหม้อไปวางชั้น) และพนักงานล่าสัตว์โซนละคน (ล่าแล้วเอาเนื้อมาใส่หม้อ ซื้อได้เมื่อเปิดโซน)
     /// </summary>
     [RequireComponent(typeof(ShopStall))]
     public class StaffHirer : MonoBehaviour
@@ -26,12 +26,76 @@ namespace GI351.KitchenGame
         [Tooltip("จุดที่พนักงานเสิร์ฟโผล่ตอนจ้าง เทียบกับร้านนี้ (เมตร)")]
         [SerializeField] private Vector2 waiterSpawnOffset = new Vector2(0f, -1f);
 
+        [System.Serializable]
+        public class HunterSlot
+        {
+            [Tooltip("id ของสินค้าในร้านที่หมายถึงลูกจ้างล่าสัตว์คนนี้")]
+            public string itemId = "hunter";
+
+            [Tooltip("ประจำโซนที่สัตว์ดรอปเนื้อนี้ (ซื้อได้เมื่อเปิดประตูโซนนั้นแล้ว)")]
+            public ItemType meat = ItemType.ChickenMeat;
+
+            [Tooltip("ถือเนื้อได้ครั้งละกี่ชิ้น (0 = ใช้ค่าใน Prefab ลูกจ้าง)")]
+            [Min(0)] public int carryCapacity;
+
+            [Tooltip("ดาเมจต่อการตี (0 = ใช้ค่าใน Prefab ลูกจ้าง) ไก่เลือด 30 หมู 100 ควาย 150")]
+            [Min(0)] public int damage;
+        }
+
+        [Header("Hunter (พนักงานล่าสัตว์ โซนละคน)")]
+        [Tooltip("ลูกจ้างล่าสัตว์แต่ละโซน: id สินค้าในร้าน -> ชนิดเนื้อของโซน  ราคาตั้งที่ ShopStall > Items")]
+        [SerializeField] private System.Collections.Generic.List<HunterSlot> hunterSlots = new System.Collections.Generic.List<HunterSlot>
+        {
+            new HunterSlot { itemId = "hunter", meat = ItemType.ChickenMeat, carryCapacity = 4, damage = 30 },
+            new HunterSlot { itemId = "hunter_pig", meat = ItemType.PigMeat, carryCapacity = 12, damage = 100 },
+            new HunterSlot { itemId = "hunter_buffalo", meat = ItemType.BuffaloMeat, carryCapacity = 8, damage = 150 }
+        };
+
+        [Tooltip("Prefab พนักงานล่าสัตว์")]
+        [SerializeField] private HunterStaff hunterStaffPrefab;
+
+        [Tooltip("จุดที่พนักงานล่าสัตว์โผล่ตอนจ้าง เทียบกับร้านนี้ (เมตร)")]
+        [SerializeField] private Vector2 hunterSpawnOffset = new Vector2(0f, -1f);
+
+        [Tooltip("ข้อความบนปุ่มตอนโซนยังไม่เปิด")]
+        [SerializeField] private string zoneLockedText = "OPEN ZONE";
+
         private ShopStall stall;
         private CashierStaff hiredCashier;
         private WaiterStaff hiredWaiter;
+        private readonly System.Collections.Generic.Dictionary<string, HunterStaff> hiredHunters = new System.Collections.Generic.Dictionary<string, HunterStaff>();
 
         public CashierStaff HiredCashier => hiredCashier;
         public WaiterStaff HiredWaiter => hiredWaiter;
+        public int HiredHunterCount => hiredHunters.Count;
+
+        private void Start()
+        {
+            // ล็อกลูกจ้างล่าสัตว์ของโซนที่ยังไม่เปิด แล้วปลดเองตอนเปิดประตู
+            foreach (HunterSlot slot in hunterSlots)
+            {
+                ShopItemData item = stall != null ? stall.FindItem(slot.itemId) : null;
+                HuntArea area = FindArea(slot.meat);
+                if (item == null || area == null || area.IsOpen || area.Gate == null) continue;
+
+                item.locked = true;
+                item.lockedText = zoneLockedText;
+                area.Gate.onUnlocked.AddListener(() =>
+                {
+                    item.locked = false;
+                    if (stall != null) stall.RefreshIfOpen();
+                });
+            }
+        }
+
+        private static HuntArea FindArea(ItemType meat)
+        {
+            foreach (HuntArea a in HuntArea.All)
+            {
+                if (a != null && a.DropsMeat(meat)) return a;
+            }
+            return null;
+        }
 
         private void Awake()
         {
@@ -54,6 +118,41 @@ namespace GI351.KitchenGame
             if (item == null) return;
             if (item.id == cashierItemId) HireCashier();
             else if (item.id == waiterItemId) HireWaiter();
+            else
+            {
+                foreach (HunterSlot slot in hunterSlots)
+                {
+                    if (item.id == slot.itemId) { HireHunter(slot); break; }
+                }
+            }
+        }
+
+        /// <summary>จ้างลูกจ้างล่าสัตว์ของโซนตาม id สินค้า (ใช้ตอนทดสอบ)</summary>
+        public HunterStaff HireHunter(string itemId)
+        {
+            foreach (HunterSlot slot in hunterSlots)
+            {
+                if (slot.itemId == itemId) return HireHunter(slot);
+            }
+            return null;
+        }
+
+        /// <summary>จ้างพนักงานล่าสัตว์ประจำโซน: โผล่ข้างร้านนี้แล้วเดินไปล่าเอง (โซนละคน)</summary>
+        private HunterStaff HireHunter(HunterSlot slot)
+        {
+            if (hiredHunters.TryGetValue(slot.itemId, out HunterStaff existing) && existing != null) return existing;
+            if (hunterStaffPrefab == null)
+            {
+                Debug.LogWarning("[StaffHirer] ยังไม่ได้ใส่ Prefab พนักงานล่าสัตว์", this);
+                return null;
+            }
+
+            HunterStaff hunter = Instantiate(hunterStaffPrefab);
+            hunter.name = "Hunter Staff (" + slot.meat + ")";
+            hunter.Init(transform.position + (Vector3)hunterSpawnOffset, slot.meat, slot.carryCapacity, slot.damage);
+            hiredHunters[slot.itemId] = hunter;
+            Debug.Log("[StaffHirer] Hired a hunter for " + slot.meat);
+            return hunter;
         }
 
         /// <summary>จ้างพนักงานแคชเชียร์มายืนที่โต๊ะจ่ายเงิน (จ้างได้คนเดียว)</summary>

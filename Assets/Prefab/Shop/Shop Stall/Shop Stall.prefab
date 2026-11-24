@@ -427,9 +427,50 @@ MonoBehaviour:
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
+  - itemName: Customers
+    description:
+    price: 0
+    stock: 0
+    id: customers
+    tab: Store
+    locked: 0
+    lockedText: SOON
+    soldOutText: SOLD OUT
+    valueLabel: Per min
+    levels:
+    - value: 8
+      price: 0
+    - value: 10
+      price: 40
+    - value: 12
+      price: 80
+    levelCap: 0
+    onPurchased:
+      m_PersistentCalls:
+        m_Calls: []
+  - itemName: Big Orders
+    description:
+    price: 0
+    stock: 0
+    id: big_orders
+    tab: Store
+    locked: 0
+    lockedText: SOON
+    soldOutText: SOLD OUT
+    valueLabel: Max buy
+    levels:
+    - value: 1
+      price: 0
+    - value: 2
+      price: 60
+    levelCap: 0
+    onPurchased:
+      m_PersistentCalls:
+        m_Calls: []
   tabs:
   - Hunt
   - Cook
+  - Store
   emptyTabText: Coming soon
   zoneCenter: {fileID: 3278608873617845483}
   zoneRadius: 0.5
@@ -479,6 +520,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.StoreUpgrades
   bindings:
+  - itemId: customers
+    stat: 0
+  - itemId: big_orders
+    stat: 1
   - itemId: shelf_size
     stat: 2
 --- !u!1 &6295968039141360220
