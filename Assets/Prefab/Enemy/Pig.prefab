@@ -16,6 +16,8 @@ GameObject:
   - component: {fileID: 6842596359950928211}
   - component: {fileID: 2947538089407229940}
   - component: {fileID: 2757716024950038812}
+  - component: {fileID: 8233991410003456420}
+  - component: {fileID: 7681226987485011168}
   m_Layer: 3
   m_Name: Pig
   m_TagString: Untagged
@@ -232,6 +234,33 @@ CapsuleCollider2D:
   m_Offset: {x: 0.0020833313, y: 0}
   m_Size: {x: 1.4231251, y: 0.97125006}
   m_Direction: 1
+--- !u!210 &8233991410003456420
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 811237516661137993}
+  m_Enabled: 1
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_SortAtRoot: 0
+  m_Sort3DAs2D: 0
+--- !u!114 &7681226987485011168
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 811237516661137993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f55b5f8b0deb5e428326fa2c0ca040e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.YSortActor
+  footRenderer: {fileID: 0}
+  footLift: 0.05
 --- !u!1 &8192489401846739916
 GameObject:
   m_ObjectHideFlags: 0

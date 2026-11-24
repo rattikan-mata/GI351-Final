@@ -209,7 +209,7 @@ namespace GI351.KitchenGame
             float pulse = 1f + Mathf.Sin(Time.time * 3f) * 0.05f;
             SetRingWorld(purchaseRing, GetWorldPos(purchaseZoneOffset), purchaseZoneRadius * 2f * pulse);
 
-            bool inZone = Vector2.Distance(cachedPlayer.transform.position, GetWorldPos(purchaseZoneOffset)) <= purchaseZoneRadius;
+            bool inZone = Vector2.Distance(YSort.FeetOf(cachedPlayer.transform), GetWorldPos(purchaseZoneOffset)) <= purchaseZoneRadius;
             int money = MoneyManager.Instance != null ? MoneyManager.Instance.CurrentMoney : 0;
             bool canAfford = money >= purchasePrice;
 
@@ -232,7 +232,7 @@ namespace GI351.KitchenGame
             {
                 Vector3 pos = GetWorldPos(offsets[i]);
                 bool inZone = cachedPlayer != null &&
-                              Vector2.Distance(cachedPlayer.transform.position, pos) <= inputZoneRadius;
+                              Vector2.Distance(YSort.FeetOf(cachedPlayer.transform), pos) <= inputZoneRadius;
 
                 if (inZone && !isMixing && !slotFilled[i])
                 {

@@ -12,7 +12,7 @@ namespace GI351.KitchenGame
     {
         [Header("Position (ตำแหน่ง)")]
         [Tooltip("ความสูงเหนือกลางตัวผู้เล่น (หน่วยในโลก)")]
-        [SerializeField] private float heightOffset = 1.05f;
+        [SerializeField] private float heightOffset = 1.85f;
 
         [Header("Look (หน้าตา)")]
         [Tooltip("ขนาดตัวอักษร (หน่วยในโลก ต่อ 1 บรรทัดโดยประมาณ)")]
@@ -88,6 +88,7 @@ namespace GI351.KitchenGame
             var rootObj = new GameObject("Carry Counter");
             root = rootObj.transform;
             root.SetParent(transform, false);
+            YSort.PutOnTop(rootObj);   // ตัวเลขอยู่บนสุดเสมอ ไม่โดนโต๊ะ/ร้านบัง
 
             outlineTexts = new TextMesh[OutlineDirs.Length];
             for (int i = 0; i < OutlineDirs.Length; i++)

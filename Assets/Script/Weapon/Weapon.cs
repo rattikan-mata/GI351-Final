@@ -33,6 +33,9 @@ namespace GI351.KitchenGame
         [Tooltip("ล็อกทิศต่อไปจนจบช่วงตามแรงด้วย (ปิด = หันกลับได้ตั้งแต่ฟาดเสร็จ)")]
         [SerializeField] private bool lockFacingDuringFollowThrough = true;
 
+        [Tooltip("ตี 4 ทิศ: ทิศที่หัน (PlayerAim โหมด Movement = ทิศที่เดิน, โหมดเมาส์ = ทิศเมาส์) ขึ้น/ลงมากกว่าด้านข้าง = ตีขึ้น/ลง (ปิด = ตีซ้าย/ขวาอย่างเดียว)")]
+        [SerializeField] private bool fourDirectionAttack = true;
+
         [Header("Weapon Visual (ภาพกระบอง)")]
         [Tooltip("Prefab ของอาวุธที่จะโชว์ (ลาก Prefab กระบองมาใส่)")]
         [SerializeField] private GameObject weaponPrefab;
@@ -44,7 +47,7 @@ namespace GI351.KitchenGame
         [SerializeField] private float spriteRotationOffset = 0f;
 
         [Tooltip("ขนาดกระบอง คูณจากขนาดใน Prefab กระบอง (1 = เท่าเดิม, 0.7 = เล็กลง 30%)")]
-        [SerializeField] private float weaponScale = 0.7f;
+        [SerializeField] private float weaponScale = 0.91f;
 
         [Tooltip("ลำดับการวาดของกระบอง = ลำดับของตัวละคร + ค่านี้ (บวก = อยู่หน้าตัวละคร)")]
         [SerializeField] private int weaponSortingOrderOffset = 10;
@@ -56,11 +59,11 @@ namespace GI351.KitchenGame
         [SerializeField] private bool snapToPixel = true;
 
         [Header("Hold Pose (ท่าถือ: ลอยข้างตัวด้านหน้า)")]
-        [Tooltip("ตำแหน่งกลางกระบองจากกลางตัว (x = ไปข้างหน้า ตอนหันซ้ายสะท้อนให้เอง, y = สูงขึ้น)")]
-        [SerializeField] private Vector2 holdOffset = new Vector2(0.72f, 0f);
+        [Tooltip("หันซ้าย/ขวา: ตำแหน่งกลางกระบองจากกลางตัว (x บวก = ไปข้างหน้า, ลบ = ด้านหลังตัว ตอนหันซ้ายสะท้อนให้เอง, y = สูงขึ้น)")]
+        [SerializeField] private Vector2 holdOffset = new Vector2(0.38f, 0.22f);
 
-        [Tooltip("มุมกระบองตอนถือ (องศา) 90 = ตั้งตรง, 60 = เอียงไปข้างหน้า 30° หัวกระบองชี้ขึ้น")]
-        [SerializeField] private float holdAngle = 60f;
+        [Tooltip("มุมกระบองตอนถือ (องศา) 90 = ตั้งตรง, น้อยกว่า 90 = หัวเอียงไปข้างหน้า, มากกว่า 90 = หัวเอียงไปด้านหลัง")]
+        [SerializeField] private float holdAngle = 65f;
 
         [Tooltip("ระยะที่ลอยขึ้นลง (idle bob) 0.0625 = 1 พิกเซล")]
         [SerializeField] private float holdBobHeight = 0.0625f;
@@ -74,12 +77,31 @@ namespace GI351.KitchenGame
         [Tooltip("เวลาที่กระบองเลื่อนข้ามไปอีกฝั่งตอนหันกลับ (วินาที)")]
         [SerializeField] private float sideSlideTime = 0.08f;
 
+        [Header("4 Directions (ท่าถือตามทิศที่ตัวละครหัน)")]
+        [Tooltip("หันหน้า (เดินลง): ตำแหน่งกลางกระบองจากกลางตัว (x บวก = ข้างขวาของจอ) ถือมือขวา = มือที่อยู่ฝั่งซ้ายของจอ")]
+        [SerializeField] private Vector2 holdOffsetFront = new Vector2(-0.51f, 0.42f);
+
+        [Tooltip("หันหน้า: มุมกระบอง (90 = ตั้งตรง, มากกว่า 90 = เอียงออกซ้าย)")]
+        [SerializeField] private float holdAngleFront = 102f;
+
+        [Tooltip("หันหลัง (เดินขึ้น): ตำแหน่งกลางกระบองจากกลางตัว ถือมือขวา = ฝั่งขวาของจอ")]
+        [SerializeField] private Vector2 holdOffsetBack = new Vector2(0.49f, 0.43f);
+
+        [Tooltip("หันหลัง: มุมกระบอง")]
+        [SerializeField] private float holdAngleBack = 80f;
+
+        [Tooltip("หันหลัง / หันซ้าย / หันขวา วาดกระบองไว้หลังตัวละคร (ตัวละครทับ), หันหน้า วาดไว้หน้าตัว")]
+        [SerializeField] private bool drawBehindWhenBack = true;
+
+        [Tooltip("เวลาที่กระบองไหลไปท่าใหม่ตอนเปลี่ยนทิศ (วินาที) มากขึ้น = นุ่มขึ้น")]
+        [SerializeField] private float facingBlendTime = 0.1f;
+
         [Header("Swing (ท่าตี 3 จังหวะ)")]
         [Tooltip("จุดหมุนของท่าเหวี่ยงจากกลางตัว (x = ไปข้างหน้า, y = สูงขึ้น) ครึ่งวงกลมของ hitbox ก็ใช้จุดนี้เป็นศูนย์กลาง")]
-        [SerializeField] private Vector2 swingPivotOffset = new Vector2(0.25f, 0.1f);
+        [SerializeField] private Vector2 swingPivotOffset = new Vector2(0.4f, 0.16f);
 
         [Tooltip("ระยะจากจุดหมุนถึงกลางกระบองตอนเหวี่ยง")]
-        [SerializeField] private float swingRadius = 0.55f;
+        [SerializeField] private float swingRadius = 0.72f;
 
         [Tooltip("1) ง้าง: เวลา (วินาที)")]
         [SerializeField] private float windupTime = 0.30f;
@@ -111,7 +133,7 @@ namespace GI351.KitchenGame
         [SerializeField] private int damage = 25;
 
         [Tooltip("รัศมีของ hitbox ครึ่งวงกลมฝั่งที่หัน (หน่วยโลก) วัดจากจุดหมุน")]
-        [SerializeField] private float attackRange = 1.0f;
+        [SerializeField] private float attackRange = 1.3f;
 
         [Tooltip("คูลดาวน์ก่อนตีครั้งถัดไป (วินาที นับจากเริ่มตี) ตั้ง 0 เพราะความช้าอยู่ในท่าเหวี่ยงแล้ว")]
         [SerializeField] private float attackCooldown = 0f;
@@ -142,10 +164,10 @@ namespace GI351.KitchenGame
         [SerializeField] private float swooshArcAngle = 70f;
 
         [Tooltip("รัศมีด้านในของแสงกวาด (หน่วยโลก)")]
-        [SerializeField] private float swooshInnerRadius = 0.55f;
+        [SerializeField] private float swooshInnerRadius = 0.72f;
 
         [Tooltip("รัศมีด้านนอกของแสงกวาด (หน่วยโลก)")]
-        [SerializeField] private float swooshOuterRadius = 1.1f;
+        [SerializeField] private float swooshOuterRadius = 1.43f;
 
         [Tooltip("เวลาที่แสงจางหายหลังฟาดเสร็จ (วินาที)")]
         [SerializeField] private float swooshFadeTime = 0.1f;
@@ -165,6 +187,9 @@ namespace GI351.KitchenGame
         private SwingPhase phase = SwingPhase.Idle;
         private float phaseTimer;
         private float swingSide = 1f;
+        private float swingRot;     // หมุนท่าเหวี่ยง: 0 = ซ้าย/ขวา, 90 = ตีขึ้น, -90 = ตีลง
+        private float swooshRot;
+        private UnityEngine.Rendering.SortingGroup ownerSortingGroup;
         private readonly HashSet<IDamageable> swingHits = new HashSet<IDamageable>();
         private bool facingLockedByMe;
         private bool bufferedAttack;
@@ -172,6 +197,11 @@ namespace GI351.KitchenGame
         private float nextAttackTime;
 
         // ท่าถือ / ท่าปัจจุบัน
+        private PlayerSpriteAnimator spriteAnimator;
+        private Vector2 holdPoseOffset;
+        private float holdPoseAngle;
+        private bool holdPoseInit;
+        private bool drawnBehind;
         private float sideBlend = 1f;
         private Vector3 smoothedAnchor;
         private bool anchorInit;
@@ -234,6 +264,7 @@ namespace GI351.KitchenGame
             }
 
             playerAim = GetComponentInParent<PlayerAim>();
+            spriteAnimator = owner != null ? owner.GetComponentInChildren<PlayerSpriteAnimator>() : null;
 
             SetupWeaponVisual();
             sideBlend = CurrentFacingSign();
@@ -402,6 +433,21 @@ namespace GI351.KitchenGame
         /// </summary>
         public void PerformAttack()
         {
+            attackDirectionOverride = null;
+            TryAttack();
+        }
+
+        /// <summary>สั่งตีไปทางที่กำหนด (ไม่อ่านเมาส์) เช่น ปุ่มบนจอมือถือ หรือทดสอบ</summary>
+        public void PerformAttack(Vector2 direction)
+        {
+            attackDirectionOverride = direction;
+            TryAttack();
+        }
+
+        private Vector2? attackDirectionOverride;
+
+        private void TryAttack()
+        {
             if (playerHealth != null && playerHealth.IsDead) return;
 
             if (phase == SwingPhase.Idle)
@@ -467,6 +513,27 @@ namespace GI351.KitchenGame
             AudioManager.Play(SoundId.Attack);
             if (playerAim != null) playerAim.RefreshFacing();
             swingSide = CurrentFacingSign();
+            swingRot = 0f;
+            if (fourDirectionAttack && !attackDirectionOverride.HasValue && spriteAnimator != null
+                && playerAim != null && playerAim.Mode == PlayerAim.AimMode.Movement)
+            {
+                // ตีตามทิศที่ตัวละครหันอยู่ (ทิศเดินล่าสุด) ให้ตรงกับภาพตัวละครพอดี
+                PlayerSpriteAnimator.Facing f = spriteAnimator.CurrentFacing;
+                if (f == PlayerSpriteAnimator.Facing.Back) swingRot = 90f;
+                else if (f == PlayerSpriteAnimator.Facing.Front) swingRot = -90f;
+            }
+            else if (fourDirectionAttack && (playerAim != null || attackDirectionOverride.HasValue))
+            {
+                Vector2 m = attackDirectionOverride ?? playerAim.MouseDirection;
+                if (attackDirectionOverride.HasValue && Mathf.Abs(m.x) >= Mathf.Abs(m.y) && Mathf.Abs(m.x) > 0.01f) swingSide = m.x > 0f ? 1f : -1f;
+                if (Mathf.Abs(m.y) > Mathf.Abs(m.x)) swingRot = m.y > 0f ? 90f : -90f;
+            }
+            if (swingRot != 0f) swingSide = 1f;   // ตีขึ้น/ลง: ใช้กรอบเดียว (กวาดผ่านทิศที่ตีพอดี)
+            if (spriteAnimator != null)
+            {
+                spriteAnimator.SetAttackFacing(swingRot > 0f ? PlayerSpriteAnimator.Facing.Back
+                    : swingRot < 0f ? PlayerSpriteAnimator.Facing.Front : PlayerSpriteAnimator.Facing.Side);
+            }
             phase = SwingPhase.Windup;
             phaseTimer = 0f;
             swingHits.Clear();
@@ -484,7 +551,7 @@ namespace GI351.KitchenGame
                 GetHoldPose(out windupStartOffset, out windupStartAngle);
             }
 
-            sideBlend = swingSide;
+            if (swingRot == 0f) sideBlend = swingSide;
             if (lockFacingDuringSwing) LockFacing();
             StopSwoosh();
 
@@ -536,6 +603,7 @@ namespace GI351.KitchenGame
 
         private void EndSwing()
         {
+            if (spriteAnimator != null) spriteAnimator.ClearAttackFacing();
             phase = SwingPhase.Idle;
             phaseTimer = 0f;
             UnlockFacing();
@@ -544,6 +612,7 @@ namespace GI351.KitchenGame
         /// <summary>ยกเลิกท่าเหวี่ยงทันที (ตาย / ปิดสคริปต์) ปลดล็อกทิศและซ่อนแสงกวาด</summary>
         private void CancelSwing()
         {
+            if (spriteAnimator != null) spriteAnimator.ClearAttackFacing();
             phase = SwingPhase.Idle;
             phaseTimer = 0f;
             swingHits.Clear();
@@ -569,10 +638,10 @@ namespace GI351.KitchenGame
 
         #region Hit detection (เฉพาะช่วงฟาด)
 
-        private Vector2 PivotWorld(float side)
+        private Vector2 PivotWorld(float side, float rot)
         {
             Vector3 p = OwnerPosition;
-            return new Vector2(p.x + swingPivotOffset.x * side, p.y + swingPivotOffset.y);
+            return (Vector2)p + SwingToWorld(swingPivotOffset, side, rot);
         }
 
         /// <summary>
@@ -581,7 +650,7 @@ namespace GI351.KitchenGame
         /// </summary>
         private void ProcessStrikeHits(bool final)
         {
-            Vector2 pivot = PivotWorld(swingSide);
+            Vector2 pivot = PivotWorld(swingSide, swingRot);
             float clubAngle = Mathf.Lerp(windupAngle, strikeEndAngle, Tween.Evaluate(strikeEase, PhaseProgress()));
 
             Collider2D[] hitColliders = Physics2D.OverlapCircleAll(pivot, attackRange, EffectiveTargetLayer);
@@ -592,11 +661,12 @@ namespace GI351.KitchenGame
                 if (!col.TryGetComponent<IDamageable>(out var damageable)) continue;
                 if (swingHits.Contains(damageable)) continue;
 
-                Vector2 rel = col.ClosestPoint(pivot) - pivot;
-                float forward = rel.x * swingSide;
+                // แปลงเป็นกรอบของท่าเหวี่ยง (เหมือนหันขวา) ตีขึ้น/ลงก็ใช้กฎเดียวกัน
+                Vector2 rel = WorldToSwing(col.ClosestPoint(pivot) - pivot, swingSide, swingRot);
+                float forward = rel.x;
                 if (forward < -hitBackTolerance) continue;
 
-                // มุมของศัตรูจากจุดหมุน (หันขวา: 0 = ตรงหน้า, + = สูงกว่า, - = ต่ำกว่า)
+                // มุมของศัตรูจากจุดหมุน (กรอบหันขวา: 0 = ตรงหน้า, + = สูงกว่า, - = ต่ำกว่า)
                 float bearing = Mathf.Atan2(rel.y, Mathf.Max(forward, 0f)) * Mathf.Rad2Deg;
                 if (!final && clubAngle > bearing + hitSweepLeadAngle) continue;
 
@@ -667,24 +737,124 @@ namespace GI351.KitchenGame
             return snapToPixel ? Tween.Snap(v, pixelsPerUnit) : v;
         }
 
-        /// <summary>ท่าถือ: ตำแหน่งกลางกระบองสัมพัทธ์กับกลางตัว + มุมโลก (ตอนเลื่อนข้ามฝั่งมุมจะค่อยๆ กลับด้าน)</summary>
+        /// <summary>ทิศที่ตัวละครหันอยู่ (ไม่มีตัวสลับภาพ 4 ทิศ = ถือแบบหันข้างอย่างเดียว)</summary>
+        private PlayerSpriteAnimator.Facing CurrentView =>
+            spriteAnimator != null ? spriteAnimator.CurrentFacing : PlayerSpriteAnimator.Facing.Side;
+
+        /// <summary>ท่าถือเป้าหมายตามทิศที่หัน: ข้าง = ข้างหน้าตัว, หน้า = ต่ำข้างลำตัว, หลัง = ข้างลำตัวด้านหลัง (ฝั่งซ้าย/ขวาตามที่หันล่าสุด)</summary>
+        private void GetHoldTarget(out Vector2 offset, out float angle)
+        {
+            float s = sideBlend;   // -1..1 เลื่อนข้ามฝั่งแบบนุ่มอยู่แล้ว
+            switch (CurrentView)
+            {
+                // หันหน้า/หันหลัง: ถือข้างลำตัวฝั่งเดียวเสมอ (ไม่สลับตามเมาส์ ไม่งั้นกระบองเลื่อนผ่านหน้าตัวละคร)
+                case PlayerSpriteAnimator.Facing.Front:
+                    offset = holdOffsetFront;
+                    angle = holdAngleFront;
+                    break;
+                case PlayerSpriteAnimator.Facing.Back:
+                    offset = holdOffsetBack;
+                    angle = holdAngleBack;
+                    break;
+                default:
+                    offset = new Vector2(holdOffset.x * s, holdOffset.y);
+                    angle = Mathf.Lerp(holdAngle, 180f - holdAngle, (1f - s) * 0.5f);
+                    break;
+            }
+        }
+
+        /// <summary>ไหลท่าถือเข้าหาท่าของทิศปัจจุบัน (เรียกเฟรมละครั้ง) เปลี่ยนทิศแล้วกระบองค่อยๆ เลื่อน/หมุนไป ไม่วาร์ป</summary>
+        private void UpdateHoldPose(float dt)
+        {
+            GetHoldTarget(out Vector2 targetOffset, out float targetAngle);
+            if (!holdPoseInit)
+            {
+                holdPoseOffset = targetOffset;
+                holdPoseAngle = targetAngle;
+                holdPoseInit = true;
+                return;
+            }
+            float k = facingBlendTime <= 0.0001f ? 1f : 1f - Mathf.Exp(-dt / facingBlendTime);
+            holdPoseOffset = Vector2.Lerp(holdPoseOffset, targetOffset, k);
+            holdPoseAngle = Mathf.LerpAngle(holdPoseAngle, targetAngle, k);
+        }
+
+        /// <summary>ท่าถือ: ตำแหน่งกลางกระบองสัมพัทธ์กับกลางตัว + มุมโลก</summary>
         private void GetHoldPose(out Vector2 offset, out float worldAngle)
         {
-            Vector3 center = smoothedAnchor + new Vector3(holdOffset.x * sideBlend, holdOffset.y + BobOffset(), 0f);
+            if (!holdPoseInit) UpdateHoldPose(0f);
             Vector3 ownerPos = OwnerPosition;
-            if (!anchorInit) center = ownerPos + new Vector3(holdOffset.x * sideBlend, holdOffset.y, 0f);
+            Vector3 basePos = anchorInit ? smoothedAnchor : ownerPos;
+            Vector3 center = basePos + new Vector3(holdPoseOffset.x, holdPoseOffset.y + (anchorInit ? BobOffset() : 0f), 0f);
             offset = new Vector2(center.x - ownerPos.x, center.y - ownerPos.y);
-            worldAngle = Mathf.Lerp(holdAngle, 180f - holdAngle, (1f - sideBlend) * 0.5f);
+            worldAngle = holdPoseAngle;
+        }
+
+        /// <summary>
+        /// หันหลัง / หันซ้าย / หันขวา: กระบองอยู่หลังตัวละคร (ตัวละครทับ) หันหน้า: กระบองอยู่หน้าตัว
+        /// ตอนเหวี่ยงใช้กฎเดียวกัน (ตีขึ้น/ตีข้าง = หลังตัว, ตีลง = หน้าตัว) เลเยอร์ไม่สลับกลางท่า
+        /// </summary>
+        private void UpdateWeaponSorting()
+        {
+            // ใช้กฎเดียวกันทั้งตอนถือและตอนตี เลเยอร์จึงไม่สลับกลางท่าเหวี่ยง
+            bool behind = false;
+            if (drawBehindWhenBack)
+            {
+                if (phase == SwingPhase.Idle)
+                {
+                    PlayerSpriteAnimator.Facing view = CurrentView;
+                    behind = view == PlayerSpriteAnimator.Facing.Back || view == PlayerSpriteAnimator.Facing.Side;
+                }
+                else
+                {
+                    // ตีขึ้น/ตีข้าง = หลังตัว (ตัวละครทับกระบอง), ตีลง = หน้าตัว
+                    behind = swingRot >= 0f;
+                }
+            }
+            if (behind == drawnBehind || weaponRenderers == null) return;
+            drawnBehind = behind;
+            int baseOrder = playerSpriteRenderer != null ? playerSpriteRenderer.sortingOrder : 0;
+            foreach (var sr in weaponRenderers)
+            {
+                if (sr != null) sr.sortingOrder = behind ? baseOrder - 1 : baseOrder + weaponSortingOrderOffset;
+            }
+            // แสงกวาดอยู่ชั้นเดียวกับกระบอง (หลังกระบองนิดหนึ่ง)
+            if (swooshRenderer != null) swooshRenderer.sortingOrder = behind ? baseOrder - 2 : baseOrder + weaponSortingOrderOffset - 1;
         }
 
         /// <summary>ท่าเหวี่ยงที่มุม a (องศาแบบหันขวา) ของฝั่ง swingSide: กระบองวนรอบจุดหมุนที่รัศมี swingRadius</summary>
         private void GetSwingPose(float a, out Vector2 offset, out float worldAngle)
         {
             float rad = a * Mathf.Deg2Rad;
-            offset = new Vector2(
-                swingPivotOffset.x * swingSide + Mathf.Cos(rad) * swingSide * swingRadius,
+            Vector2 local = new Vector2(
+                swingPivotOffset.x + Mathf.Cos(rad) * swingRadius,
                 swingPivotOffset.y + Mathf.Sin(rad) * swingRadius);
-            worldAngle = swingSide > 0f ? a : 180f - a;
+            offset = SwingToWorld(local, swingSide, swingRot);
+            worldAngle = SwingAngleToWorld(a, swingSide, swingRot);
+        }
+
+        private static Vector2 Rotate(Vector2 v, float deg)
+        {
+            float r = deg * Mathf.Deg2Rad;
+            float c = Mathf.Cos(r), sn = Mathf.Sin(r);
+            return new Vector2(v.x * c - v.y * sn, v.x * sn + v.y * c);
+        }
+
+        /// <summary>กรอบท่าเหวี่ยง (หันขวา) -> โลก: สะท้อนซ้าย/ขวาก่อน แล้วหมุนตามทิศที่ตี</summary>
+        private static Vector2 SwingToWorld(Vector2 local, float side, float rot)
+        {
+            return Rotate(new Vector2(local.x * side, local.y), rot);
+        }
+
+        private static Vector2 WorldToSwing(Vector2 world, float side, float rot)
+        {
+            Vector2 v = Rotate(world, -rot);
+            return new Vector2(v.x * side, v.y);
+        }
+
+        private static float SwingAngleToWorld(float a, float side, float rot)
+        {
+            return (side > 0f ? a : 180f - a) + rot;
         }
 
         private void LateUpdate()
@@ -717,6 +887,8 @@ namespace GI351.KitchenGame
                 smoothedAnchor = ownerPos;
             }
             anchorInit = true;
+            UpdateHoldPose(dt);
+            UpdateWeaponSorting();
 
             Vector2 offset;
             float angle;
@@ -769,10 +941,10 @@ namespace GI351.KitchenGame
                 new Vector3(x, y, ownerPos.z),
                 Quaternion.Euler(0f, 0f, angle + spriteRotationOffset));
 
-            // กลับด้านภาพกระบองตามฝั่ง (ไม่ให้กลับหัว)
+            // กลับด้านภาพกระบองตามฝั่ง (ไม่ให้กลับหัว) ตอนถือใช้มุมจริง: กระบองเอียงไปทางซ้าย (มุมเกิน 90) = พลิก
             if (weaponSpriteRenderer != null)
             {
-                weaponSpriteRenderer.flipY = side < 0f;
+                weaponSpriteRenderer.flipY = phase == SwingPhase.Idle ? Mathf.Cos(angle * Mathf.Deg2Rad) < 0f : side < 0f;
             }
 
             UpdateSwoosh(dt, ownerPos);
@@ -790,6 +962,7 @@ namespace GI351.KitchenGame
             if (swooshObject == null) return;
 
             swooshSide = swingSide;
+            swooshRot = swingRot;
             swooshFading = false;
             swooshAlpha = 0f;
             swooshFacingAngle = windupAngle;
@@ -827,12 +1000,18 @@ namespace GI351.KitchenGame
                 return;
             }
 
-            Vector2 pivot = PivotWorld(swooshSide);
+            Vector2 pivot = PivotWorld(swooshSide, swooshRot);
             swooshObject.transform.SetPositionAndRotation(
                 new Vector3(pivot.x, pivot.y, ownerPos.z),
-                Quaternion.Euler(0f, 0f, swooshSide > 0f ? swooshFacingAngle : 180f - swooshFacingAngle));
+                Quaternion.Euler(0f, 0f, SwingAngleToWorld(swooshFacingAngle, swooshSide, swooshRot)));
 
             swooshRenderer.flipY = swooshSide < 0f;
+
+            // แสงกวาดไม่ได้อยู่ในตัวผู้เล่น: ตามลำดับชั้นของตัวผู้เล่น (เรียงตาม Y) หน้า/หลังตามกระบอง
+            if (ownerSortingGroup == null && playerSpriteRenderer != null)
+                ownerSortingGroup = playerSpriteRenderer.GetComponentInParent<UnityEngine.Rendering.SortingGroup>();
+            if (ownerSortingGroup != null)
+                swooshRenderer.sortingOrder = ownerSortingGroup.sortingOrder + (drawnBehind ? -1 : 1);
             Color c = swooshColor;
             c.a = Mathf.Max(0f, swooshAlpha);
             swooshRenderer.color = c;
@@ -852,7 +1031,7 @@ namespace GI351.KitchenGame
             if (playerSpriteRenderer != null) swooshRenderer.sortingLayerID = playerSpriteRenderer.sortingLayerID;
             int baseOrder = playerSpriteRenderer != null ? playerSpriteRenderer.sortingOrder : 0;
             // อยู่หน้าตัวละคร หลังตัวกระบอง
-            swooshRenderer.sortingOrder = baseOrder + weaponSortingOrderOffset - 1;
+            swooshRenderer.sortingOrder = drawnBehind ? baseOrder - 2 : baseOrder + weaponSortingOrderOffset - 1;
         }
 
         /// <summary>

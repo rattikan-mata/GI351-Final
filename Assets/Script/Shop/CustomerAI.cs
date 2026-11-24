@@ -740,6 +740,7 @@ namespace GI351.KitchenGame
             {
                 int layer = spriteRenderer != null ? spriteRenderer.sortingLayerID : 0;
                 carryBadgeRoot = new GameObject("CarryBadge");
+                YSort.PutOnTop(carryBadgeRoot);   // ป้ายเหนือหัวอยู่บนสุดเสมอ
                 carryBadgeRoot.transform.SetParent(transform, false);
                 carryBadge = WorldCountBadge.Create(carryBadgeRoot.transform, "Badge", new Vector2(0.72f, 0.36f),
                     new Color(1f, 0.8f, 0.28f, 1f), new Color(0.42f, 0.26f, 0.12f, 1f), new Color(0.25f, 0.15f, 0.08f, 1f), layer, 55);
@@ -832,6 +833,7 @@ namespace GI351.KitchenGame
             if (wantBubbleObject == null)
             {
                 wantBubbleObject = new GameObject("WantBubble");
+                YSort.PutOnTop(wantBubbleObject);   // ป้ายเหนือหัวอยู่บนสุดเสมอ
                 wantBubbleObject.transform.SetParent(transform, false);
 
                 float headY = 1.0f;
@@ -979,6 +981,7 @@ namespace GI351.KitchenGame
             if (exclamationObject == null)
             {
                 exclamationObject = new GameObject("ExclamationMark");
+                YSort.PutOnTop(exclamationObject);   // ป้ายเหนือหัวอยู่บนสุดเสมอ
                 exclamationObject.transform.SetParent(transform, false);
 
                 // วางไว้เหนือหัวโจรตามขนาดสไปรต์จริง
@@ -1028,8 +1031,9 @@ namespace GI351.KitchenGame
             if (dizzyObject == null)
             {
                 dizzyObject = new GameObject("DizzyIndicator");
+                YSort.PutOnTop(dizzyObject);   // ป้ายเหนือหัวอยู่บนสุดเสมอ
                 dizzyObject.transform.SetParent(transform);
-                dizzyObject.transform.localPosition = new Vector3(0f, 0.8f, -0.1f);
+                dizzyObject.transform.localPosition = new Vector3(0f, spriteRenderer != null ? (spriteRenderer.bounds.max.y - transform.position.y) / Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.y)) - 0.3f : 0.8f, -0.1f);
                 var tm = dizzyObject.AddComponent<TextMesh>();
                 tm.text = "💫";
                 tm.fontSize = 52;

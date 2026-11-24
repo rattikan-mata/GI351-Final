@@ -108,6 +108,8 @@ GameObject:
   - component: {fileID: 8370949968597705460}
   - component: {fileID: 5691464730723614357}
   - component: {fileID: 8532301262830496536}
+  - component: {fileID: 761449825714250483}
+  - component: {fileID: 485589618066966594}
   m_Layer: 3
   m_Name: Chicken
   m_TagString: Untagged
@@ -316,3 +318,30 @@ CapsuleCollider2D:
   m_Offset: {x: -0.0008250773, y: 0}
   m_Size: {x: 0.8212871, y: 1.1613861}
   m_Direction: 0
+--- !u!210 &761449825714250483
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8703162885063433997}
+  m_Enabled: 1
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_SortAtRoot: 0
+  m_Sort3DAs2D: 0
+--- !u!114 &485589618066966594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8703162885063433997}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f55b5f8b0deb5e428326fa2c0ca040e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.YSortActor
+  footRenderer: {fileID: 0}
+  footLift: 0.05

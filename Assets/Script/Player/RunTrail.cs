@@ -31,7 +31,7 @@ namespace GI351.KitchenGame
         [SerializeField] private float widthPerLevel = 0.05f;
 
         [Tooltip("ตำแหน่งที่หางออก เทียบกับกลางตัว (หน่วยในโลก) y ติดลบ = ต่ำลงไปทางเท้า")]
-        [SerializeField] private Vector2 offset = new Vector2(0f, -0.3f);
+        [SerializeField] private Vector2 offset = new Vector2(0f, -0.6f);
 
         [Tooltip("ต้องวิ่งเร็วกว่านี้ (หน่วย/วินาที) ถึงจะมีหาง")]
         [SerializeField] private float minSpeed = 1f;

@@ -18,6 +18,9 @@ GameObject:
   - component: {fileID: 6101388199149423569}
   - component: {fileID: 8825630694182402744}
   - component: {fileID: 5515814336802129285}
+  - component: {fileID: 233609908248474703}
+  - component: {fileID: 6763349495811124558}
+  - component: {fileID: 1429406148259706337}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -92,7 +95,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 10
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -9095717837082945937, guid: 207ee8102dd4143d288186ef0be518ee, type: 3}
+  m_Sprite: {fileID: 21300000, guid: f1b1142b66c3666409a273d6c94c02e7, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -137,9 +140,9 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Size: {x: 1, y: 2}
-  m_Direction: 0
+  m_Offset: {x: 0, y: -1.4284439}
+  m_Size: {x: 1.0722251, y: 0.42889005}
+  m_Direction: 1
 --- !u!50 &110802087264818116
 Rigidbody2D:
   serializedVersion: 5
@@ -180,6 +183,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.PlayerMovement
   moveSpeed: 5
+  stepInterval: 0.32
   spriteRenderer: {fileID: 0}
 --- !u!114 &79929230217973858
 MonoBehaviour:
@@ -254,7 +258,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d18704af307bf1446997ca1e065cbaea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.PlayerAim
-  aimMode: 0
+  aimMode: 2
   sideDeadZone: 0.15
   deadZone: 0.3
   flipSpriteToAim: 1
@@ -272,7 +276,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0c1aa6c6ba8d354d9716afff244eb78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CarryCounter
-  heightOffset: 1.05
+  heightOffset: 1.48
   textHeight: 0.36
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   fullColor: {r: 1, g: 0.35, b: 0.3, a: 1}
@@ -304,10 +308,72 @@ MonoBehaviour:
   trailTime: 0.22
   startWidth: 0.45
   widthPerLevel: 0.05
-  offset: {x: 0, y: -0.3}
+  offset: {x: 0, y: -0.48}
   minSpeed: 1
   trailMaterial: {fileID: 2100000, guid: e7ab7bf42f220934580fcc495f20674b, type: 2}
   sortingOrderOffset: -1
+--- !u!114 &233609908248474703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 843211722710816562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 197e74afb7ca19f42b824bb82dc482c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.PlayerSpriteAnimator
+  spriteRenderer: {fileID: 3876473651640678323}
+  body: {fileID: 110802087264818116}
+  idle:
+  - {fileID: 21300000, guid: f1b1142b66c3666409a273d6c94c02e7, type: 3}
+  - {fileID: 21300000, guid: 51b3b8c1c7d38e34a9a01338dd3211d0, type: 3}
+  - {fileID: 21300000, guid: 9ae487f946a12d3448239e31ca9d7eff, type: 3}
+  walkFront:
+  - {fileID: 21300000, guid: 85ff9ee84aa53494598c8e7298470811, type: 3}
+  - {fileID: 21300000, guid: 8322bc99f6e583f42a400c5e73f3eac2, type: 3}
+  - {fileID: 21300000, guid: 82d9396a346468c4ea3722745c9d42d2, type: 3}
+  walkBack:
+  - {fileID: 21300000, guid: abf39f7865cf40547958b1ef18050183, type: 3}
+  - {fileID: 21300000, guid: 6eab34d549180f4479a653d30415c862, type: 3}
+  - {fileID: 21300000, guid: 7dc82b29b477e6e4b97bb0c1679f7b45, type: 3}
+  walkSide:
+  - {fileID: 21300000, guid: f7d42f53002ab7d48a2afc6822c81884, type: 3}
+  - {fileID: 21300000, guid: bc4b8f51c2358cc4b86b16a294d1ff03, type: 3}
+  - {fileID: 21300000, guid: c02b0e53b4ceb404b882e122548b9f7d, type: 3}
+  walkFps: 9
+  idleFps: 2
+  blinkEvery: {x: 2.5, y: 4.5}
+  blinkTime: 0.14
+  moveThreshold: 0.15
+--- !u!210 &6763349495811124558
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 843211722710816562}
+  m_Enabled: 1
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_SortAtRoot: 0
+  m_Sort3DAs2D: 0
+--- !u!114 &1429406148259706337
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 843211722710816562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f55b5f8b0deb5e428326fa2c0ca040e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.YSortActor
+  footRenderer: {fileID: 3876473651640678323}
+  footLift: 0.05
 --- !u!1 &3009060927515983737
 GameObject:
   m_ObjectHideFlags: 0
@@ -354,21 +420,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.Weapon
   lockFacingDuringSwing: 1
   lockFacingDuringFollowThrough: 1
+  fourDirectionAttack: 1
   weaponPrefab: {fileID: 1264822325981503142, guid: b473436e01580074a83c50b64fd647e3, type: 3}
   weaponVisualObject: {fileID: 0}
   spriteRotationOffset: 0
-  weaponScale: 0.7
+  weaponScale: 0.91
   weaponSortingOrderOffset: 10
   pixelsPerUnit: 16
   snapToPixel: 1
-  holdOffset: {x: 0.72, y: 0}
-  holdAngle: 60
+  holdOffset: {x: 0.38, y: 0.22}
+  holdAngle: 65
   holdBobHeight: 0.0625
   holdBobPeriod: 0.8
   holdFollowSmoothTime: 0.06
   sideSlideTime: 0.08
-  swingPivotOffset: {x: 0.25, y: 0.1}
-  swingRadius: 0.55
+  holdOffsetFront: {x: -0.51, y: 0.42}
+  holdAngleFront: 102
+  holdOffsetBack: {x: 0.49, y: 0.43}
+  holdAngleBack: 80
+  drawBehindWhenBack: 1
+  facingBlendTime: 0.1
+  swingPivotOffset: {x: 0.4, y: 0.16}
+  swingRadius: 0.72
   windupTime: 0.3
   windupAngle: 110
   windupEase: 2
@@ -379,7 +452,7 @@ MonoBehaviour:
   followThroughEase: 7
   inputBufferTime: 0.4
   damage: 25
-  attackRange: 1
+  attackRange: 1.3
   attackCooldown: 0
   attackSpeed: 1
   knockbackForce: 3
@@ -391,8 +464,8 @@ MonoBehaviour:
   swooshEnabled: 1
   swooshColor: {r: 1, g: 1, b: 1, a: 0.55}
   swooshArcAngle: 70
-  swooshInnerRadius: 0.55
-  swooshOuterRadius: 1.1
+  swooshInnerRadius: 0.72
+  swooshOuterRadius: 1.43
   swooshFadeTime: 0.1
   onAttack:
     m_PersistentCalls:

@@ -12,6 +12,9 @@ GameObject:
   - component: {fileID: 5329153628373021188}
   - component: {fileID: 7754658183204335017}
   - component: {fileID: 8234024633864701401}
+  - component: {fileID: 8651835074671515760}
+  - component: {fileID: 6937279928037162306}
+  - component: {fileID: 6558531662628645913}
   m_Layer: 0
   m_Name: Thief
   m_TagString: Untagged
@@ -83,7 +86,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 2
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 14d7c02dc8aa6f247914c93d7a670937, type: 3}
   m_Color: {r: 0.4, g: 0.45, b: 0.55, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -135,18 +138,84 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CustomerAI
   moveSpeed: 3.2
   patienceDuration: 15
+  normalCustomerLeavesWhenImpatient: 0
   wantSpecificFood: 0
   preferredDish: 2
+  dishesToBuy: {x: 1, y: 3}
+  angryStartRatio: 0.4
+  angryColor: {r: 1, g: 0.47, b: 0.38, a: 1}
   avoidanceRadius: 0.4
   avoidanceMargin: 0.15
   isThief: 1
   thiefHealth: 20
   thiefFleeSpeedMultiplier: 1.3
-  thiefEscapedMessage: "\u0E42\u0E08\u0E23\u0E2B\u0E19\u0E35\u0E44\u0E1B\u0E44\u0E14\u0E49!"
   targetCounter: {fileID: 8507393914842812104, guid: 7c826388d620c024e8e792ab45d5684e, type: 3}
   exitPoint: {fileID: 0}
+  cashier: {fileID: 0}
+  heldDishScale: 0.6
   happyIcon: {fileID: 0}
   angryIcon: {fileID: 0}
   spriteRenderer: {fileID: 0}
   hurtColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   hurtFlashDuration: 0.18
+--- !u!114 &8651835074671515760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1480874739530231457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85d53d1b79d691545b667b554f8b76bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CustomerSpriteAnimator
+  spriteRenderer: {fileID: 5329153628373021188}
+  body: {fileID: 7754658183204335017}
+  looks:
+  - name: Female
+    idle:
+    - {fileID: 21300000, guid: 14d7c02dc8aa6f247914c93d7a670937, type: 3}
+    - {fileID: 21300000, guid: a2f12fcb7b26803498c9c41731a31967, type: 3}
+    walk:
+    - {fileID: 21300000, guid: fe427d6628b07994d9aade04db211a83, type: 3}
+    - {fileID: 21300000, guid: 43605dd20d90d184b8d26ea008280362, type: 3}
+    - {fileID: 21300000, guid: 08e60a3c821f25940b9789648894f82e, type: 3}
+  - name: Male
+    idle:
+    - {fileID: 21300000, guid: 5b6da743f50b4374683ea6918f6b03bd, type: 3}
+    - {fileID: 21300000, guid: 71144f9be04ba3449a58c286b100ac7b, type: 3}
+    walk:
+    - {fileID: 21300000, guid: 0dfbf4573c7328049b2337397fc45c25, type: 3}
+    - {fileID: 21300000, guid: 1b3d6ea97070db04e8130cb5d4c4f1ba, type: 3}
+    - {fileID: 21300000, guid: b201a40445f90db44b3e23dc3fbf0794, type: 3}
+  walkFps: 8
+  idleFps: 1.5
+  moveThreshold: 0.15
+--- !u!210 &6937279928037162306
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1480874739530231457}
+  m_Enabled: 1
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_SortAtRoot: 0
+  m_Sort3DAs2D: 0
+--- !u!114 &6558531662628645913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1480874739530231457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f55b5f8b0deb5e428326fa2c0ca040e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.YSortActor
+  footRenderer: {fileID: 5329153628373021188}
+  footLift: 0.05

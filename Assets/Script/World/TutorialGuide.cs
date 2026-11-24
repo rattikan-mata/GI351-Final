@@ -350,7 +350,7 @@ namespace GI351.KitchenGame
             handRenderer = go.AddComponent<SpriteRenderer>();
             handRenderer.sprite = handSprite != null ? handSprite : WorldUi.Arrow;
             handRenderer.color = handColor;
-            handRenderer.sortingOrder = sortingOrder;
+            handRenderer.sortingOrder = YSort.Overlay + sortingOrder;
             float h = handRenderer.sprite.bounds.size.y;
             float s = h > 0.0001f ? handSize / h : 1f;
             handBaseScale = new Vector3(s, s, 1f);

@@ -18,7 +18,9 @@ namespace GI351.KitchenGame
             /// <summary>หันแค่ซ้าย/ขวาตามฝั่งของเมาส์ (FacingDirection เป็น (1,0) หรือ (-1,0) เสมอ)</summary>
             LeftRight,
             /// <summary>หันตามเมาส์แล้วล็อกเป็น 8 ทิศ (ทุก 45 องศา) แบบเดิม</summary>
-            EightDirections
+            EightDirections,
+            /// <summary>หันซ้าย/ขวาตามทิศที่เดินล่าสุด (ไม่ใช้เมาส์) อาวุธตีไปทางที่เดิน</summary>
+            Movement
         }
 
         [Header("Aim Settings (หันตามเมาส์)")]
@@ -45,6 +47,7 @@ namespace GI351.KitchenGame
         private Vector2 mouseDirection = Vector2.right;
         private int lockCount;
         private PlayerHealth playerHealth;
+        private PlayerMovement movement;
 
         public AimMode Mode => aimMode;
 
@@ -63,7 +66,7 @@ namespace GI351.KitchenGame
         /// <summary>หันขึ้นบน (หันหลังให้กล้อง) เช่น บน, ซ้ายบน, ขวาบน (โหมด LeftRight เป็น false เสมอ)</summary>
         public bool IsFacingAway => aimMode == AimMode.EightDirections && facingDirection.y > 0.1f;
 
-        /// <summary>ทิศจากตัวไปยังเมาส์ล่าสุด (ไม่ล็อกทิศ ความยาว 1)</summary>
+        /// <summary>ทิศจากตัวไปยังเมาส์ล่าสุด (ไม่ล็อกทิศ ความยาว 1) โหมด Movement = ทิศที่เดินล่าสุด</summary>
         public Vector2 MouseDirection => mouseDirection;
 
         /// <summary>กำลังล็อกทิศอยู่ (เช่น ระหว่างเหวี่ยงอาวุธ) ทิศจะไม่เปลี่ยนตามเมาส์</summary>
@@ -72,6 +75,7 @@ namespace GI351.KitchenGame
         private void Awake()
         {
             playerHealth = GetComponent<PlayerHealth>();
+            movement = GetComponent<PlayerMovement>();
             if (spriteRenderer == null)
             {
                 spriteRenderer = GetComponentInChildren<SpriteRenderer>();
@@ -102,7 +106,14 @@ namespace GI351.KitchenGame
         /// </summary>
         public void RefreshFacing()
         {
-            if (TryGetMouseWorld(out Vector2 mouseWorld))
+            if (aimMode == AimMode.Movement)
+            {
+                // ทิศที่เดินล่าสุด (เดินขึ้น/ลงตรงๆ ยังหันซ้าย/ขวาฝั่งเดิม)
+                Vector2 walk = movement != null ? movement.LastFacingDirection : Vector2.zero;
+                if (walk.sqrMagnitude > 0.0001f) mouseDirection = walk.normalized;
+                if (!IsFacingLocked && Mathf.Abs(walk.x) > 0.01f) SetFacingFromVector(new Vector2(walk.x, 0f));
+            }
+            else if (TryGetMouseWorld(out Vector2 mouseWorld))
             {
                 Vector2 toMouse = mouseWorld - (Vector2)transform.position;
                 if (toMouse.sqrMagnitude > 0.0001f) mouseDirection = toMouse.normalized;
@@ -145,7 +156,7 @@ namespace GI351.KitchenGame
         {
             if (direction.sqrMagnitude < 0.0001f) return;
 
-            if (aimMode == AimMode.LeftRight)
+            if (aimMode == AimMode.LeftRight || aimMode == AimMode.Movement)
             {
                 if (Mathf.Abs(direction.x) < 0.0001f) return;
                 bool right = direction.x > 0f;

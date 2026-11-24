@@ -110,6 +110,7 @@ namespace GI351.KitchenGame
 
             barRoot = new GameObject("HP Bar");
             barRoot.transform.SetParent(transform, false);
+            YSort.PutOnTop(barRoot);   // แถบเลือดอยู่บนสุดเสมอ
             barRoot.transform.localPosition = new Vector3(0f, heightOffset, 0f);
 
             // ใช้ Sorting Layer เดียวกับตัวสัตว์ เปลี่ยนแค่ลำดับ

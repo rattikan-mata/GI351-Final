@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4956649808499957145}
   - component: {fileID: 8916871781032105028}
+  - component: {fileID: 8415869252538926115}
   m_Layer: 0
   m_Name: Body
   m_TagString: Untagged
@@ -81,7 +82,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 3
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -1050596333, guid: 0e3e071a113ba004981dba714e464418, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 5b6da743f50b4374683ea6918f6b03bd, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -92,6 +93,40 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!114 &8415869252538926115
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2648974945442869112}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85d53d1b79d691545b667b554f8b76bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CustomerSpriteAnimator
+  spriteRenderer: {fileID: 8916871781032105028}
+  body: {fileID: 0}
+  looks:
+  - name: Female
+    idle:
+    - {fileID: 21300000, guid: 14d7c02dc8aa6f247914c93d7a670937, type: 3}
+    - {fileID: 21300000, guid: a2f12fcb7b26803498c9c41731a31967, type: 3}
+    walk:
+    - {fileID: 21300000, guid: fe427d6628b07994d9aade04db211a83, type: 3}
+    - {fileID: 21300000, guid: 43605dd20d90d184b8d26ea008280362, type: 3}
+    - {fileID: 21300000, guid: 08e60a3c821f25940b9789648894f82e, type: 3}
+  - name: Male
+    idle:
+    - {fileID: 21300000, guid: 5b6da743f50b4374683ea6918f6b03bd, type: 3}
+    - {fileID: 21300000, guid: 71144f9be04ba3449a58c286b100ac7b, type: 3}
+    walk:
+    - {fileID: 21300000, guid: 0dfbf4573c7328049b2337397fc45c25, type: 3}
+    - {fileID: 21300000, guid: 1b3d6ea97070db04e8130cb5d4c4f1ba, type: 3}
+    - {fileID: 21300000, guid: b201a40445f90db44b3e23dc3fbf0794, type: 3}
+  walkFps: 8
+  idleFps: 1.5
+  moveThreshold: 0.15
 --- !u!1 &4467584809041050141
 GameObject:
   m_ObjectHideFlags: 0
@@ -102,6 +137,8 @@ GameObject:
   m_Component:
   - component: {fileID: 3309652915016823431}
   - component: {fileID: 5166231996330896409}
+  - component: {fileID: 8776192680011064671}
+  - component: {fileID: 783577036243570589}
   m_Layer: 0
   m_Name: Cashier Staff
   m_TagString: Untagged
@@ -137,15 +174,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9dc7adac75f39741b86557bcf4a63d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CashierStaff
-  collectInterval: 0.6
-  standOffset: {x: 0.55, y: 0}
   bodyRenderer: {fileID: 8916871781032105028}
   hairRenderer: {fileID: 0}
-  bodyFrames:
-  - {fileID: -1050596333, guid: 0e3e071a113ba004981dba714e464418, type: 3}
-  - {fileID: 262501664, guid: 0e3e071a113ba004981dba714e464418, type: 3}
-  - {fileID: -1009429976, guid: 0e3e071a113ba004981dba714e464418, type: 3}
-  - {fileID: 1202696402, guid: 0e3e071a113ba004981dba714e464418, type: 3}
+  bodyFrames: []
   hairFrames: []
   frameRate: 4
   popInDuration: 0.35
+  collectCoins: 0
+  collectInterval: 0.6
+  standOffset: {x: 0.55, y: 0}
+--- !u!210 &8776192680011064671
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4467584809041050141}
+  m_Enabled: 1
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_SortAtRoot: 0
+  m_Sort3DAs2D: 0
+--- !u!114 &783577036243570589
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4467584809041050141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f55b5f8b0deb5e428326fa2c0ca040e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.YSortActor
+  footRenderer: {fileID: 8916871781032105028}
+  footLift: 0.05

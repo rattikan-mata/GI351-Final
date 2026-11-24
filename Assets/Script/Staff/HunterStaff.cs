@@ -49,8 +49,8 @@ namespace GI351.KitchenGame
         [SerializeField] private Vector2[] shopExitPath = { new Vector2(-2.5f, -1f), new Vector2(-5.5f, -1f) };
 
         [Header("Carry (เนื้อที่ถืออยู่)")]
-        [SerializeField] private Vector2 carryOffset = new Vector2(0f, 0.55f);
-        [SerializeField] private float carryStackSpacing = 0.12f;
+        [SerializeField] private Vector2 carryOffset = new Vector2(0f, 2.0f);
+        [SerializeField] private float carryStackSpacing = 0.2f;
 
         private enum State { Idle, GoingOut, Hunting, Returning, Feeding }
 

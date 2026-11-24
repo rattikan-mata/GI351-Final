@@ -275,7 +275,7 @@ namespace GI351.KitchenGame
             }
             sr.gameObject.SetActive(true);
             sr.sortingLayerID = layerId;
-            sr.sortingOrder = order;
+            sr.sortingOrder = YSort.Overlay + order;   // เศษ/ควันอยู่เหนือตัวละครและของในแมพ
             return sr;
         }
 

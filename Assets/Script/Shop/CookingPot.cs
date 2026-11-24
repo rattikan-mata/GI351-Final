@@ -903,7 +903,7 @@ namespace GI351.KitchenGame
 
             if (cachedPlayerCarry == null) return;
 
-            Vector3 playerPos = cachedPlayerCarry.transform.position;
+            Vector3 playerPos = YSort.FeetOf(cachedPlayerCarry.transform);
             float dist = Vector2.Distance(playerPos, GetPurchaseZonePosition());
             bool isPlayerInBuyZone = dist <= purchaseZoneRadius;
 
@@ -1523,6 +1523,8 @@ namespace GI351.KitchenGame
             SpriteRenderer potRenderer = GetComponent<SpriteRenderer>();
             int layer = potRenderer != null ? potRenderer.sortingLayerID : 0;
             int baseOrder = (potRenderer != null ? potRenderer.sortingOrder : 0) + 3;
+            // จานวางบนโต๊ะถาด: ต้องอยู่เหนือโต๊ะถาดด้วย (โต๊ะถาดเรียงชั้นตาม Y ของตัวเอง)
+            if (trayTable != null) baseOrder = Mathf.Max(baseOrder, trayTable.sortingOrder + 3);
             Vector3 center = TrayCenter;
 
             for (int i = 0; i < trayItems.Count; i++)
@@ -1567,7 +1569,7 @@ namespace GI351.KitchenGame
             foreach (PlayerCarry pc in PlayerCarry.All)
             {
                 if (pc == null || !pc.CanCarry()) continue;
-                float d = ((Vector2)pc.transform.position - center).sqrMagnitude;
+                float d = (YSort.FeetOf(pc.transform) - center).sqrMagnitude;
                 if (d <= best) { best = d; target = pc; }
             }
             if (target == null || !target.TryReserveIncoming()) return;
@@ -1732,6 +1734,7 @@ namespace GI351.KitchenGame
 
             potUIRoot = new GameObject("PotUI");
             potUIRoot.transform.SetParent(transform, false);
+            YSort.PutOnTop(potUIRoot.gameObject);   // ป้ายสูตรบนหม้ออยู่บนสุดเสมอ
 
             const float outline = 0.06f;
             float w = potSignSize.x, h = potSignSize.y;
@@ -1822,7 +1825,7 @@ namespace GI351.KitchenGame
 
             if (cachedPlayerCarry != null)
             {
-                float distToStand = Vector2.Distance(GetStandZonePosition(), cachedPlayerCarry.transform.position);
+                float distToStand = Vector2.Distance(GetStandZonePosition(), YSort.FeetOf(cachedPlayerCarry.transform));
                 if (distToStand <= standZoneRadius)
                 {
                     isPlayerInRange = true;
@@ -1872,7 +1875,7 @@ namespace GI351.KitchenGame
             var playerCarry = other.GetComponentInParent<PlayerCarry>();
             if (playerCarry != null && cachedPlayerCarry == playerCarry)
             {
-                float distToStand = Vector2.Distance(GetStandZonePosition(), playerCarry.transform.position);
+                float distToStand = Vector2.Distance(GetStandZonePosition(), YSort.FeetOf(playerCarry.transform));
                 if (distToStand > standZoneRadius)
                 {
                     isPlayerInRange = false;

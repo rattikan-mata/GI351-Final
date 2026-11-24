@@ -542,6 +542,7 @@ MonoBehaviour:
   foodDepositPoint: {fileID: 1697021705898018168}
   depositZoneOffset: {x: -1.2, y: 0}
   depositZoneRadius: 0.5
+  depositReachDown: -1
   tableProximityRadius: 1.6
   requireKeyPress: 0
   showDepositRing: 1

@@ -216,7 +216,7 @@ namespace GI351.KitchenGame
         private void Update()
         {
             Transform buyer = GetBuyer();
-            isBuyerInside = buyer != null && Vector2.Distance(buyer.position, ZonePosition) <= zoneRadius;
+            isBuyerInside = buyer != null && Vector2.Distance(YSort.FeetOf(buyer), ZonePosition) <= zoneRadius;
 
             if (!isBuyerInside)
             {

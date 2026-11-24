@@ -100,6 +100,9 @@ namespace GI351.KitchenGame
         [Tooltip("รัศมีของวงกลมวางอาหาร (เมตร)")]
         [SerializeField] private float depositZoneRadius = 0.65f;
 
+        [Tooltip("ยืดเขตวงวางอาหารลงไปทางโต๊ะ (หน่วยโลก) ยืนชิดหลังโต๊ะลึกแค่ไหนก็ยังวางได้ ภาพวงไม่ขยับ (-1 = คิดเองจนถึงขอบโต๊ะ)")]
+        [SerializeField] private float depositReachDown = -1f;
+
         [Tooltip("ระยะที่เดินเข้ามาใกล้โต๊ะแล้ววางอาหารได้ทันที (เมตร)")]
         [SerializeField] private float tableProximityRadius = 2.5f;
 
@@ -688,7 +691,8 @@ namespace GI351.KitchenGame
 
             if (playerTransform != null)
             {
-                float distToDeposit = Vector2.Distance(GetDepositPosition(), playerTransform.position);
+                float distToDeposit = YSort.DistanceToRing(YSort.FeetOf(playerTransform), GetDepositPosition(),
+                    depositReachDown >= 0f ? depositReachDown : YSort.ReachDownToSolid(gameObject, GetDepositPosition()));
                 float distToTable = Vector2.Distance(transform.position, playerTransform.position);
 
                 if (distToDeposit <= depositZoneRadius || distToTable <= tableProximityRadius)
@@ -940,13 +944,19 @@ namespace GI351.KitchenGame
                 return;
             }
 
-            if (stockBadgeRoot == null)
+            if (stockBadgeRoot == null || stockBadge == null)
             {
+                // หลังคอมไพล์ใน Editor ตัวป้ายหาย (ไม่ได้เซฟ) แต่ GameObject ยังอยู่: ลบทิ้งแล้วสร้างใหม่
+                if (stockBadgeRoot != null)
+                {
+                    if (Application.isPlaying) Destroy(stockBadgeRoot); else DestroyImmediate(stockBadgeRoot);
+                }
                 SpriteRenderer tableRenderer = GetComponent<SpriteRenderer>();
                 int layer = tableRenderer != null ? tableRenderer.sortingLayerID : 0;
                 int order = (tableRenderer != null ? tableRenderer.sortingOrder : 0) + 60;
                 stockBadgeRoot = new GameObject("StockBadgeRoot");
                 stockBadgeRoot.transform.SetParent(transform, false);
+                YSort.PutOnTop(stockBadgeRoot.gameObject);   // ป้ายจำนวนอาหารอยู่บนสุดเสมอ
                 stockBadge = WorldCountBadge.Create(stockBadgeRoot.transform, "StockBadge", stockBadgeSize,
                     stockBadgeColor, stockBadgeOutlineColor, stockTextColor, layer, order);
                 stockBadge.Root.transform.localPosition = new Vector3(stockBadgeOffset.x, stockBadgeOffset.y, 0f);

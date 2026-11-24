@@ -102,6 +102,9 @@ namespace GI351.KitchenGame
         [Tooltip("รัศมีวง (เมตร)")]
         [SerializeField] private float playerRingRadius = 0.5f;
 
+        [Tooltip("ยืดเขตวงยืนลงไปทางโต๊ะ (หน่วยโลก) ยืนชิดหลังโต๊ะลึกแค่ไหนก็ยังนับว่าอยู่ในวง ภาพวงไม่ขยับ (-1 = คิดเองจนถึงขอบโต๊ะ)")]
+        [SerializeField] private float playerRingReachDown = -1f;
+
         [Tooltip("สีวงตอนปกติ (สีขาว)")]
         [SerializeField] private Color playerRingColor = new Color(1f, 1f, 1f, 0.9f);
 
@@ -247,7 +250,8 @@ namespace GI351.KitchenGame
             }
 
             playerInRing = playerRing != null && playerTransform != null &&
-                           Vector2.Distance(playerRing.position, playerTransform.position) <= playerRingRadius;
+                           YSort.DistanceToRing(YSort.FeetOf(playerTransform), playerRing.position,
+                               playerRingReachDown >= 0f ? playerRingReachDown : YSort.ReachDownToSolid(gameObject, playerRing.position)) <= playerRingRadius;
 
             if (playerRing == null || playerRingRenderer == null) return;
 
@@ -443,6 +447,7 @@ namespace GI351.KitchenGame
                 int layer = tableRenderer != null ? tableRenderer.sortingLayerID : 0;
                 payBarRoot = new GameObject("PayBar");
                 payBarRoot.transform.SetParent(transform, false);
+                YSort.PutOnTop(payBarRoot.gameObject);   // หลอดจ่ายเงินอยู่บนสุดเสมอ
                 WorldUi.MakeShape(payBarRoot.transform, "Back", WorldUi.Pixel, payBarBackColor, payBarSize, Vector3.zero, layer, 70);
                 payBarFillRenderer = WorldUi.MakeShape(payBarRoot.transform, "Fill", WorldUi.PixelLeft, payBarFillColor,
                     new Vector2(payBarSize.x, payBarSize.y * 0.7f), new Vector3(-payBarSize.x * 0.5f, 0f, 0f), layer, 71);

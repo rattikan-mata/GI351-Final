@@ -209,7 +209,7 @@ namespace GI351.KitchenGame
             if (available && payRing != null)
             {
                 Transform buyer = GetBuyer();
-                isBuyerInside = buyer != null && Vector2.Distance(buyer.position, payRing.position) <= payRadius;
+                isBuyerInside = buyer != null && Vector2.Distance(YSort.FeetOf(buyer), payRing.position) <= payRadius;
             }
 
             int money = MoneyManager.Instance != null ? MoneyManager.Instance.CurrentMoney : 0;
