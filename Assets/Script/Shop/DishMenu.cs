@@ -91,6 +91,14 @@ namespace GI351.KitchenGame
             });
             if (withRoom.Count > 0) list = withRoom;
 
+            // เลือกเมนูที่ยังมีของบนแผงเหลือพอ (หักจานที่ลูกค้าคนอื่นจองไว้แล้ว) ลูกค้าไม่ต้องยืนรอเมนูที่ไม่มีของ
+            var stocked = list.FindAll(d =>
+            {
+                FoodSellCounter c = FoodSellCounter.FindCounterFor(d);
+                return c != null && c.CountDishes(d) > CustomerSpawner.CountCustomersWaitingFor(d);
+            });
+            if (stocked.Count > 0) list = stocked;
+
             return list[Random.Range(0, list.Count)];
         }
 

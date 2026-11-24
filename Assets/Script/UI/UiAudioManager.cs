@@ -24,6 +24,16 @@ namespace GI351.KitchenGame
         public AudioClip cashCollect;
         public AudioClip thiefAlert;
 
+        [Header("UI Volumes (ความดังของแต่ละเสียง 0-1)")]
+        [Tooltip("ตั้งจากการวัดความดังของไฟล์ ให้เสียงที่ดังบ่อยเบากว่าเสียงรางวัล/เตือน แล้วคูณกับแถบ SFX อีกที")]
+        [Range(0f, 1f)] public float buttonClickVolume = 0.86f;
+        [Range(0f, 1f)] public float panelToggleVolume = 0.15f;
+        [Range(0f, 1f)] public float upgradeSuccessVolume = 0.76f;
+        [Range(0f, 1f)] public float buyUnlockItemVolume = 0.71f;
+        [Range(0f, 1f)] public float cantAffordVolume = 0.15f;
+        [Range(0f, 1f)] public float cashCollectVolume = 0.37f;
+        [Range(0f, 1f)] public float thiefAlertVolume = 0.66f;
+
         [Header("Pitch Settings")]
         [SerializeField] private float pitchVariance = 0.06f;
         private float coinComboPitch = 1f;
@@ -64,12 +74,12 @@ namespace GI351.KitchenGame
                 Instance.sfxSource.volume = SfxVolume;
         }
 
-        public void PlayClick() => PlayClip(buttonClick, 1f, true);
-        public void PlayPanelToggle() => PlayClip(panelToggle, 1f, false);
-        public void PlayUpgrade() => PlayClip(upgradeSuccess, 1f, true);
-        public void PlayBuyOrUnlockZone() => PlayClip(buyUnlockItem, 1f, false);
-        public void PlayCantAfford() => PlayClip(cantAfford, 0.95f, false);
-        public void PlayThiefAlert() => PlayClip(thiefAlert, 1f, false);
+        public void PlayClick() => PlayClip(buttonClick, 1f, true, buttonClickVolume);
+        public void PlayPanelToggle() => PlayClip(panelToggle, 1f, false, panelToggleVolume);
+        public void PlayUpgrade() => PlayClip(upgradeSuccess, 1f, true, upgradeSuccessVolume);
+        public void PlayBuyOrUnlockZone() => PlayClip(buyUnlockItem, 1f, false, buyUnlockItemVolume);
+        public void PlayCantAfford() => PlayClip(cantAfford, 0.95f, false, cantAffordVolume);
+        public void PlayThiefAlert() => PlayClip(thiefAlert, 1f, false, thiefAlertVolume);
 
         public void PlayCashCollect()
         {
@@ -79,16 +89,16 @@ namespace GI351.KitchenGame
                 coinComboPitch = 1f;
 
             lastCoinTime = Time.unscaledTime;
-            PlayClip(cashCollect, coinComboPitch, false);
+            PlayClip(cashCollect, coinComboPitch, false, cashCollectVolume);
         }
 
-        private void PlayClip(AudioClip clip, float basePitch, bool randomizePitch)
+        private void PlayClip(AudioClip clip, float basePitch, bool randomizePitch, float volume = 1f)
         {
             if (clip == null || sfxSource == null) return;
             sfxSource.pitch = randomizePitch
                 ? basePitch + Random.Range(-pitchVariance, pitchVariance)
                 : basePitch;
-            sfxSource.PlayOneShot(clip);
+            sfxSource.PlayOneShot(clip, volume);
         }
     }
 }

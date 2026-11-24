@@ -6,10 +6,9 @@ namespace GI351.KitchenGame
 {
     /// <summary>
     /// อัปเกรดฝั่งร้านแบบเลเวล (คู่กับ HuntUpgrades ที่ดูแลฝั่งล่า): อยู่คู่กับ ShopStall ผูก id สินค้า -> ค่าที่จะเปลี่ยน
-    ///   CustomersPerMinute = ลูกค้ามากี่คนต่อนาที (CustomerSpawner ทุกตัว)
-    ///   DishesPerCustomer  = ลูกค้าซื้อได้สูงสุดคนละกี่จาน
-    ///   ShelfCapacity      = แผงขายทุกแผงจุอาหารได้กี่จาน
-    /// ค่าของแต่ละเลเวลและราคาตั้งที่ ShopStall > Items > Levels  ตอนเริ่มเกมจะ apply ค่า Lv1 ให้ (ค่าในตารางเป็นหลัก)
+    ///   CustomersPerMinute = ลูกค้ามากี่คนต่อนาที (CustomerSpawner ทุกตัว) ตอนนี้ไม่ขายแล้ว ลูกค้ามาตามของบนแผงเอง
+    ///   DishesPerCustomer  = ลูกค้าซื้อได้สูงสุดคนละกี่จาน (ไม่ขายแล้ว)
+    ///   ShelfCapacity      = แผงขายทุกแผงจุอาหารได้กี่จาน    /// ค่าของแต่ละเลเวลและราคาตั้งที่ ShopStall > Items > Levels  ตอนเริ่มเกมจะ apply ค่า Lv1 ให้ (ค่าในตารางเป็นหลัก)
     /// (ความเร็วหม้อ/ราคาอาหาร อัปที่แผงของหม้อแต่ละใบ: PotUpgrade)
     /// </summary>
     [RequireComponent(typeof(ShopStall))]
@@ -35,8 +34,6 @@ namespace GI351.KitchenGame
         [Tooltip("สินค้าไหน (id) เปลี่ยนค่าอะไร")]
         [SerializeField] private List<Binding> bindings = new List<Binding>
         {
-            new Binding { itemId = "customers", stat = Stat.CustomersPerMinute },
-            new Binding { itemId = "big_orders", stat = Stat.DishesPerCustomer },
             new Binding { itemId = "shelf_size", stat = Stat.ShelfCapacity }
         };
 
@@ -106,8 +103,7 @@ namespace GI351.KitchenGame
                     {
                         c.SetMaxPlates(Mathf.RoundToInt(value));
                     }
-                    break;
-            }
+                    break;            }
         }
     }
 }

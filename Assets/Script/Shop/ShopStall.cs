@@ -200,6 +200,9 @@ namespace GI351.KitchenGame
 
         private Vector3 ZonePosition => zoneCenter != null ? zoneCenter.position : transform.position;
 
+        /// <summary>จุดกลางวงยืนซื้อของร้าน (ใช้ชี้ทางในสอนเล่น)</summary>
+        public Vector3 BuyRingPosition => ZonePosition;
+
         private void OnValidate()
         {
             if (zoneRadius < 0.1f) zoneRadius = 0.1f;

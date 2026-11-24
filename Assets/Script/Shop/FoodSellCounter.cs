@@ -1151,6 +1151,18 @@ namespace GI351.KitchenGame
             return false;
         }
 
+        /// <summary>จำนวนจานบนแผงที่ขายให้ลูกค้าที่อยากกินเมนูนี้ได้ (null = ทุกจาน)</summary>
+        public int CountDishes(ItemType? type = null)
+        {
+            if (!type.HasValue) return dishesOnCounter.Count;
+            int n = 0;
+            foreach (var dish in dishesOnCounter)
+            {
+                if (dish != null && (dish.Type == type.Value || dish.Type == ItemType.SpecialDish)) n++;
+            }
+            return n;
+        }
+
         // ========================== ตำแหน่งและ Ring Sprite ==========================
 
         public Vector3 GetFoodDisplayCenterPosition()

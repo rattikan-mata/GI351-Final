@@ -51,7 +51,7 @@ MonoBehaviour:
     clips:
     - {fileID: 8300000, guid: a0fa609422728bb4c9b77483069aa837, type: 3}
     - {fileID: 8300000, guid: a40385eaea96b9f47851947b35336d2e, type: 3}
-    volume: 0.086
+    volume: 0.233
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0
@@ -60,7 +60,7 @@ MonoBehaviour:
   - id: 1
     clips:
     - {fileID: 8300000, guid: 62219ba3fdd482e459bdd72a8abc934d, type: 3}
-    volume: 0.118
+    volume: 0.098
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0
@@ -78,7 +78,7 @@ MonoBehaviour:
   - id: 3
     clips:
     - {fileID: 8300000, guid: e439bbfaf2573014d8a8d6eb88ffcc05, type: 3}
-    volume: 1
+    volume: 0.43
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0
@@ -97,7 +97,7 @@ MonoBehaviour:
     clips:
     - {fileID: 8300000, guid: c61ba09a9c7feda47858a5726a18a09f, type: 3}
     - {fileID: 8300000, guid: 66720f6c9a1ca7944ae890c31d1f955e, type: 3}
-    volume: 1
+    volume: 0.46
     pitchRange: {x: 1, y: 0.5}
     minInterval: 0
     spatial: 0
@@ -106,7 +106,7 @@ MonoBehaviour:
   - id: 6
     clips:
     - {fileID: 8300000, guid: c42ebdb908edc6b499eaed237ea6cc82, type: 3}
-    volume: 0.181
+    volume: 0.204
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0
@@ -115,7 +115,7 @@ MonoBehaviour:
   - id: 7
     clips:
     - {fileID: 8300000, guid: 566c27d6a46046a4a9ac1f9965d862f7, type: 3}
-    volume: 0.189
+    volume: 0.145
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 3
     spatial: 0
@@ -124,7 +124,7 @@ MonoBehaviour:
   - id: 8
     clips:
     - {fileID: 8300000, guid: ca94edc6a9b3c04469b58190037e4918, type: 3}
-    volume: 0.3
+    volume: 0.251
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 3
     spatial: 0
@@ -133,7 +133,7 @@ MonoBehaviour:
   - id: 9
     clips:
     - {fileID: 8300000, guid: 91fe018bb8c3061439c0d9f950175aa3, type: 3}
-    volume: 0.07
+    volume: 0.079
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 3
     spatial: 0
@@ -142,7 +142,7 @@ MonoBehaviour:
   - id: 10
     clips:
     - {fileID: 8300000, guid: 27babdae3e1dd8a4b848e201919b4157, type: 3}
-    volume: 0.189
+    volume: 0.127
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0
@@ -151,7 +151,7 @@ MonoBehaviour:
   - id: 11
     clips:
     - {fileID: 8300000, guid: 45f5da0870256524a9c0638783e04077, type: 3}
-    volume: 0.3
+    volume: 0.38
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 1
     spatial: 0
@@ -160,7 +160,7 @@ MonoBehaviour:
   - id: 12
     clips:
     - {fileID: 8300000, guid: f6e852111e8e94e4fa2a6ea62ad922bf, type: 3}
-    volume: 0.165
+    volume: 0.741
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 1
     spatial: 0
@@ -169,7 +169,7 @@ MonoBehaviour:
   - id: 13
     clips:
     - {fileID: 8300000, guid: 9c32accf1402d454285ec756cbe66c93, type: 3}
-    volume: 0.126
+    volume: 0.288
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 1
     spatial: 0
@@ -179,7 +179,7 @@ MonoBehaviour:
     clips:
     - {fileID: 8300000, guid: 66720f6c9a1ca7944ae890c31d1f955e, type: 3}
     - {fileID: 8300000, guid: d3c0f90b3ec6dde4fa7d8e1f399a9ef8, type: 3}
-    volume: 0.564
+    volume: 0.403
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0
@@ -188,7 +188,7 @@ MonoBehaviour:
   - id: 15
     clips:
     - {fileID: 8300000, guid: 670147ee3f5525746bb363e05fdc5887, type: 3}
-    volume: 0.142
+    volume: 0.331
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0
@@ -197,7 +197,7 @@ MonoBehaviour:
   - id: 16
     clips:
     - {fileID: 8300000, guid: bce22e546ec2cda46a41cea6b0366e37, type: 3}
-    volume: 0.283
+    volume: 0.479
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0
@@ -206,7 +206,7 @@ MonoBehaviour:
   - id: 17
     clips:
     - {fileID: 8300000, guid: d3c0f90b3ec6dde4fa7d8e1f399a9ef8, type: 3}
-    volume: 0.181
+    volume: 0.437
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0
@@ -215,7 +215,7 @@ MonoBehaviour:
   - id: 20
     clips:
     - {fileID: 8300000, guid: 027d8211a0264a24ba2e5b2b1d3e2e12, type: 3}
-    volume: 0.129
+    volume: 0.741
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0
@@ -224,7 +224,7 @@ MonoBehaviour:
   - id: 21
     clips:
     - {fileID: 8300000, guid: 91283defb53a4b2488b84912586c6068, type: 3}
-    volume: 0.15
+    volume: 0.479
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0
@@ -233,7 +233,7 @@ MonoBehaviour:
   - id: 22
     clips:
     - {fileID: 8300000, guid: 2d491283eea6850408c658dfa355170f, type: 3}
-    volume: 0.35
+    volume: 0.412
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 1.5
     spatial: 0
@@ -242,7 +242,7 @@ MonoBehaviour:
   - id: 23
     clips:
     - {fileID: 8300000, guid: 76a6809d254fdd94ab326d6cb5325268, type: 3}
-    volume: 0.142
+    volume: 0.182
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0

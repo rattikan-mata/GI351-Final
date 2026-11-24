@@ -341,8 +341,7 @@ namespace GI351.KitchenGame
             for (int i = 0; i < Mathf.Max(1, n); i++)
             {
                 Item dish = n > 0 ? dishes[i] : null;
-                int price = dish != null && dish.SellPrice > 0 ? dish.SellPrice : 10;
-                total += price;
+                int price = dish != null && dish.SellPrice > 0 ? dish.SellPrice : 10;                total += price;
 
                 if (coinPrefab != null)
                 {

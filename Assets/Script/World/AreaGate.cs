@@ -329,9 +329,6 @@ namespace GI351.KitchenGame
 
         private IEnumerator PanCamera()
         {
-            Camera cam = Camera.main;
-            if (cam == null) yield break;
-
             Vector3? focus = null;
             if (panTarget != null) focus = panTarget.position;
             else if (revealOnUnlock != null)
@@ -339,43 +336,11 @@ namespace GI351.KitchenGame
                 foreach (GameObject go in revealOnUnlock) if (go != null) { focus = go.transform.position; break; }
             }
             if (!focus.HasValue) yield break;
-
-            Transform ct = cam.transform;
-            Transform oldParent = ct.parent;
-            Vector3 oldLocalPos = ct.localPosition;
-            float z = ct.position.z;
-
-            // แยกกล้องออกจากตัวผู้เล่นชั่วคราวเพื่อเลื่อนไปดูโซนใหม่
-            ct.SetParent(null, true);
-            Vector3 from = ct.position;
-            Vector3 to = new Vector3(focus.Value.x, focus.Value.y, z);
-
-            yield return Move(ct, from, to, panTravelTime);
-            yield return new WaitForSeconds(panHoldTime);
-
-            // กลับมาที่ตัวผู้เล่น (ตามตำแหน่งปัจจุบันของผู้เล่น)
-            Vector3 back = oldParent != null ? oldParent.TransformPoint(oldLocalPos) : from;
-            yield return Move(ct, ct.position, back, panTravelTime);
-
-            if (oldParent != null)
-            {
-                ct.SetParent(oldParent, false);
-                ct.localPosition = oldLocalPos;
-            }
+            yield return CameraPan.Run(focus.Value, panTravelTime, panHoldTime);
         }
 
-        private static IEnumerator Move(Transform t, Vector3 from, Vector3 to, float duration)
-        {
-            float e = 0f;
-            while (e < duration)
-            {
-                e += Time.deltaTime;
-                float k = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(duration > 0f ? e / duration : 1f));
-                t.position = Vector3.Lerp(from, to, k);
-                yield return null;
-            }
-            t.position = to;
-        }
+        /// <summary>จุดกลางวงจ่ายเงินของประตู (ใช้ชี้ทางในสอนเล่น)</summary>
+        public Vector3 PayRingPosition => payRing != null ? payRing.position : transform.position;
 
         private void OnDrawGizmos()
         {

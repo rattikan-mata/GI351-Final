@@ -19,6 +19,12 @@ namespace GI351.KitchenGame
         [Tooltip("เปิดระบบซื้อสำหรับหม้อหมู (Pork/Pig Pot) โดยอัตโนมัติ")]
         [SerializeField] private bool autoRequirePurchaseForPork = true;
 
+        [Tooltip("หม้อที่ล็อกอยู่ ปลดเองทันทีที่เปิดประตูโซนของสัตว์ที่ให้วัตถุดิบหม้อนี้ (ไม่ต้องซื้อแยก)")]
+        [SerializeField] private bool unlockWithArea = true;
+
+        [Tooltip("ประตูที่ปลดหม้อนี้ ปล่อยว่าง = หาเองจาก Hunt Area ที่สัตว์ดรอปวัตถุดิบของหม้อนี้")]
+        [SerializeField] private AreaGate unlockGate;
+
         [Tooltip("ราคาที่ต้องจ่ายเพื่อซื้อหม้อ (เหรียญ) ใช้กับวงซื้อที่หม้อ (ถ้าซื้อจากร้าน ราคาตั้งที่สินค้าในร้าน)")]
         [SerializeField] private int purchasePrice = 50;
 
@@ -40,6 +46,9 @@ namespace GI351.KitchenGame
         [Tooltip("ความโปร่งใสของหม้อก่อนซื้อ (0 = ล่องหน, 1 = ทึบแสงปกติ, 0.35 = โปร่งแสง)")]
         [Range(0.05f, 1f)]
         [SerializeField] private float lockedAlpha = 0.35f;
+
+        [Tooltip("โต๊ะวางอาหารข้างหม้อ (อาหารที่ต้มเสร็จกองบนโต๊ะนี้) ปล่อยว่าง = หาลูกชื่อ Tray Table เอง ตอนหม้อยังล็อก โต๊ะจะจางและเดินทะลุได้เหมือนหม้อ")]
+        [SerializeField] private SpriteRenderer trayTable;
 
         [Header("Pot Art (ภาพหม้อ)")]
         [Tooltip("ภาพหม้อตอนว่าง/ยังไม่ต้ม (ว่าง = ใช้ภาพที่ SpriteRenderer อยู่แล้ว)")]
@@ -387,10 +396,43 @@ namespace GI351.KitchenGame
             }
         }
 
+        private void Start()
+        {
+            if (Application.isPlaying) HookAreaGate();
+        }
+
         private void OnDisable()
         {
             AllPots.Remove(this);
             AudioManager.StopLoop(this);
+        }
+
+        private void OnDestroy()
+        {
+            if (unlockGate != null) unlockGate.onUnlocked.RemoveListener(UnlockPot);
+        }
+
+        /// <summary>หม้อปลดพร้อมประตูโซน: ประตูเปิดอยู่แล้ว = ปลดเลย, ยังไม่เปิด = รอประตูเปิด</summary>
+        private void HookAreaGate()
+        {
+            if (!unlockWithArea || isUnlocked) return;
+
+            if (unlockGate == null)
+            {
+                bool foundOpenArea = false;
+                foreach (HuntArea area in HuntArea.All)
+                {
+                    if (area == null || !area.DropsMeat(requiredIngredient)) continue;
+                    if (area.Gate == null) { foundOpenArea = true; break; }
+                    if (unlockGate == null) unlockGate = area.Gate;
+                }
+                // สัตว์ของหม้อนี้อยู่ในโซนที่เปิดตั้งแต่เริ่ม = ไม่มีอะไรต้องรอ
+                if (foundOpenArea) { UnlockPot(); return; }
+            }
+
+            if (unlockGate == null) return;
+            if (unlockGate.IsUnlocked) UnlockPot();
+            else unlockGate.onUnlocked.AddListener(UnlockPot);
         }
 
         private void OnValidate()
@@ -492,6 +534,8 @@ namespace GI351.KitchenGame
                 potSolidCollider.isTrigger = true;
             }
 
+            SetTrayTableLocked(true);
+
             // 3. ปิดการใช้งานจุดยืนปรุงอาหารและจุดอาหารออก
             if (standZoneObject != null) standZoneObject.SetActive(false);
             if (outputRingObject != null) outputRingObject.SetActive(false);
@@ -509,6 +553,23 @@ namespace GI351.KitchenGame
                     purchaseZoneObject.SetActive(false);
                 }
             }
+        }
+
+        /// <summary>โต๊ะวางอาหารข้างหม้อ: ล็อก = จางและเดินทะลุ, ปลดแล้ว = ทึบและชนได้</summary>
+        private void SetTrayTableLocked(bool locked)
+        {
+            if (trayTable == null)
+            {
+                Transform t = transform.Find("Tray Table");
+                if (t != null) trayTable = t.GetComponent<SpriteRenderer>();
+            }
+            if (trayTable == null) return;
+
+            Color c = trayTable.color;
+            c.a = locked ? lockedAlpha : 1f;
+            trayTable.color = c;
+            Collider2D col = trayTable.GetComponent<Collider2D>();
+            if (col != null) col.isTrigger = locked;
         }
 
         /// <summary>
@@ -530,6 +591,8 @@ namespace GI351.KitchenGame
                 potSolidCollider.isTrigger = false;
                 potSolidCollider.enabled = true;
             }
+
+            SetTrayTableLocked(false);
 
             // 3. ปิดจุดยืนซื้อหม้อ
             if (purchaseZoneObject != null)
@@ -1482,9 +1545,11 @@ namespace GI351.KitchenGame
             if (!useOutputTray || Time.time < nextTrayCollectTime) return;
             if (TrayCount == 0) return;
 
-            Vector2 center = TrayCenter;
+            // วัดจากวงเหลือง (จุดอาหารออก) ที่ผู้เล่นยืน ไม่ใช่กองจานบนโต๊ะ (โต๊ะอยู่เหนือวง)
+            Vector2 center = GetOutputPosition();
             PlayerCarry target = null;
-            float best = trayCollectRadius * trayCollectRadius;
+            float radius = Mathf.Max(trayCollectRadius, outputZoneRadius);
+            float best = radius * radius;
             foreach (PlayerCarry pc in PlayerCarry.All)
             {
                 if (pc == null || !pc.CanCarry()) continue;

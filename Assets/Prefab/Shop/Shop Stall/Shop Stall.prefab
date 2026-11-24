@@ -208,7 +208,6 @@ GameObject:
   - component: {fileID: 1188983409740115280}
   - component: {fileID: 5989593789037977040}
   - component: {fileID: 3683803792171021409}
-  - component: {fileID: 850800840462032608}
   - component: {fileID: 1865791447962721318}
   m_Layer: 0
   m_Name: Shop Stall
@@ -405,36 +404,6 @@ MonoBehaviour:
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
-  - itemName: Pork Pot
-    description: Cook pork and open the Pork shelf
-    price: 50
-    stock: 1
-    id: pork_pot
-    tab: Cook
-    locked: 0
-    lockedText: SOON
-    soldOutText: OWNED
-    valueLabel: 
-    levels: []
-    levelCap: 0
-    onPurchased:
-      m_PersistentCalls:
-        m_Calls: []
-  - itemName: Buffalo Pot
-    description: Cook buffalo meat into Buffalo Stew
-    price: 200
-    stock: 1
-    id: buffalo_pot
-    tab: Cook
-    locked: 0
-    lockedText: SOON
-    soldOutText: OWNED
-    valueLabel: 
-    levels: []
-    levelCap: 0
-    onPurchased:
-      m_PersistentCalls:
-        m_Calls: []
   - itemName: Shelf Size
     description: 
     price: 0
@@ -458,56 +427,9 @@ MonoBehaviour:
     onPurchased:
       m_PersistentCalls:
         m_Calls: []
-  - itemName: Customers
-    description: 
-    price: 0
-    stock: 0
-    id: customers
-    tab: Store
-    locked: 0
-    lockedText: SOON
-    soldOutText: SOLD OUT
-    valueLabel: Per min
-    levels:
-    - value: 12
-      price: 0
-    - value: 15
-      price: 40
-    - value: 18
-      price: 80
-    - value: 21
-      price: 150
-    - value: 24
-      price: 250
-    levelCap: 0
-    onPurchased:
-      m_PersistentCalls:
-        m_Calls: []
-  - itemName: Big Orders
-    description: 
-    price: 0
-    stock: 0
-    id: big_orders
-    tab: Store
-    locked: 0
-    lockedText: SOON
-    soldOutText: SOLD OUT
-    valueLabel: Max buy
-    levels:
-    - value: 1
-      price: 0
-    - value: 2
-      price: 60
-    - value: 3
-      price: 150
-    levelCap: 0
-    onPurchased:
-      m_PersistentCalls:
-        m_Calls: []
   tabs:
   - Hunt
   - Cook
-  - Store
   emptyTabText: Coming soon
   zoneCenter: {fileID: 3278608873617845483}
   zoneRadius: 0.5
@@ -544,23 +466,6 @@ MonoBehaviour:
     stat: 2
   - itemId: gloves
     stat: 3
---- !u!114 &850800840462032608
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4636435379294269516}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 235d11597fc851c48b073280cb7c7c00, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.PotShopUnlock
-  bindings:
-  - itemId: pork_pot
-    potIngredient: 1
-  - itemId: buffalo_pot
-    potIngredient: 7
 --- !u!114 &1865791447962721318
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -574,10 +479,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.StoreUpgrades
   bindings:
-  - itemId: customers
-    stat: 0
-  - itemId: big_orders
-    stat: 1
   - itemId: shelf_size
     stat: 2
 --- !u!1 &6295968039141360220

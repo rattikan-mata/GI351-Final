@@ -111,6 +111,13 @@ namespace GI351.KitchenGame
             dishesToBuy = new Vector2Int(Mathf.Max(1, min), Mathf.Max(1, max));
         }
 
+        private bool waitForever;
+
+        /// <summary>true = รออาหารได้ไม่จำกัด ไม่เดินหนี (ลูกค้าคนแรกตอนสอนเล่น)</summary>
+        public void SetWaitForever(bool value)
+        {
+            waitForever = value;
+        }
         /// <summary>จำนวนลูกค้าปกติที่รอจนหมดความอดทนแล้วเดินหนี (นับตั้งแต่เริ่มเล่น)</summary>
         public static int LostCustomers { get; private set; }
 
@@ -137,6 +144,10 @@ namespace GI351.KitchenGame
         public ItemType? RequestedDish => (!isThief && wantSpecificFood) ? preferredDish : (ItemType?)null;
         public ItemType PreferredDish => preferredDish;
         public float RemainingPatience => currentPatienceTimer;
+
+        /// <summary>ลูกค้าปกติที่เลือกเมนูแล้ว กำลังเดินไป/ยืนรอที่แผง ยังไม่ได้อาหาร</summary>
+        public bool IsWaitingForFood => !isThief && dishPicked && carriedDishes.Count == 0 &&
+            (currentState == CustomerState.WalkingToCounter || currentState == CustomerState.WaitingAtCounter);
         public bool IsThief => isThief;
         public bool IsUnconscious => currentState == CustomerState.Unconscious;
 
@@ -613,8 +624,8 @@ namespace GI351.KitchenGame
                     }
                 }
 
-                // นับเวลาความอดทน (ปิดไว้ = ลูกค้าปกติรอได้ไม่จำกัด)
-                if (!normalCustomerLeavesWhenImpatient)
+                // นับเวลาความอดทน (ปิดไว้ = ลูกค้าปกติรอได้ไม่จำกัด / ลูกค้าคนแรกตอนสอนเล่นรอได้ไม่จำกัด)
+                if (!normalCustomerLeavesWhenImpatient || waitForever)
                 {
                     currentPatienceTimer = patienceDuration;
                     return;

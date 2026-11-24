@@ -50,16 +50,68 @@ namespace GI351.KitchenGame
         [SerializeField] private FoodSellCounter targetCounter;
 
         [Header("Order Size (ลูกค้าซื้อคนละกี่จาน)")]
-        [Tooltip("ลูกค้าแต่ละคนซื้อสุ่ม 1 ถึงค่านี้ (อัปเกรดได้จากร้าน Big Orders)")]
+        [Tooltip("ลูกค้าแต่ละคนซื้อสุ่ม 1 ถึงค่านี้")]
         [Min(1)] [SerializeField] private int maxDishesPerCustomer = 1;
 
         [Header("Start (เริ่มปล่อยลูกค้า)")]
         [Tooltip("เปิด = ลูกค้าเริ่มมาเมื่อมีอาหารวางบนแผงครั้งแรก (เปิดเกมมาร้านว่าง) / ปิด = มาตั้งแต่เริ่มเกม")]
         [SerializeField] private bool waitForFirstFood = true;
 
+        [Header("Adaptive Rate (ลูกค้ามาตามของบนแผง)")]
+        [Tooltip("เปิด = ลูกค้ามาถี่ขึ้นตอนแผงมีของเหลือ และมาช้าลงตอนแผงว่าง (ลดคนรอจนเดินหนี)")]
+        [SerializeField] private bool adaptToStock = true;
+
+        [Tooltip("ตัวคูณความถี่ตอนแผงไม่มีของเหลือให้ลูกค้าใหม่ (0.35 = มาช้าลงเหลือราว 1/3)")]
+        [Range(0.05f, 1f)] [SerializeField] private float emptyRateMultiplier = 0.35f;
+
+        [Tooltip("ตัวคูณความถี่ตอนแผงมีของเหลือเยอะ (2 = มาถี่ขึ้น 2 เท่า)")]
+        [Range(1f, 4f)] [SerializeField] private float fullRateMultiplier = 2f;
+
+        [Tooltip("ของเหลือกี่จาน (หลังหักจานที่ลูกค้าที่รออยู่จะซื้อ) ถึงจะมาถี่สุด")]
+        [Min(2)] [SerializeField] private int busyStock = 6;
+
         private readonly List<CustomerAI> activeCustomers = new List<CustomerAI>();
         private float spawnTimer;
         private bool firstFoodSeen;
+
+        /// <summary>ความถี่ตอนนี้เทียบกับค่าปกติ (ตามของบนแผง)</summary>
+        public float CurrentRateMultiplier { get; private set; } = 1f;
+
+        /// <summary>จำนวนลูกค้าปกติที่เลือกเมนูนี้แล้วและยังรออาหารอยู่ (ทุกจุดเกิด)</summary>
+        public static int CountCustomersWaitingFor(ItemType? dish)
+        {
+            int n = 0;
+            foreach (CustomerSpawner s in All)
+            {
+                if (s == null) continue;
+                foreach (CustomerAI c in s.activeCustomers)
+                {
+                    if (c == null || !c.IsWaitingForFood) continue;
+                    if (!dish.HasValue || !c.RequestedDish.HasValue || c.RequestedDish.Value == dish.Value) n++;
+                }
+            }
+            return n;
+        }
+
+        /// <summary>จานที่เหลือบนแผงที่เปิดอยู่ หลังหักลูกค้าที่รออยู่ (ติดลบ = คนรอมากกว่าของ)</summary>
+        public static int StockSurplus()
+        {
+            int dishes = 0;
+            foreach (FoodSellCounter c in FoodSellCounter.All)
+            {
+                if (c != null && c.isActiveAndEnabled && c.IsOpen) dishes += c.CountDishes();
+            }
+            return dishes - CountCustomersWaitingFor(null);
+        }
+
+        private float ComputeRateMultiplier()
+        {
+            if (!adaptToStock) return 1f;
+            int surplus = StockSurplus();
+            if (surplus <= 0) return emptyRateMultiplier;
+            float t = Mathf.Clamp01((surplus - 1) / (float)Mathf.Max(1, busyStock - 1));
+            return Mathf.Lerp(1f, fullRateMultiplier, t);
+        }
 
         /// <summary>ทุกจุดเกิดลูกค้าในฉาก</summary>
         public static readonly List<CustomerSpawner> All = new List<CustomerSpawner>();
@@ -156,12 +208,38 @@ namespace GI351.KitchenGame
                 spawnTimer = Mathf.Max(spawnTimer, spawnInterval - 1f);
             }
 
-            spawnTimer += Time.deltaTime;
+            // แผงมีของเหลือ = เวลานับเร็วขึ้น (ลูกค้ามาถี่), แผงว่าง = นับช้าลง
+            CurrentRateMultiplier = ComputeRateMultiplier();
+            spawnTimer += Time.deltaTime * CurrentRateMultiplier;
             if (spawnTimer >= spawnInterval)
             {
                 spawnTimer = 0f;
                 TrySpawnCustomer();
             }
+        }
+
+        /// <summary>
+        /// เสกลูกค้าปกติ 1 คนทันที ไม่รอเวลาและไม่ต้องมีอาหารบนแผงก่อน (ใช้ตอนสอนเล่น)
+        /// waitForever = ลูกค้าคนนี้รออาหารได้ไม่จำกัด ไม่เดินหนี
+        /// </summary>
+        public CustomerAI SpawnCustomerNow(bool waitForever)
+        {
+            activeCustomers.RemoveAll(c => c == null);
+            if (customerPrefab == null) return null;
+            if (targetCounter == null) targetCounter = Object.FindAnyObjectByType<FoodSellCounter>();
+            if (targetCounter == null) return null;
+
+            Vector3 pos = spawnPoint != null ? spawnPoint.position : transform.position;
+            GameObject customerObj = Instantiate(customerPrefab, pos, Quaternion.identity);
+            if (!customerObj.TryGetComponent<CustomerAI>(out var customerAI)) return null;
+
+            customerAI.SetAsThief(false);
+            customerAI.SetDishesToBuy(1, maxDishesPerCustomer);
+            customerAI.SetWaitForever(waitForever);
+            customerAI.Init(targetCounter, exitPoint, this);
+            customerAI.IgnoreCollisionWithOtherCustomers();
+            activeCustomers.Add(customerAI);
+            return customerAI;
         }
 
         public void TrySpawnCustomer()
@@ -199,8 +277,7 @@ namespace GI351.KitchenGame
             if (customerObj.TryGetComponent<CustomerAI>(out var customerAI))
             {
                 customerAI.SetAsThief(isThief);
-                customerAI.SetDishesToBuy(1, maxDishesPerCustomer);
-                customerAI.Init(targetCounter, exitPoint, this);
+                customerAI.SetDishesToBuy(1, maxDishesPerCustomer);                customerAI.Init(targetCounter, exitPoint, this);
                 customerAI.IgnoreCollisionWithOtherCustomers();
                 activeCustomers.Add(customerAI);
 
