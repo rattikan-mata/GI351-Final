@@ -40,9 +40,6 @@ namespace GI351.KitchenGame
         [Tooltip("ตำแหน่งจานใบแรกเทียบกับตัวพนักงาน (เมตร)")]
         [SerializeField] private Vector2 carryOffset = new Vector2(0f, 2.0f);
 
-        [Tooltip("ระยะซ้อนของจานแต่ละใบ (เมตร)")]
-        [SerializeField] private float carryStackSpacing = 0.2f;
-
         private enum State { Idle, ToPot, Loading, ToShelf, Unloading }
 
         private readonly List<Item> carried = new List<Item>();

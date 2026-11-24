@@ -1959,14 +1959,7 @@ namespace GI351.KitchenGame
         {
             if (customRingSprite != null) return customRingSprite;
 
-#if UNITY_EDITOR
-            Sprite loaded = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Prefab/Shop/FloorStandRing.png");
-            if (loaded != null)
-            {
-                customRingSprite = loaded;
-                return loaded;
-            }
-#endif
+            // วงที่สร้างด้วยโค้ด เหมือนกันทั้งใน Editor และตอนบิ้ลเกม
             return GetOrCreateRingSprite();
         }
 
@@ -1975,10 +1968,6 @@ namespace GI351.KitchenGame
         /// </summary>
         public static Sprite GetSharedRingSprite()
         {
-#if UNITY_EDITOR
-            Sprite loaded = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Prefab/Shop/FloorStandRing.png");
-            if (loaded != null) return loaded;
-#endif
             return GetOrCreateRingSprite();
         }
 

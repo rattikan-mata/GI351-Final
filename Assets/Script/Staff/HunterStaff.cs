@@ -50,7 +50,6 @@ namespace GI351.KitchenGame
 
         [Header("Carry (เนื้อที่ถืออยู่)")]
         [SerializeField] private Vector2 carryOffset = new Vector2(0f, 2.0f);
-        [SerializeField] private float carryStackSpacing = 0.2f;
 
         private enum State { Idle, GoingOut, Hunting, Returning, Feeding }
 

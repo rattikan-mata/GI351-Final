@@ -41,9 +41,6 @@ namespace GI351.KitchenGame
         [Tooltip("ตำแหน่งเยื้องสำหรับวางอาหารบนโต๊ะ (ถ้าไม่ได้กำหนด foodDisplayPoint)")]
         [SerializeField] private Vector2 foodDisplayOffset = new Vector2(0f, 0.2f);
 
-        [Tooltip("ระยะห่างระหว่างอาหารแต่ละชิ้นที่วางเรียงบนโต๊ะ (เมตร) กรณีจัดเรียงอัตโนมัติ")]
-        [SerializeField] private float foodDisplaySpacing = 0.45f;
-
         [Tooltip("วางอาหารบนโต๊ะได้ไม่จำกัด (ติ๊กถูก = ไม่สนใจ Max Plates)")]
         [SerializeField] private bool unlimitedFood = false;
 
@@ -520,11 +517,11 @@ namespace GI351.KitchenGame
         private void OnValidate()
         {
             if (depositZoneRadius < 0.1f) depositZoneRadius = 0.1f;
-            if (Application.isPlaying)
-            {
-                SetupDepositZoneAndRing();
-            }
+            // ตั้งรูปใน OnValidate ไม่ได้ (Unity เตือน SendMessage) ให้ไปทำเฟรมถัดไปใน Update แทน
+            if (Application.isPlaying) pendingZoneSetup = true;
         }
+
+        private bool pendingZoneSetup;
 
         /// <summary>
         /// ทำให้ตัวเคาน์เตอร์ขายอาหารเป็นของแข็ง (Solid) เดินชนแล้วไม่ทะลุ
@@ -635,6 +632,12 @@ namespace GI351.KitchenGame
             {
                 UpdateEditorVisuals();
                 return;
+            }
+
+            if (pendingZoneSetup)
+            {
+                pendingZoneSetup = false;
+                SetupDepositZoneAndRing();
             }
 
             // ล็อก/ปลดพร้อมหม้อ: ยังล็อกอยู่ก็ไม่รับของ
@@ -1229,14 +1232,7 @@ namespace GI351.KitchenGame
         {
             if (cachedRingSprite != null) return cachedRingSprite;
 
-#if UNITY_EDITOR
-            Sprite loaded = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Prefab/Shop/FloorStandRing.png");
-            if (loaded != null)
-            {
-                cachedRingSprite = loaded;
-                return cachedRingSprite;
-            }
-#endif
+            // วงที่สร้างด้วยโค้ด เหมือนกันทั้งใน Editor และตอนบิ้ลเกม
             return GetOrCreateRingSprite();
         }
 
