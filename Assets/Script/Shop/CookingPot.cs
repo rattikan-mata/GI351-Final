@@ -881,6 +881,7 @@ namespace GI351.KitchenGame
 
                 if (MoneyManager.Instance.SpendMoney(purchasePrice))
                 {
+                    UiAudioManager.Instance?.PlayBuyOrUnlockZone();
                     UnlockPot();
                     return true;
                 }

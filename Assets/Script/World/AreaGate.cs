@@ -231,7 +231,11 @@ namespace GI351.KitchenGame
             paid += spend;
             RefreshVisuals();
 
-            if (paid >= price) Unlock();
+            if (paid >= price)
+            {
+                UiAudioManager.Instance?.PlayBuyOrUnlockZone();
+                Unlock();
+            }
             return spend;
         }
 

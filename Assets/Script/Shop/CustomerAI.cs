@@ -561,6 +561,12 @@ namespace GI351.KitchenGame
             ShowExclamationMark();
             AudioManager.Play(SoundId.ThiefAlert);
             currentState = CustomerState.ThiefFleeing;
+            if (stolenDish != null)
+            {
+                HudExtrasView alert = FindAnyObjectByType<HudExtrasView>();
+                if (alert != null) alert.ShowThiefAlert();
+                else UiAudioManager.Instance?.PlayThiefAlert();
+            }
             Debug.Log("[CustomerAI] โจรฉกอาหารไปแล้ว! วิ่งหนีเร็ว!");
         }
 
