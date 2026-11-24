@@ -35,6 +35,12 @@ namespace GI351.KitchenGame
         [Tooltip("เมื่อเปิดประตูไปโซนถัดไป (ประตูที่อยู่ติดโซนนี้) จำนวนสูงสุดของโซนนี้เพิ่มเป็นเท่านี้ (0 = ไม่เพิ่ม)")]
         [SerializeField] private int maxAnimalsAfterNextOpens = 12;
 
+        [Tooltip("เมื่ออัปกระบองเต็มเลเวลแล้ว สัตว์ในโซนนี้เกิดเยอะขึ้น/ถี่ขึ้นกี่เปอร์เซ็นต์ (0.1 = +10%)")]
+        [Min(0f)] [SerializeField] private float maxClubSpawnBonus = 0.1f;
+
+        [Tooltip("เมื่อจ้าง Hunter ประจำโซนนี้แล้ว จำนวนสัตว์สูงสุดเพิ่มกี่ตัว")]
+        [Min(0)] [SerializeField] private int hunterExtraAnimals = 0;
+
         [Header("Unlock (การปลดล็อก)")]
         [Tooltip("ประตูที่ต้องจ่ายเงินเปิดก่อนเข้าโซนนี้ (ว่าง = เปิดตั้งแต่เริ่ม) ก่อนเปิดจะไม่มีสัตว์เกิด")]
         [SerializeField] private AreaGate gate;
@@ -80,11 +86,52 @@ namespace GI351.KitchenGame
         }
 
         private AreaGate nextGate;
+        private bool nextOpened;
+        private bool hunterHired;
+
+        /// <summary>จ้าง Hunter ประจำโซนนี้แล้ว: เพิ่มสัตว์ตาม hunterExtraAnimals (StaffHirer เรียก)</summary>
+        public void SetHunterHired()
+        {
+            if (hunterHired) return;
+            hunterHired = true;
+            ApplySpawnCount();
+        }
+
+        private static bool clubMaxed;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetClubMaxed()
+        {
+            clubMaxed = false;
+        }
+
+        /// <summary>กระบองเต็มเลเวลแล้ว: ทุกโซนเพิ่มจำนวนสัตว์ตาม maxClubSpawnBonus ของโซนนั้น (HuntUpgrades เรียก)</summary>
+        public static void SetClubMaxed(bool maxed)
+        {
+            if (clubMaxed == maxed) return;
+            clubMaxed = maxed;
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i] != null) all[i].ApplySpawnCount();
+            }
+        }
+
+        /// <summary>จำนวนสูงสุดและเวลาเกิดตอนนี้ (รวมโบนัสเปิดโซนถัดไป และโบนัสกระบองเต็ม)</summary>
+        private void ApplySpawnCount()
+        {
+            if (spawner == null) return;
+            int baseMax = nextOpened ? Mathf.Max(maxAnimals, maxAnimalsAfterNextOpens) : maxAnimals;
+            if (hunterHired) baseMax += hunterExtraAnimals;
+            float mult = clubMaxed ? 1f + maxClubSpawnBonus : 1f;
+            spawner.SetMaxCount(Mathf.RoundToInt(baseMax * mult));
+            spawner.SetSpawnInterval(respawnInterval / mult);
+        }
 
         private void Start()
         {
             // ประตูไปโซนถัดไป = ประตูถัดไปตามลำดับปลดล็อก (ประตูที่ต้องเปิดประตูของโซนนี้ก่อน)
             // โซนเริ่มต้นที่ไม่มีประตู -> ประตูแรกที่ไม่ต้องเปิดอะไรก่อน (เช่น เกาะไก่ -> ประตูเกาะหมู, เกาะหมู -> ประตูเกาะควาย)
+            if (clubMaxed) ApplySpawnCount();
             if (maxAnimalsAfterNextOpens <= 0 || spawner == null) return;
             for (int i = 0; i < all.Count; i++)
             {
@@ -101,7 +148,8 @@ namespace GI351.KitchenGame
 
         private void OnNextGateUnlocked()
         {
-            if (spawner != null) spawner.SetMaxCount(Mathf.Max(maxAnimals, maxAnimalsAfterNextOpens));
+            nextOpened = true;
+            ApplySpawnCount();
         }
 
         private void OnDestroy()

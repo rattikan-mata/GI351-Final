@@ -65,6 +65,12 @@ namespace GI351.KitchenGame
             spawnRadius = Mathf.Max(0.1f, radius);
         }
 
+        /// <summary>เปลี่ยนช่วงเวลาเกิดระหว่างเกม (วินาที)</summary>
+        public void SetSpawnInterval(float interval)
+        {
+            spawnInterval = Mathf.Max(0.1f, interval);
+        }
+
         /// <summary>เปลี่ยนจำนวนสูงสุดระหว่างเกม (เพิ่มแล้วจะค่อยๆ เกิดเพิ่มตาม spawnInterval)</summary>
         public void SetMaxCount(int maxCount)
         {

@@ -443,8 +443,11 @@ namespace GI351.KitchenGame
                 return;
             }
 
+            // จุดเกิดอยู่บนแหลมที่มีน้ำล้อม: ข้ามระหว่างแหลมกับเกาะร้านต้องผ่านคอแหลม (Path Gate) ก่อน ไม่เดินตัดน้ำ
+            Vector2 goal = GetGateTarget(currentPos, destination);
+
             // ถ้าทางตรงชนโต๊ะ/หม้อ ให้เดินไปมุมของสิ่งกีดขวางก่อน
-            Vector2 steerTarget = GetSteerTarget(currentPos, destination);
+            Vector2 steerTarget = goal != (Vector2)destination ? goal : GetSteerTarget(currentPos, destination);
             Vector2 vel = (steerTarget - currentPos).normalized * speed;
             rb.linearVelocity = vel;
 
@@ -453,6 +456,21 @@ namespace GI351.KitchenGame
                 if (vel.x > 0.05f) spriteRenderer.flipX = false;
                 else if (vel.x < -0.05f) spriteRenderer.flipX = true;
             }
+        }
+
+        /// <summary>
+        /// ถ้าตัวลูกค้ากับปลายทางอยู่คนละฝั่งของคอแหลม (ฝั่งหนึ่งต่ำกว่า Path Gate อีกฝั่งสูงกว่า) ให้เดินไปที่คอแหลมก่อน
+        /// </summary>
+        private Vector2 GetGateTarget(Vector2 from, Vector2 destination)
+        {
+            if (spawnerReference == null || spawnerReference.PathGate == null) return destination;
+            Vector2 gate = spawnerReference.PathGate.position;
+            const float band = 0.15f;
+            bool fromBelow = from.y < gate.y - band;
+            bool destBelow = destination.y < gate.y - band;
+            if (fromBelow == destBelow) return destination;
+            if (Vector2.Distance(from, gate) <= 0.2f) return destination;
+            return gate;
         }
 
         /// <summary>

@@ -46,6 +46,9 @@ namespace GI351.KitchenGame
         [Tooltip("จุดที่ลูกค้าจะเดินกลับไปแล้วหายไป (ถ้าว่างจะใช้จุดเกิด)")]
         [SerializeField] private Transform exitPoint;
 
+        [Tooltip("คอแหลมที่ต่อจากจุดเกิดไปเกาะร้าน: ลูกค้าที่จะข้ามระหว่างฝั่งต่ำกว่าจุดนี้กับฝั่งสูงกว่า ต้องเดินผ่านจุดนี้ก่อน (ไม่เดินตัดน้ำ) ว่าง = เดินตรง")]
+        [SerializeField] private Transform pathGate;
+
         [Tooltip("โต๊ะขายอาหารที่ลูกค้าจะเดินไป")]
         [SerializeField] private FoodSellCounter targetCounter;
 
@@ -57,9 +60,25 @@ namespace GI351.KitchenGame
         [Tooltip("เปิด = ลูกค้าเริ่มมาเมื่อมีอาหารวางบนแผงครั้งแรก (เปิดเกมมาร้านว่าง) / ปิด = มาตั้งแต่เริ่มเกม")]
         [SerializeField] private bool waitForFirstFood = true;
 
-        [Header("Adaptive Rate (ลูกค้ามาตามของบนแผง)")]
+        [Header("Rhythm (จังหวะการมา: เฉลี่ยตามคนต่อนาที แต่สุ่มมาถี่บ้างเว้นบ้าง)")]
+        [Tooltip("โอกาสที่คนถัดไปจะมาติดๆ กัน (มารัว)")]
+        [Range(0f, 1f)] [SerializeField] private float burstChance = 0.3f;
+
+        [Tooltip("ช่วงห่างตอนมารัว เทียบกับช่วงปกติ (0.15-0.4 = เร็วกว่าปกติมาก)")]
+        [SerializeField] private Vector2 burstGap = new Vector2(0.15f, 0.4f);
+
+        [Tooltip("โอกาสที่จะเว้นว่างนานกว่าปกติ")]
+        [Range(0f, 1f)] [SerializeField] private float lullChance = 0.2f;
+
+        [Tooltip("ช่วงห่างตอนเว้น เทียบกับช่วงปกติ")]
+        [SerializeField] private Vector2 lullGap = new Vector2(1.6f, 2.3f);
+
+        [Tooltip("ช่วงห่างตอนปกติ เทียบกับช่วงปกติ")]
+        [SerializeField] private Vector2 normalGap = new Vector2(0.9f, 1.4f);
+
+        [Header("Adaptive Rate (ลูกค้ามาตามของบนแผง) ปิดไว้: ลูกค้ามาตามเวลาเสมอ ของน้อยก็ยังมา ให้มีคนยืนรอ")]
         [Tooltip("เปิด = ลูกค้ามาถี่ขึ้นตอนแผงมีของเหลือ และมาช้าลงตอนแผงว่าง (ลดคนรอจนเดินหนี)")]
-        [SerializeField] private bool adaptToStock = true;
+        [SerializeField] private bool adaptToStock = false;
 
         [Tooltip("ตัวคูณความถี่ตอนแผงไม่มีของเหลือให้ลูกค้าใหม่ (0.35 = มาช้าลงเหลือราว 1/3)")]
         [Range(0.05f, 1f)] [SerializeField] private float emptyRateMultiplier = 0.35f;
@@ -72,7 +91,19 @@ namespace GI351.KitchenGame
 
         private readonly List<CustomerAI> activeCustomers = new List<CustomerAI>();
         private float spawnTimer;
+        private float nextGap = -1f;
         private bool firstFoodSeen;
+
+        /// <summary>คอแหลมที่ลูกค้าต้องเดินผ่านระหว่างจุดเกิดกับเกาะร้าน (null = ไม่มี)</summary>
+        public Transform PathGate => pathGate;
+
+        /// <summary>สุ่มช่วงห่างถึงคนถัดไป: มารัว / เว้น / ปกติ เฉลี่ยแล้วราว spawnInterval</summary>
+        private float RollGap()
+        {
+            float r = Random.value;
+            Vector2 range = r < burstChance ? burstGap : (r < burstChance + lullChance ? lullGap : normalGap);
+            return spawnInterval * Random.Range(range.x, range.y);
+        }
 
         /// <summary>ความถี่ตอนนี้เทียบกับค่าปกติ (ตามของบนแผง)</summary>
         public float CurrentRateMultiplier { get; private set; } = 1f;
@@ -214,15 +245,18 @@ namespace GI351.KitchenGame
                     if (c != null && c.DishesCount > 0) { firstFoodSeen = true; break; }
                 }
                 if (!firstFoodSeen) { CurrentRateMultiplier = 0f; return; }   // ยังไม่ปล่อยลูกค้า
-                spawnTimer = Mathf.Max(spawnTimer, spawnInterval - 1f);
+                nextGap = 1f;
+                spawnTimer = 0f;
             }
 
             // แผงมีของเหลือ = เวลานับเร็วขึ้น (ลูกค้ามาถี่), แผงว่าง = นับช้าลง
             CurrentRateMultiplier = ComputeRateMultiplier();
+            if (nextGap < 0f) nextGap = RollGap();
             spawnTimer += Time.deltaTime * CurrentRateMultiplier;
-            if (spawnTimer >= spawnInterval)
+            if (spawnTimer >= nextGap)
             {
                 spawnTimer = 0f;
+                nextGap = RollGap();
                 TrySpawnCustomer();
             }
         }

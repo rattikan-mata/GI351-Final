@@ -110,6 +110,7 @@ GameObject:
   - component: {fileID: 8532301262830496536}
   - component: {fileID: 761449825714250483}
   - component: {fileID: 485589618066966594}
+  - component: {fileID: 6269391234529843036}
   m_Layer: 3
   m_Name: Chicken
   m_TagString: Untagged
@@ -345,3 +346,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.YSortActor
   footRenderer: {fileID: 0}
   footLift: 0.05
+--- !u!114 &6269391234529843036
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8703162885063433997}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 366b0b08c0b74934d9fbab594f8c7e16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.AnimalHop
+  stepsPerSecond: 3
+  hopHeightRatio: 0.28333333
+  swayDegrees: 25
+  fullSpeed: 0
+  ampSmoothing: 10
+  visual: {fileID: 0}

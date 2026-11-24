@@ -104,6 +104,8 @@ namespace GI351.KitchenGame
                     {
                         w.SetDamage(damage);
                     }
+                    // กระบองเต็มเลเวล: สัตว์ทุกโซนเกิดเยอะขึ้น (ค่าต่อโซนตั้งที่ HuntArea > Max Club Spawn Bonus)
+                    HuntArea.SetClubMaxed(item.IsMaxLevel);
                     break;
 
                 case Stat.CarryCapacity:

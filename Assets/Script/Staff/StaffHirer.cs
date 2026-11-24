@@ -158,6 +158,8 @@ namespace GI351.KitchenGame
             hunter.Init(transform.position + (Vector3)hunterSpawnOffset, slot.meat, slot.carryCapacity, slot.damage,
                 slot.attackInterval, slot.moveSpeedMultiplier);
             hiredHunters[slot.itemId] = hunter;
+            HuntArea area = FindArea(slot.meat);
+            if (area != null) area.SetHunterHired();
             Debug.Log("[StaffHirer] Hired a hunter for " + slot.meat);
             return hunter;
         }

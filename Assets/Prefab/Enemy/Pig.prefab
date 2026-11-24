@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 2757716024950038812}
   - component: {fileID: 8233991410003456420}
   - component: {fileID: 7681226987485011168}
+  - component: {fileID: 159828982878498106}
   m_Layer: 3
   m_Name: Pig
   m_TagString: Untagged
@@ -261,6 +262,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.YSortActor
   footRenderer: {fileID: 0}
   footLift: 0.05
+--- !u!114 &159828982878498106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 811237516661137993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 366b0b08c0b74934d9fbab594f8c7e16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.AnimalHop
+  stepsPerSecond: 3
+  hopHeightRatio: 0.28333333
+  swayDegrees: 25
+  fullSpeed: 0
+  ampSmoothing: 10
+  visual: {fileID: 0}
 --- !u!1 &8192489401846739916
 GameObject:
   m_ObjectHideFlags: 0
