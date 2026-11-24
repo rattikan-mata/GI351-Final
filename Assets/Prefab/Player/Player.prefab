@@ -277,9 +277,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.CarryCounter
   heightOffset: 1.48
-  textHeight: 0.36
-  normalColor: {r: 1, g: 1, b: 1, a: 1}
-  fullColor: {r: 1, g: 0.35, b: 0.3, a: 1}
+  pillSprite: {fileID: 21300000, guid: 863f6aaeb34fc214691777d7d7ca84aa, type: 3}
+  pillFullSprite: {fileID: 21300000, guid: 0eda871b0ebf5a84f8addf55dca678f6, type: 3}
+  pillWidth: 0.95
+  textHeight: 0.3
+  normalColor: {r: 0.15, g: 0.1, b: 0.08, a: 1}
+  fullColor: {r: 0.15, g: 0.1, b: 0.08, a: 1}
   outlineColor: {r: 0.1, g: 0.07, b: 0.06, a: 1}
   outlineThickness: 0.025
   sortingOrder: 60
@@ -457,6 +460,7 @@ MonoBehaviour:
   attackSpeed: 1
   knockbackForce: 3
   hitBackTolerance: 0.05
+  closeHitRadius: 1.2
   hitSweepLeadAngle: 10
   targetLayer:
     serializedVersion: 2

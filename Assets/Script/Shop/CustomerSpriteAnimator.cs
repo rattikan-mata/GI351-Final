@@ -15,8 +15,10 @@ namespace GI351.KitchenGame
             public string name = "Customer";
             [Tooltip("ท่ายืน (สลับไปมาช้าๆ)")]
             public Sprite[] idle;
-            [Tooltip("ท่าเดิน: เฟรม 0 = ยืนตรง, 1-2 = ก้าวเท้า")]
+            [Tooltip("ท่าเดิน: เฟรม 0 = ยืนตรง, 1-2 = ก้าวเท้า (ว่าง = ใช้ท่ายืน)")]
             public Sprite[] walk;
+            [Tooltip("ท่าตี (ลูกจ้างล่าสัตว์) เล่นครั้งเดียวตอนเรียก PlayAttack")]
+            public Sprite[] hit;
         }
 
         [SerializeField] private SpriteRenderer spriteRenderer;
@@ -33,8 +35,18 @@ namespace GI351.KitchenGame
 
         private static readonly int[] WalkCycle = { 1, 0, 2, 0 };
 
+        [Tooltip("ท่าตีเล่นนานกี่วินาที")]
+        [SerializeField] private float hitDuration = 0.3f;
+
         private Look look;
         private float timer;
+        private float hitUntil = -1f;
+
+        /// <summary>เล่นท่าตี 1 รอบ (ถ้าหน้าตานี้มีท่าตี)</summary>
+        public void PlayAttack()
+        {
+            if (look != null && look.hit != null && look.hit.Length > 0) hitUntil = Time.time + hitDuration;
+        }
         private Vector3 lastPos;
 
         private void Awake()
@@ -55,8 +67,16 @@ namespace GI351.KitchenGame
             if (v.sqrMagnitude < 0.0001f && Time.deltaTime > 0f) v = (transform.position - lastPos) / Time.deltaTime;
             lastPos = transform.position;
 
+            if (Time.time < hitUntil)
+            {
+                float k = 1f - (hitUntil - Time.time) / Mathf.Max(0.01f, hitDuration);
+                Sprite h = look.hit[Mathf.Clamp((int)(k * look.hit.Length), 0, look.hit.Length - 1)];
+                if (spriteRenderer.sprite != h) spriteRenderer.sprite = h;
+                return;
+            }
+
             bool moving = v.sqrMagnitude > moveThreshold * moveThreshold;
-            Sprite[] set = moving ? look.walk : look.idle;
+            Sprite[] set = moving && look.walk != null && look.walk.Length > 0 ? look.walk : look.idle;
             if (set == null || set.Length == 0) return;
 
             timer += Time.deltaTime * (moving ? walkFps : idleFps);

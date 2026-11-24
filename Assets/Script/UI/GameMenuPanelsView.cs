@@ -87,7 +87,7 @@ namespace GI351.KitchenGame
         private static void BindVolumeSlider(Slider slider, bool bgm)
         {
             if (slider == null) return;
-            float saved = PlayerPrefs.GetFloat(bgm ? UiAudioManager.BgmPrefKey : UiAudioManager.SfxPrefKey, 1f);
+            float saved = PlayerPrefs.GetFloat(bgm ? UiAudioManager.BgmPrefKey : UiAudioManager.SfxPrefKey, UiAudioManager.DefaultVolume);
             slider.SetValueWithoutNotify(saved);
             if (bgm)
             {

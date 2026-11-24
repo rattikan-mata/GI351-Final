@@ -70,6 +70,16 @@ namespace GI351.KitchenGame
         [Tooltip("โชว์จานบนโต๊ะสูงสุดกี่จาน (ที่เกินยังอยู่บนแผง แต่ซ่อนไว้ ดูจำนวนจริงที่ป้าย)")]
         [Min(1)] [SerializeField] private int maxVisibleDishes = 20;
 
+        [Header("Table Art (โต๊ะมีรูปอาหาร แทนการวางจานทีละชิ้น)")]
+        [Tooltip("ปิด = ไม่โชว์จานทีละชิ้นบนโต๊ะ (จานลอยมาลงแล้วหายเข้าโต๊ะ) ใช้รูปโต๊ะที่มีอาหาร + ป้ายจำนวนจานแทน")]
+        [SerializeField] private bool showDishesOnTable = false;
+
+        [Tooltip("รูปโต๊ะตอนไม่มีอาหาร (ว่าง = ใช้รูปที่ตั้งไว้ตอนเริ่ม)")]
+        [SerializeField] private Sprite emptyTableSprite;
+
+        [Tooltip("รูปโต๊ะตอนมีอาหารอย่างน้อย 1 จาน (ต้องขนาดภาพ/จุดหมุนเดียวกับรูปโต๊ะว่าง)")]
+        [SerializeField] private Sprite stockedTableSprite;
+
         [Header("Stock Badge (ป้ายจำนวนอาหารบนแผง แบบ Juice King)")]
         [Tooltip("ป้ายวงรีบอกจำนวนอาหารที่เหลือบนแผง (ไอคอน + ตัวเลข)")]
         [SerializeField] private bool showStockBadge = true;
@@ -378,14 +388,17 @@ namespace GI351.KitchenGame
             if (!customerQueue.Contains(customer)) return false;
 
             int mySlot = crowdSlots.GetSlot(customer);
+            float myPatience = customer.RemainingPatience;
             foreach (CustomerAI other in customerQueue)
             {
                 if (other == null || other == customer) continue;
                 if (other.State != CustomerState.WaitingAtCounter) continue;
                 if (!HasFoodAvailable(other.RequestedDish)) continue;
 
-                // มีคนยืนใกล้เคาน์เตอร์กว่าที่ก็หยิบอาหารชิ้นนี้ได้ ให้เขาหยิบก่อน
-                if (crowdSlots.GetSlot(other) < mySlot) return false;
+                // คนที่ความอดทนเหลือน้อยกว่า (ใกล้โมโหเดินหนี) ได้ก่อน เท่ากันแล้วค่อยให้คนที่ยืนใกล้เคาน์เตอร์กว่า
+                float otherPatience = other.RemainingPatience;
+                if (otherPatience < myPatience - 0.01f) return false;
+                if (Mathf.Abs(otherPatience - myPatience) <= 0.01f && crowdSlots.GetSlot(other) < mySlot) return false;
             }
             return true;
         }
@@ -923,9 +936,24 @@ namespace GI351.KitchenGame
                         sr.sortingOrder = foodDisplaySortingOrder + FlatPile.SortingOffset(i, displayColumns, maxVisibleDishes);
                     }
                     // โชว์เฉพาะจานในจำนวนที่กำหนด (จานที่กำลังลอยมายังเห็นจนกว่าจะถึง)
-                    sr.enabled = hasPlateSlots || i < maxVisibleDishes || flyingIn.ContainsKey(dish);
+                    sr.enabled = showDishesOnTable
+                        ? (hasPlateSlots || i < maxVisibleDishes || flyingIn.ContainsKey(dish))
+                        : flyingIn.ContainsKey(dish);
                 }
             }
+
+            UpdateTableSprite();
+        }
+
+        /// <summary>สลับรูปโต๊ะ: มีอาหาร = โต๊ะมีรูปอาหาร, หมด = โต๊ะเปล่า</summary>
+        private void UpdateTableSprite()
+        {
+            if (stockedTableSprite == null) return;
+            SpriteRenderer tableRenderer = GetComponent<SpriteRenderer>();
+            if (tableRenderer == null) return;
+            if (emptyTableSprite == null) emptyTableSprite = tableRenderer.sprite;
+            Sprite target = dishesOnCounter.Count > 0 ? stockedTableSprite : emptyTableSprite;
+            if (tableRenderer.sprite != target) tableRenderer.sprite = target;
         }
 
         // ---------- ป้ายจำนวนอาหารบนแผง ----------
@@ -1048,7 +1076,7 @@ namespace GI351.KitchenGame
                     if (index >= 0)
                     {
                         d.transform.position = GetDisplaySlotPosition(index);
-                        if (index >= maxVisibleDishes && d.SpriteRenderer != null) d.SpriteRenderer.enabled = false;
+                        if ((!showDishesOnTable || index >= maxVisibleDishes) && d.SpriteRenderer != null) d.SpriteRenderer.enabled = false;
                     }
                 }
             }
@@ -1142,6 +1170,8 @@ namespace GI351.KitchenGame
             if (stolenDish != null)
             {
                 stolenDish.transform.SetParent(null);
+                flyingIn.Remove(stolenDish);
+                if (stolenDish.SpriteRenderer != null) stolenDish.SpriteRenderer.enabled = true;   // จานที่ซ่อนอยู่ในโต๊ะ ให้เห็นตอนโจรถือไป
                 RearrangeFoodOnCounter();
                 onDishesCountChanged?.Invoke(dishesOnCounter.Count);
             }

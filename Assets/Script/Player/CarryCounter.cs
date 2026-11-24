@@ -14,6 +14,16 @@ namespace GI351.KitchenGame
         [Tooltip("ความสูงเหนือกลางตัวผู้เล่น (หน่วยในโลก)")]
         [SerializeField] private float heightOffset = 1.85f;
 
+        [Header("Pill (กรอบหลังตัวเลข)")]
+        [Tooltip("รูปกรอบหลังตัวเลข (ว่าง = ไม่มีกรอบ ใช้ตัวหนังสือขอบดำแบบเดิม)")]
+        [SerializeField] private Sprite pillSprite;
+
+        [Tooltip("รูปกรอบตอนถือเต็ม")]
+        [SerializeField] private Sprite pillFullSprite;
+
+        [Tooltip("ความกว้างกรอบ (หน่วยโลก) ความสูงตามสัดส่วนรูป")]
+        [SerializeField] private float pillWidth = 0.95f;
+
         [Header("Look (หน้าตา)")]
         [Tooltip("ขนาดตัวอักษร (หน่วยในโลก ต่อ 1 บรรทัดโดยประมาณ)")]
         [SerializeField] private float textHeight = 0.36f;
@@ -49,6 +59,7 @@ namespace GI351.KitchenGame
         private Transform root;
         private TextMesh mainText;
         private TextMesh[] outlineTexts;
+        private SpriteRenderer pillRenderer;
         private float popTimer = -1f;
         private int lastCount = -1;
 
@@ -90,8 +101,20 @@ namespace GI351.KitchenGame
             root.SetParent(transform, false);
             YSort.PutOnTop(rootObj);   // ตัวเลขอยู่บนสุดเสมอ ไม่โดนโต๊ะ/ร้านบัง
 
-            outlineTexts = new TextMesh[OutlineDirs.Length];
-            for (int i = 0; i < OutlineDirs.Length; i++)
+            if (pillSprite != null)
+            {
+                var pill = new GameObject("Pill");
+                pill.transform.SetParent(root, false);
+                pillRenderer = pill.AddComponent<SpriteRenderer>();
+                pillRenderer.sprite = pillSprite;
+                pillRenderer.sortingOrder = sortingOrder - 1;
+                float w = pillSprite.bounds.size.x;
+                pill.transform.localScale = Vector3.one * (w > 0.0001f ? pillWidth / w : 1f);
+            }
+
+            // มีกรอบแล้วไม่ต้องมีขอบตัวหนังสือ
+            outlineTexts = new TextMesh[pillSprite != null ? 0 : OutlineDirs.Length];
+            for (int i = 0; i < outlineTexts.Length; i++)
             {
                 outlineTexts[i] = CreateText("Outline", font, outlineColor, sortingOrder);
                 outlineTexts[i].transform.localPosition = (Vector3)(OutlineDirs[i] * outlineThickness);
@@ -133,6 +156,7 @@ namespace GI351.KitchenGame
 
             mainText.text = s;
             mainText.color = full ? fullColor : normalColor;
+            if (pillRenderer != null && pillFullSprite != null) pillRenderer.sprite = full ? pillFullSprite : pillSprite;
             foreach (var o in outlineTexts) o.text = s;
 
             root.gameObject.SetActive(!(hideWhenEmpty && count <= 0));

@@ -321,7 +321,9 @@ namespace GI351.KitchenGame
             }
             else
             {
-                UiAudioManager.Instance?.PlayBuyOrUnlockZone();
+                // ซื้อลูกจ้าง (ร้าน Staff) ใช้เสียงเบากว่าซื้อของทั่วไป
+                if (GetComponentInParent<StaffHirer>() != null || GetComponentInChildren<StaffHirer>() != null) UiAudioManager.Instance?.PlayBuyStaff();
+                else UiAudioManager.Instance?.PlayBuyOrUnlockZone();
                 Debug.Log("[ShopStall] Bought " + it.itemName + " ($" + it.price + ")");
             }
             it.onPurchased?.Invoke();
@@ -524,7 +526,12 @@ namespace GI351.KitchenGame
         {
             Image image = tab.targetGraphic as Image;
             if (image == null) image = tab.GetComponent<Image>();
-            if (image != null) image.color = selected ? v.tabSelectedColor : v.tabNormalColor;
+            if (image != null)
+            {
+                image.color = selected ? v.tabSelectedColor : v.tabNormalColor;
+                Sprite s = selected ? v.tabSelectedSprite : v.tabNormalSprite;
+                if (s != null) image.sprite = s;
+            }
             Text label = tab.GetComponentInChildren<Text>(true);
             if (label != null) label.color = selected ? v.tabSelectedTextColor : v.tabNormalTextColor;
         }

@@ -51,7 +51,7 @@ MonoBehaviour:
     clips:
     - {fileID: 8300000, guid: a0fa609422728bb4c9b77483069aa837, type: 3}
     - {fileID: 8300000, guid: a40385eaea96b9f47851947b35336d2e, type: 3}
-    volume: 0.233
+    volume: 0.198
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0
@@ -106,7 +106,7 @@ MonoBehaviour:
   - id: 6
     clips:
     - {fileID: 8300000, guid: c42ebdb908edc6b499eaed237ea6cc82, type: 3}
-    volume: 0.204
+    volume: 0.173
     pitchRange: {x: 0.95, y: 1.05}
     minInterval: 0
     spatial: 0

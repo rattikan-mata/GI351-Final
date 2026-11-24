@@ -50,6 +50,20 @@ namespace GI351.KitchenGame
         [Tooltip("โต๊ะวางอาหารข้างหม้อ (อาหารที่ต้มเสร็จกองบนโต๊ะนี้) ปล่อยว่าง = หาลูกชื่อ Tray Table เอง ตอนหม้อยังล็อก โต๊ะจะจางและเดินทะลุได้เหมือนหม้อ")]
         [SerializeField] private SpriteRenderer trayTable;
 
+        [Tooltip("ปิด = ไม่โชว์จานทีละชิ้นบนโต๊ะข้างเตา ใช้รูปโต๊ะที่มีอาหาร + ป้ายจำนวนจานแทน")]
+        [SerializeField] private bool showDishesOnTray = false;
+
+        [Tooltip("รูปโต๊ะข้างเตาตอนไม่มีอาหาร (ว่าง = ใช้รูปที่ตั้งไว้ตอนเริ่ม)")]
+        [SerializeField] private Sprite trayEmptySprite;
+
+        [Tooltip("รูปโต๊ะข้างเตาตอนมีอาหาร (ขนาดภาพ/จุดหมุนเดียวกับรูปโต๊ะว่าง)")]
+        [SerializeField] private Sprite trayStockedSprite;
+
+        [Tooltip("ป้ายจำนวนจานบนโต๊ะข้างเตา: ตำแหน่งจากกลางโต๊ะ")]
+        [SerializeField] private Vector2 trayBadgeOffset = new Vector2(0f, -0.25f);
+
+        [SerializeField] private Vector2 trayBadgeSize = new Vector2(0.9f, 0.44f);
+
         [Header("Pot Art (ภาพหม้อ)")]
         [Tooltip("ภาพหม้อตอนว่าง/ยังไม่ต้ม (ว่าง = ใช้ภาพที่ SpriteRenderer อยู่แล้ว)")]
         [SerializeField] private Sprite idleSprite;
@@ -1503,6 +1517,7 @@ namespace GI351.KitchenGame
             int last = trayItems.Count - 1;
             Item dish = trayItems[last];
             trayItems.RemoveAt(last);
+            if (dish != null && dish.SpriteRenderer != null) dish.SpriteRenderer.enabled = true;   // ออกจากโต๊ะแล้วให้เห็นจาน
             LayoutTray();
             return dish;
         }
@@ -1538,8 +1553,63 @@ namespace GI351.KitchenGame
                     it.transform.localScale = FlatPile.LocalScaleForWidth(it.transform, it.SpriteRenderer, trayDishWidth);
                     it.SpriteRenderer.sortingLayerID = layer;
                     it.SpriteRenderer.sortingOrder = baseOrder + FlatPile.SortingOffset(i, trayColumns, outputTrayCapacity);
+                    it.SpriteRenderer.enabled = showDishesOnTray;
                 }
             }
+
+            UpdateTrayVisual();
+        }
+
+        private GameObject trayBadgeRoot;
+        private WorldCountBadge trayBadge;
+        private int lastTrayCount = -1;
+
+        /// <summary>โต๊ะข้างเตา: สลับรูปโต๊ะมี/ไม่มีอาหาร + ป้ายจำนวนจาน (โชว์เมื่อมีอย่างน้อย 1 จาน)</summary>
+        private void UpdateTrayVisual()
+        {
+            if (showDishesOnTray || trayTable == null) return;
+            int count = trayItems.Count;
+
+            if (trayStockedSprite != null)
+            {
+                if (trayEmptySprite == null) trayEmptySprite = trayTable.sprite;
+                Sprite target = count > 0 ? trayStockedSprite : trayEmptySprite;
+                if (trayTable.sprite != target) trayTable.sprite = target;
+            }
+
+            if (count <= 0)
+            {
+                if (trayBadgeRoot != null && trayBadgeRoot.activeSelf) trayBadgeRoot.SetActive(false);
+                lastTrayCount = 0;
+                return;
+            }
+
+            if (trayBadgeRoot == null || trayBadge == null)
+            {
+                if (trayBadgeRoot != null) Destroy(trayBadgeRoot);
+                trayBadgeRoot = new GameObject("TrayBadgeRoot");
+                trayBadgeRoot.transform.SetParent(transform, false);
+                YSort.PutOnTop(trayBadgeRoot);   // ป้ายจำนวนอยู่บนสุดเสมอ
+                trayBadge = WorldCountBadge.Create(trayBadgeRoot.transform, "TrayBadge", trayBadgeSize,
+                    new Color(1f, 0.8f, 0.28f, 1f), new Color(0.42f, 0.26f, 0.12f, 1f), new Color(0.25f, 0.15f, 0.08f, 1f),
+                    trayTable.sortingLayerID, 0);
+            }
+            if (!trayBadgeRoot.activeSelf) trayBadgeRoot.SetActive(true);
+            WorldUi.KeepWorldScale(trayBadgeRoot.transform);
+            Vector3 c = trayTable.bounds.center;
+            trayBadgeRoot.transform.position = new Vector3(c.x + trayBadgeOffset.x, c.y + trayBadgeOffset.y, c.z - 0.1f);
+            trayBadgeRoot.transform.rotation = Quaternion.identity;
+
+            Sprite icon = dishIcon;
+            Color iconColor = Color.white;
+            if (icon == null && trayItems[0] != null && trayItems[0].SpriteRenderer != null)
+            {
+                icon = trayItems[0].SpriteRenderer.sprite;
+                iconColor = trayItems[0].SpriteRenderer.color;
+            }
+            trayBadge.Set(icon, iconColor, count);
+            if (lastTrayCount >= 0 && count > lastTrayCount) trayBadge.Punch();
+            lastTrayCount = count;
         }
 
         private IEnumerator TrayPopIn(Transform t)
@@ -1577,6 +1647,8 @@ namespace GI351.KitchenGame
             int last = trayItems.Count - 1;
             Item dish = trayItems[last];
             trayItems.RemoveAt(last);
+            if (dish != null && dish.SpriteRenderer != null) dish.SpriteRenderer.enabled = true;   // จานลอยออกจากโต๊ะไปหาผู้เล่น
+            UpdateTrayVisual();
             nextTrayCollectTime = Time.time + trayCollectInterval;
             StartCoroutine(FlyTrayDishTo(dish, target));
         }

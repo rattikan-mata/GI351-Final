@@ -67,7 +67,7 @@ namespace GI351.KitchenGame
         [SerializeField] private CashierCounter cashier;
 
         [Tooltip("ขนาดอาหารตอนลูกค้าถือ (สเกลในโลก)")]
-        [SerializeField] private float heldDishScale = 0.6f;
+        [SerializeField] private float heldDishScale = 0.84f;
 
         [Header("Visual Feedback (Optional)")]
         [Tooltip("ไอคอนแสดงตอนได้กินอาหาร (มีความสุข)")]
@@ -324,7 +324,8 @@ namespace GI351.KitchenGame
             if (carryBadge != null)
             {
                 // ในแถวจ่ายเงิน โชว์ป้ายเฉพาะคนหัวแถว (คนข้างหลังยืนชิดกัน ป้ายจะบังกัน)
-                bool showBadge = carriedDishes.Count > 0 &&
+                // จ่ายเงินแล้วแบกอาหารกลับบ้าน: เหลือแค่จานบนหัว ไม่ต้องมีป้ายจำนวน
+                bool showBadge = carriedDishes.Count > 0 && currentState != CustomerState.WalkingToExit &&
                                  (cashier == null || currentState != CustomerState.WaitingAtCashier || cashier.IsHeadOfQueue(this));
                 if (carryBadgeRoot.activeSelf != showBadge) carryBadgeRoot.SetActive(showBadge);
                 carryBadge.Tick();
@@ -712,6 +713,10 @@ namespace GI351.KitchenGame
                 d.transform.position = transform.position + new Vector3(0f, headY, -0.05f);
                 if (d.SpriteRenderer != null)
                 {
+                    // จานใหญ่ขึ้นแล้วก้นจานไม่จมลงไปในหัว: ยกให้ก้นจานอยู่ไม่ต่ำกว่าขอบหัว - 0.1
+                    float headTop = transform.position.y + headY - 0.15f;
+                    float sink = (headTop - 0.1f) - d.SpriteRenderer.bounds.min.y;
+                    if (sink > 0f) d.transform.position += new Vector3(0f, sink, 0f);
                     d.SpriteRenderer.enabled = i == 0;
                     if (spriteRenderer != null)
                     {
@@ -747,7 +752,11 @@ namespace GI351.KitchenGame
             }
             carryBadgeRoot.SetActive(true);
             WorldUi.KeepWorldScale(carryBadgeRoot.transform);
-            carryBadgeRoot.transform.position = transform.position + new Vector3(0f, headY + 0.5f, -0.1f);
+            // ป้ายอยู่ชิดเหนือจานที่ถือ (จานใหญ่/เล็กแค่ไหนก็ไม่ทับ)
+            float badgeY = transform.position.y + headY + 0.42f;
+            Item top = carriedDishes[0];
+            if (top != null && top.SpriteRenderer != null) badgeY = top.SpriteRenderer.bounds.max.y + 0.22f;
+            carryBadgeRoot.transform.position = new Vector3(transform.position.x, badgeY, transform.position.z - 0.1f);
 
             Item first = carriedDishes[0];
             Sprite icon = first != null && first.SpriteRenderer != null ? first.SpriteRenderer.sprite : null;
@@ -827,6 +836,16 @@ namespace GI351.KitchenGame
 
         private GameObject wantBubbleObject;
 
+        [Header("Order Bubble (ป้ายเมนูเหนือหัว)")]
+        [Tooltip("รูปฟองความคิดหลังชื่อเมนู (ว่าง = ตัวหนังสือลอยๆ แบบเดิม)")]
+        [SerializeField] private Sprite orderBubbleSprite;
+
+        [Tooltip("ความกว้างฟอง (หน่วยโลก)")]
+        [SerializeField] private float orderBubbleWidth = 1.5f;
+
+        [Tooltip("สีชื่อเมนูในฟอง")]
+        [SerializeField] private Color orderBubbleTextColor = new Color(0.33f, 0.24f, 0.36f, 1f);
+
         /// <summary>แสดงป้ายเมนูที่ลูกค้าอยากกินเหนือหัว</summary>
         private void ShowWantBubble()
         {
@@ -844,20 +863,38 @@ namespace GI351.KitchenGame
                 }
                 wantBubbleObject.transform.localPosition = new Vector3(0f, headY, -0.1f);
 
-                var tm = wantBubbleObject.AddComponent<TextMesh>();
+                // ชื่อเมนูอยู่ในลูกของฟอง (ฟองเป็นรูป ตัวหนังสือวางทับ)
+                GameObject textObj = wantBubbleObject;
+                if (orderBubbleSprite != null)
+                {
+                    float s = Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.x));
+                    var bubble = new GameObject("Bubble");
+                    bubble.transform.SetParent(wantBubbleObject.transform, false);
+                    var bsr = bubble.AddComponent<SpriteRenderer>();
+                    bsr.sprite = orderBubbleSprite;
+                    bsr.sortingOrder = 49;
+                    float w = orderBubbleSprite.bounds.size.x;
+                    bubble.transform.localScale = Vector3.one * (w > 0.0001f ? orderBubbleWidth / w / s : 1f);
+                    textObj = new GameObject("Text");
+                    textObj.transform.SetParent(wantBubbleObject.transform, false);
+                    // ให้ตัวหนังสืออยู่กลางส่วนฟองใหญ่ (หางฟองอยู่ซ้ายล่าง)
+                    textObj.transform.localPosition = new Vector3(0.05f / s, 0.08f / s, 0f);
+                }
+
+                var tm = textObj.AddComponent<TextMesh>();
                 tm.text = DishMenu.GetShortName(preferredDish);
                 tm.fontSize = 48;
-                tm.characterSize = 0.07f;
+                tm.characterSize = orderBubbleSprite != null ? 0.05f : 0.07f;   // ในฟองตัวเล็กลงให้พอดีฟอง
                 tm.anchor = TextAnchor.MiddleCenter;
                 tm.alignment = TextAlignment.Center;
                 tm.fontStyle = FontStyle.Bold;
-                tm.color = DishMenu.GetColor(preferredDish);
+                tm.color = orderBubbleSprite != null ? orderBubbleTextColor : DishMenu.GetColor(preferredDish);
 
                 Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                 if (font != null)
                 {
                     tm.font = font;
-                    var mr = wantBubbleObject.GetComponent<MeshRenderer>();
+                    var mr = textObj.GetComponent<MeshRenderer>();
                     if (mr != null)
                     {
                         mr.sharedMaterial = font.material;

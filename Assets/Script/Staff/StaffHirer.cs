@@ -40,6 +40,12 @@ namespace GI351.KitchenGame
 
             [Tooltip("ดาเมจต่อการตี (0 = ใช้ค่าใน Prefab ลูกจ้าง) ไก่เลือด 30 หมู 100 ควาย 150")]
             [Min(0)] public int damage;
+
+            [Tooltip("ตีได้ทุกกี่วินาที (0 = ใช้ค่าใน Prefab ลูกจ้าง 0.8)")]
+            [Min(0f)] public float attackInterval;
+
+            [Tooltip("คูณความเร็วเดิน (1 = เท่า Prefab, 1.15 = เร็วขึ้น 15%)")]
+            [Min(0f)] public float moveSpeedMultiplier = 1f;
         }
 
         [Header("Hunter (พนักงานล่าสัตว์ โซนละคน)")]
@@ -149,7 +155,8 @@ namespace GI351.KitchenGame
 
             HunterStaff hunter = Instantiate(hunterStaffPrefab);
             hunter.name = "Hunter Staff (" + slot.meat + ")";
-            hunter.Init(transform.position + (Vector3)hunterSpawnOffset, slot.meat, slot.carryCapacity, slot.damage);
+            hunter.Init(transform.position + (Vector3)hunterSpawnOffset, slot.meat, slot.carryCapacity, slot.damage,
+                slot.attackInterval, slot.moveSpeedMultiplier);
             hiredHunters[slot.itemId] = hunter;
             Debug.Log("[StaffHirer] Hired a hunter for " + slot.meat);
             return hunter;

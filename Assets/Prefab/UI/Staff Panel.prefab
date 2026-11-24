@@ -100,17 +100,21 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: 700
       objectReference: {fileID: 0}
+    - target: {fileID: 4004415713006881945, guid: 6a361a7d4ddd84c4ba1bb7f40d5460ab, type: 3}
+      propertyPath: m_Spacing
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 4695560888799941279, guid: 6a361a7d4ddd84c4ba1bb7f40d5460ab, type: 3}
       propertyPath: m_Name
       value: Staff Panel
       objectReference: {fileID: 0}
     - target: {fileID: 5149996154189754049, guid: 6a361a7d4ddd84c4ba1bb7f40d5460ab, type: 3}
       propertyPath: m_SizeDelta.y
-      value: -235
+      value: -198
       objectReference: {fileID: 0}
     - target: {fileID: 5149996154189754049, guid: 6a361a7d4ddd84c4ba1bb7f40d5460ab, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 12.5
+      value: -19
       objectReference: {fileID: 0}
     - target: {fileID: 5209550363789148149, guid: 6a361a7d4ddd84c4ba1bb7f40d5460ab, type: 3}
       propertyPath: m_AnchorMax.y
@@ -163,6 +167,10 @@ PrefabInstance:
     - target: {fileID: 6419877000768862651, guid: 6a361a7d4ddd84c4ba1bb7f40d5460ab, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7047491471634862528, guid: 6a361a7d4ddd84c4ba1bb7f40d5460ab, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 90
       objectReference: {fileID: 0}
     - target: {fileID: 8434911143284711478, guid: 6a361a7d4ddd84c4ba1bb7f40d5460ab, type: 3}
       propertyPath: m_Text

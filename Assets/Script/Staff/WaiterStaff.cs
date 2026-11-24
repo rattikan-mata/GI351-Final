@@ -72,6 +72,7 @@ namespace GI351.KitchenGame
             {
                 Item dish = carried[i];
                 if (dish == null) continue;
+                RestoreItem(dish);
                 dish.transform.SetParent(null, true);
                 dish.SetCarriedState(false);
             }
@@ -200,6 +201,7 @@ namespace GI351.KitchenGame
                     if (!targetShelf.Accepts(dish.Type)) continue;
 
                     carried.RemoveAt(i);
+                    RestoreItem(dish);
                     targetShelf.PlaceFoodOnCounter(dish);
                     AudioManager.PlayAt(SoundId.FoodPlace, targetShelf.transform.position);
                     return;
@@ -295,19 +297,83 @@ namespace GI351.KitchenGame
             }
         }
 
-        /// <summary>เรียงจานที่ถือซ้อนกันเหนือหัว</summary>
+        /// <summary>ถือของบนหัวแบบลูกค้า: โชว์ชิ้นเดียวบนหัว (ใหญ่ขึ้น) + ป้ายเหลืองบอกจำนวน</summary>
         private void LayoutCarried()
         {
             int baseOrder = bodyRenderer != null ? bodyRenderer.sortingOrder + 1 : 10;
+            float headTop = bodyRenderer != null ? bodyRenderer.bounds.max.y : transform.position.y + carryOffset.y;
+            Item top = null;
             for (int i = 0; i < carried.Count; i++)
             {
-                Item dish = carried[i];
-                if (dish == null) continue;
-
-                Vector3 p = transform.position + new Vector3(carryOffset.x, carryOffset.y + carryStackSpacing * i, 0f);
-                dish.transform.position = new Vector3(p.x, p.y, dish.transform.position.z);
-                if (dish.SpriteRenderer != null) dish.SpriteRenderer.sortingOrder = baseOrder + i;
+                Item it = carried[i];
+                if (it == null) continue;
+                if (top == null) top = it;
+                if (it.SpriteRenderer != null)
+                {
+                    it.SpriteRenderer.enabled = it == top;
+                    it.SpriteRenderer.sortingOrder = baseOrder + 1;
+                }
+                if (it != top) continue;
+                if (!originalScales.ContainsKey(it)) originalScales[it] = it.transform.localScale;
+                it.transform.localScale = Vector3.one * (carriedItemScale / Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.x)));
+                it.transform.position = new Vector3(transform.position.x + carryOffset.x, headTop, it.transform.position.z);
+                if (it.SpriteRenderer != null)
+                {
+                    // วางชิ้นบนสุดให้ก้นอยู่ที่หัวพอดี
+                    float lift = headTop - 0.1f - it.SpriteRenderer.bounds.min.y;
+                    it.transform.position += new Vector3(0f, lift, 0f);
+                }
             }
+            UpdateCarryBadge(top);
+        }
+
+        private readonly System.Collections.Generic.Dictionary<Item, Vector3> originalScales = new System.Collections.Generic.Dictionary<Item, Vector3>();
+
+        /// <summary>ของออกจากมือ: คืนขนาดเดิมและให้เห็นอีกครั้ง</summary>
+        private void RestoreItem(Item it)
+        {
+            if (it == null) return;
+            if (originalScales.TryGetValue(it, out Vector3 s)) it.transform.localScale = s;
+            originalScales.Remove(it);
+            if (it.SpriteRenderer != null) it.SpriteRenderer.enabled = true;
+        }
+
+        [Tooltip("ขนาดของที่ถือบนหัว (เท่าจานบนหัวลูกค้า)")]
+        [SerializeField] private float carriedItemScale = 0.84f;
+
+        private GameObject carryBadgeRoot;
+        private WorldCountBadge carryBadge;
+        private int lastBadgeCount = -1;
+
+        private void UpdateCarryBadge(Item top)
+        {
+            int count = 0;
+            foreach (var it in carried) if (it != null) count++;
+            if (count == 0 || top == null)
+            {
+                if (carryBadgeRoot != null && carryBadgeRoot.activeSelf) carryBadgeRoot.SetActive(false);
+                lastBadgeCount = 0;
+                return;
+            }
+            if (carryBadgeRoot == null)
+            {
+                carryBadgeRoot = new GameObject("CarryBadge");
+                YSort.PutOnTop(carryBadgeRoot);   // ป้ายอยู่บนสุดเสมอ
+                carryBadgeRoot.transform.SetParent(transform, false);
+                carryBadge = WorldCountBadge.Create(carryBadgeRoot.transform, "Badge", new Vector2(0.72f, 0.36f),
+                    new Color(1f, 0.8f, 0.28f, 1f), new Color(0.42f, 0.26f, 0.12f, 1f), new Color(0.25f, 0.15f, 0.08f, 1f),
+                    bodyRenderer != null ? bodyRenderer.sortingLayerID : 0, 55);
+            }
+            if (!carryBadgeRoot.activeSelf) carryBadgeRoot.SetActive(true);
+            WorldUi.KeepWorldScale(carryBadgeRoot.transform);
+            float y = top.SpriteRenderer != null ? top.SpriteRenderer.bounds.max.y + 0.22f : transform.position.y + carryOffset.y + 0.5f;
+            carryBadgeRoot.transform.position = new Vector3(transform.position.x, y, transform.position.z - 0.1f);
+            Sprite icon = top.SpriteRenderer != null ? top.SpriteRenderer.sprite : null;
+            Color iconColor = top.SpriteRenderer != null ? top.SpriteRenderer.color : Color.white;
+            carryBadge.Set(icon, iconColor, count);
+            if (lastBadgeCount >= 0 && count > lastBadgeCount) carryBadge.Punch();
+            carryBadge.Tick();
+            lastBadgeCount = count;
         }
     }
 }

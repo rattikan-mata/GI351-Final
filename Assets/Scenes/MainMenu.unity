@@ -258,13 +258,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.UiAudioManager
   sfxSource: {fileID: 725021847}
-  buttonClick: {fileID: 8300000, guid: 2cdef247d73aabe43b76e180f6a02785, type: 3}
+  buttonClick: {fileID: 8300000, guid: 57821e21e75e4d4b8aa324e9fe33200c, type: 3}
   panelToggle: {fileID: 8300000, guid: 877738604a7c31d4dba583d52e490c05, type: 3}
   upgradeSuccess: {fileID: 8300000, guid: 6855e58c002de334ba960c0ec295821a, type: 3}
   buyUnlockItem: {fileID: 8300000, guid: ec0534e466c68c74fbf1d88daaa1fa1c, type: 3}
   cantAfford: {fileID: 8300000, guid: 1d2738b95296c2a4f9cb9d6d3cfa6c95, type: 3}
   cashCollect: {fileID: 8300000, guid: 88b1df3fbd8bbf44ebdef68ac808ae70, type: 3}
   thiefAlert: {fileID: 8300000, guid: 26eb52f0fb773ce45b8b1f6934c93717, type: 3}
+  buttonClickVolume: 0.43
+  panelToggleVolume: 0.15
+  upgradeSuccessVolume: 0.76
+  buyUnlockItemVolume: 0.71
+  buyStaffVolume: 0.53
+  cantAffordVolume: 0.15
+  cashCollectVolume: 0.37
+  thiefAlertVolume: 0.66
   pitchVariance: 0.06
 --- !u!82 &725021847
 AudioSource:
@@ -1306,54 +1314,6 @@ PrefabInstance:
       propertyPath: m_Text
       value: START
       objectReference: {fileID: 0}
-    - target: {fileID: 2821082072035515469, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2821082072035515469, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2821082072035515469, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchorMin.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2821082072035515469, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2821082072035515469, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2821082072035515469, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4385609735169065157, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4385609735169065157, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4385609735169065157, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchorMin.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4385609735169065157, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4385609735169065157, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4385609735169065157, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 4586136828843018616, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
       propertyPath: m_Name
       value: Main Menu Panel
@@ -1390,33 +1350,17 @@ PrefabInstance:
       propertyPath: m_FontData.m_MaxSize
       value: 52
       objectReference: {fileID: 0}
-    - target: {fileID: 7376300027843913083, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_Text
-      value: QUIT
-      objectReference: {fileID: 0}
-    - target: {fileID: 8851303011222551792, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
+    - target: {fileID: 7195584298728384160, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 8851303011222551792, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
+    - target: {fileID: 7195584298728384160, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 8851303011222551792, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchorMin.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8851303011222551792, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8851303011222551792, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8851303011222551792, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
+    - target: {fileID: 7376300027843913083, guid: a8800bb140b3c034d83c6dcbd2bc40fc, type: 3}
+      propertyPath: m_Text
+      value: QUIT
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

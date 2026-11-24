@@ -301,14 +301,20 @@ MonoBehaviour:
     meat: 0
     carryCapacity: 4
     damage: 30
+    attackInterval: 0
+    moveSpeedMultiplier: 1
   - itemId: hunter_pig
     meat: 1
-    carryCapacity: 12
-    damage: 100
+    carryCapacity: 5
+    damage: 50
+    attackInterval: 0.7
+    moveSpeedMultiplier: 1.15
   - itemId: hunter_buffalo
     meat: 7
-    carryCapacity: 8
-    damage: 150
+    carryCapacity: 6
+    damage: 50
+    attackInterval: 0.53
+    moveSpeedMultiplier: 1.25
   hunterStaffPrefab: {fileID: 3219910164869969977, guid: e810eb6f2d8abc2418fa5144a41e683c, type: 3}
   hunterSpawnOffset: {x: 0, y: -1}
   zoneLockedText: OPEN ZONE

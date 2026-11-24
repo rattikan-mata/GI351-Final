@@ -147,6 +147,9 @@ namespace GI351.KitchenGame
         [Tooltip("ศัตรูที่ล้ำไปด้านหลังเส้นกลางตัวเกินระยะนี้จะไม่โดน (เผื่อตัวใหญ่ที่ทับตัวผู้เล่นอยู่)")]
         [SerializeField] private float hitBackTolerance = 0.05f;
 
+        [Tooltip("ระยะประชิดรอบตัวผู้เล่น: สัตว์ที่ชิดตัวมากๆ ฝั่งที่หัน (ไม่ใช่ข้างหลัง) โดนทันทีตอนเริ่มฟาด แม้อยู่หลังจุดหมุนของกระบอง")]
+        [SerializeField] private float closeHitRadius = 1.2f;
+
         [Tooltip("กระบองกวาดผ่านศัตรูแล้วถึงจะโดน: โดนเมื่อมุมกระบองลงมาถึงมุมของศัตรู + ค่านี้ (องศา) ตั้งสูงๆ = โดนเร็วขึ้น")]
         [SerializeField] private float hitSweepLeadAngle = 10f;
 
@@ -517,8 +520,15 @@ namespace GI351.KitchenGame
             if (fourDirectionAttack && !attackDirectionOverride.HasValue && spriteAnimator != null
                 && playerAim != null && playerAim.Mode == PlayerAim.AimMode.Movement)
             {
-                // ตีตามทิศที่ตัวละครหันอยู่ (ทิศเดินล่าสุด) ให้ตรงกับภาพตัวละครพอดี
+                // ตีตามทิศที่เดินล่าสุด (อ่านจากปุ่มเดิน ไม่ใช่ท่าที่ภาพค้างอยู่) ตีรัวๆ แล้วเปลี่ยนทิศเดินก็หันตามทันที
                 PlayerSpriteAnimator.Facing f = spriteAnimator.CurrentFacing;
+                if (playerMovement != null && playerMovement.LastFacingDirection.sqrMagnitude > 0.0001f)
+                {
+                    Vector2 d = playerMovement.LastFacingDirection;
+                    f = Mathf.Abs(d.x) > Mathf.Abs(d.y) * 0.9f ? PlayerSpriteAnimator.Facing.Side
+                        : (d.y > 0f ? PlayerSpriteAnimator.Facing.Back : PlayerSpriteAnimator.Facing.Front);
+                    if (f == PlayerSpriteAnimator.Facing.Side) swingSide = d.x > 0f ? 1f : -1f;
+                }
                 if (f == PlayerSpriteAnimator.Facing.Back) swingRot = 90f;
                 else if (f == PlayerSpriteAnimator.Facing.Front) swingRot = -90f;
             }
@@ -674,6 +684,26 @@ namespace GI351.KitchenGame
                 damageable.TakeDamage(damage);
                 AudioManager.Play(SoundId.WeaponHit);
                 ApplyKnockbackTo(col, pivot);
+            }
+
+            // ประชิดตัว: ตัวที่ติดกับผู้เล่นมากๆ อยู่หลังจุดหมุนกระบอง วงกลมข้างบนเลยไม่นับ ให้เช็กจากกลางตัวแทน (เฉพาะฝั่งที่หัน)
+            if (closeHitRadius <= 0f) return;
+            Vector2 center = OwnerPosition;
+            Collider2D[] close = Physics2D.OverlapCircleAll(center, closeHitRadius, EffectiveTargetLayer);
+            foreach (var col in close)
+            {
+                if (col == null) continue;
+                if (col.GetComponentInParent<PlayerMovement>() != null) continue;
+                if (!col.TryGetComponent<IDamageable>(out var damageable)) continue;
+                if (swingHits.Contains(damageable)) continue;
+
+                Vector2 rel = WorldToSwing(col.ClosestPoint(center) - center, swingSide, swingRot);
+                if (rel.x < -hitBackTolerance) continue;   // อยู่ข้างหลังตัว ไม่โดน
+
+                swingHits.Add(damageable);
+                damageable.TakeDamage(damage);
+                AudioManager.Play(SoundId.WeaponHit);
+                ApplyKnockbackTo(col, center);
             }
         }
 

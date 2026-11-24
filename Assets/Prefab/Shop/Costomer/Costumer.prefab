@@ -152,12 +152,15 @@ MonoBehaviour:
   targetCounter: {fileID: 8507393914842812104, guid: 7c826388d620c024e8e792ab45d5684e, type: 3}
   exitPoint: {fileID: 0}
   cashier: {fileID: 0}
-  heldDishScale: 0.6
+  heldDishScale: 0.84
   happyIcon: {fileID: 0}
   angryIcon: {fileID: 0}
   spriteRenderer: {fileID: 0}
   hurtColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   hurtFlashDuration: 0.18
+  orderBubbleSprite: {fileID: 21300000, guid: 3456964bbc4d0184e9aff6a718e82961, type: 3}
+  orderBubbleWidth: 1.5
+  orderBubbleTextColor: {r: 0.33, g: 0.24, b: 0.36, a: 1}
 --- !u!114 &6242753989696299710
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -181,6 +184,7 @@ MonoBehaviour:
     - {fileID: 21300000, guid: fe427d6628b07994d9aade04db211a83, type: 3}
     - {fileID: 21300000, guid: 43605dd20d90d184b8d26ea008280362, type: 3}
     - {fileID: 21300000, guid: 08e60a3c821f25940b9789648894f82e, type: 3}
+    hit: []
   - name: Male
     idle:
     - {fileID: 21300000, guid: 5b6da743f50b4374683ea6918f6b03bd, type: 3}
@@ -189,9 +193,11 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 0dfbf4573c7328049b2337397fc45c25, type: 3}
     - {fileID: 21300000, guid: 1b3d6ea97070db04e8130cb5d4c4f1ba, type: 3}
     - {fileID: 21300000, guid: b201a40445f90db44b3e23dc3fbf0794, type: 3}
+    hit: []
   walkFps: 8
   idleFps: 1.5
   moveThreshold: 0.15
+  hitDuration: 0.3
 --- !u!210 &6608778978795892519
 SortingGroup:
   m_ObjectHideFlags: 0

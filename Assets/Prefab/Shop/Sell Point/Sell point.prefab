@@ -531,6 +531,9 @@ MonoBehaviour:
   displaySpacing: {x: 0.44, y: 0.16}
   displayDishWidth: 0.38
   maxVisibleDishes: 20
+  showDishesOnTable: 0
+  emptyTableSprite: {fileID: 0}
+  stockedTableSprite: {fileID: 0}
   showStockBadge: 1
   stockBadgeOffset: {x: 0, y: -0.5}
   stockBadgeSize: {x: 0.9, y: 0.44}

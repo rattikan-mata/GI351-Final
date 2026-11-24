@@ -39,6 +39,12 @@ namespace GI351.KitchenGame
         public Color tabSelectedTextColor = Color.white;
         public Color tabNormalTextColor = new Color(0.65f, 0.7f, 0.85f, 1f);
 
+        [Tooltip("รูปปุ่มแท็บที่เลือกอยู่ (ว่าง = ใช้แค่สี)")]
+        public Sprite tabSelectedSprite;
+
+        [Tooltip("รูปปุ่มแท็บที่ไม่ได้เลือก (ว่าง = ใช้แค่สี)")]
+        public Sprite tabNormalSprite;
+
         [Header("Buy Button (สีปุ่มซื้อตามสถานะ)")]
         public Color buyColor = new Color(0.2f, 0.7f, 1f, 1f);
         [Tooltip("สินค้าธรรมดาที่เงินไม่พอ")]

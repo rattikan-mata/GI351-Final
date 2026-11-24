@@ -55,6 +55,7 @@ namespace GI351.KitchenGame
         private enum State { Idle, GoingOut, Hunting, Returning, Feeding }
 
         private readonly List<Item> carried = new List<Item>();
+        private CustomerSpriteAnimator bodyAnimator;
         private readonly List<Vector3> path = new List<Vector3>();
         private readonly List<Vector3> outPath = new List<Vector3>();
         private int pathIndex;
@@ -88,12 +89,15 @@ namespace GI351.KitchenGame
         public ItemType? AssignedMeat => assignedMeat;
 
         /// <summary>เริ่มงาน: โผล่ที่ตำแหน่งนี้แล้วไปหางานเอง  meat = ประจำโซนที่ดรอปเนื้อนี้ (null = เลือกเอง)</summary>
-        public void Init(Vector3 spawnPosition, ItemType? meat = null, int carryOverride = 0, int damageOverride = 0)
+        public void Init(Vector3 spawnPosition, ItemType? meat = null, int carryOverride = 0, int damageOverride = 0,
+            float attackIntervalOverride = 0f, float moveSpeedMultiplier = 1f)
         {
             transform.position = spawnPosition;
             assignedMeat = meat;
             if (carryOverride > 0) carryCapacity = carryOverride;
             if (damageOverride > 0) damage = damageOverride;
+            if (attackIntervalOverride > 0f) attackInterval = attackIntervalOverride;
+            if (moveSpeedMultiplier > 0f) moveSpeed *= moveSpeedMultiplier;
             state = State.Idle;
             timer = 0f;
         }
@@ -104,6 +108,7 @@ namespace GI351.KitchenGame
             foreach (Item meat in carried)
             {
                 if (meat == null) continue;
+                RestoreItem(meat);
                 meat.transform.SetParent(null, true);
                 meat.SetCarriedState(false);
             }
@@ -205,6 +210,8 @@ namespace GI351.KitchenGame
                     attackTimer = attackInterval;
                     FaceDirection(targetAnimal.transform.position.x - transform.position.x);
                     AudioManager.PlayAt(SoundId.Attack, transform.position);
+                    if (bodyAnimator == null) bodyAnimator = GetComponentInChildren<CustomerSpriteAnimator>();
+                    if (bodyAnimator != null) bodyAnimator.PlayAttack();   // ท่าตี
                     targetAnimal.TakeDamageFromStaff(damage);
                     if (targetAnimal.IsDead) scanTimer = 0.6f;   // รอเนื้อตกพื้นแป๊บหนึ่งก่อนค่อยมองหา
                 }
@@ -237,6 +244,7 @@ namespace GI351.KitchenGame
             {
                 Item meat = carried[i];
                 if (meat == null || meat.Type != targetPot.RequiredIngredient) continue;
+                RestoreItem(meat);
                 if (!targetPot.TryFeedItem(meat)) return;   // หม้อเต็ม: ยืนรอ
                 carried.RemoveAt(i);
                 return;
@@ -445,18 +453,83 @@ namespace GI351.KitchenGame
             }
         }
 
-        /// <summary>เรียงเนื้อที่ถือซ้อนกันเหนือหัว</summary>
+        /// <summary>ถือของบนหัวแบบลูกค้า: โชว์ชิ้นเดียวบนหัว (ใหญ่ขึ้น) + ป้ายเหลืองบอกจำนวน</summary>
         private void LayoutCarried()
         {
             int baseOrder = bodyRenderer != null ? bodyRenderer.sortingOrder + 1 : 10;
+            float headTop = bodyRenderer != null ? bodyRenderer.bounds.max.y : transform.position.y + carryOffset.y;
+            Item top = null;
             for (int i = 0; i < carried.Count; i++)
             {
-                Item meat = carried[i];
-                if (meat == null) continue;
-                Vector3 p = transform.position + new Vector3(carryOffset.x, carryOffset.y + carryStackSpacing * i, 0f);
-                meat.transform.position = new Vector3(p.x, p.y, meat.transform.position.z);
-                if (meat.SpriteRenderer != null) meat.SpriteRenderer.sortingOrder = baseOrder + i;
+                Item it = carried[i];
+                if (it == null) continue;
+                if (top == null) top = it;
+                if (it.SpriteRenderer != null)
+                {
+                    it.SpriteRenderer.enabled = it == top;
+                    it.SpriteRenderer.sortingOrder = baseOrder + 1;
+                }
+                if (it != top) continue;
+                if (!originalScales.ContainsKey(it)) originalScales[it] = it.transform.localScale;
+                it.transform.localScale = Vector3.one * (carriedItemScale / Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.x)));
+                it.transform.position = new Vector3(transform.position.x + carryOffset.x, headTop, it.transform.position.z);
+                if (it.SpriteRenderer != null)
+                {
+                    // วางชิ้นบนสุดให้ก้นอยู่ที่หัวพอดี
+                    float lift = headTop - 0.1f - it.SpriteRenderer.bounds.min.y;
+                    it.transform.position += new Vector3(0f, lift, 0f);
+                }
             }
+            UpdateCarryBadge(top);
+        }
+
+        private readonly System.Collections.Generic.Dictionary<Item, Vector3> originalScales = new System.Collections.Generic.Dictionary<Item, Vector3>();
+
+        /// <summary>ของออกจากมือ: คืนขนาดเดิมและให้เห็นอีกครั้ง</summary>
+        private void RestoreItem(Item it)
+        {
+            if (it == null) return;
+            if (originalScales.TryGetValue(it, out Vector3 s)) it.transform.localScale = s;
+            originalScales.Remove(it);
+            if (it.SpriteRenderer != null) it.SpriteRenderer.enabled = true;
+        }
+
+        [Tooltip("ขนาดของที่ถือบนหัว (เท่าจานบนหัวลูกค้า)")]
+        [SerializeField] private float carriedItemScale = 0.84f;
+
+        private GameObject carryBadgeRoot;
+        private WorldCountBadge carryBadge;
+        private int lastBadgeCount = -1;
+
+        private void UpdateCarryBadge(Item top)
+        {
+            int count = 0;
+            foreach (var it in carried) if (it != null) count++;
+            if (count == 0 || top == null)
+            {
+                if (carryBadgeRoot != null && carryBadgeRoot.activeSelf) carryBadgeRoot.SetActive(false);
+                lastBadgeCount = 0;
+                return;
+            }
+            if (carryBadgeRoot == null)
+            {
+                carryBadgeRoot = new GameObject("CarryBadge");
+                YSort.PutOnTop(carryBadgeRoot);   // ป้ายอยู่บนสุดเสมอ
+                carryBadgeRoot.transform.SetParent(transform, false);
+                carryBadge = WorldCountBadge.Create(carryBadgeRoot.transform, "Badge", new Vector2(0.72f, 0.36f),
+                    new Color(1f, 0.8f, 0.28f, 1f), new Color(0.42f, 0.26f, 0.12f, 1f), new Color(0.25f, 0.15f, 0.08f, 1f),
+                    bodyRenderer != null ? bodyRenderer.sortingLayerID : 0, 55);
+            }
+            if (!carryBadgeRoot.activeSelf) carryBadgeRoot.SetActive(true);
+            WorldUi.KeepWorldScale(carryBadgeRoot.transform);
+            float y = top.SpriteRenderer != null ? top.SpriteRenderer.bounds.max.y + 0.22f : transform.position.y + carryOffset.y + 0.5f;
+            carryBadgeRoot.transform.position = new Vector3(transform.position.x, y, transform.position.z - 0.1f);
+            Sprite icon = top.SpriteRenderer != null ? top.SpriteRenderer.sprite : null;
+            Color iconColor = top.SpriteRenderer != null ? top.SpriteRenderer.color : Color.white;
+            carryBadge.Set(icon, iconColor, count);
+            if (lastBadgeCount >= 0 && count > lastBadgeCount) carryBadge.Punch();
+            carryBadge.Tick();
+            lastBadgeCount = count;
         }
     }
 }
