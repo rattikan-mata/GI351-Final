@@ -883,6 +883,9 @@ namespace GI351.KitchenGame
         /// <summary>
         /// จัดเรียงอาหารทั้งหมดที่วางรอบนโต๊ะให้สวยงามและเป็นระเบียบ
         /// </summary>
+        /// <summary>จัดจานบนแผงใหม่ (ใช้หลังแผงเด้งยืดหดจบ ให้ขนาดจานกลับมาถูก)</summary>
+        public void RelayoutFood() => RearrangeFoodOnCounter();
+
         private void RearrangeFoodOnCounter()
         {
             SpriteRenderer tableRenderer = GetComponent<SpriteRenderer>();

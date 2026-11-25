@@ -46,11 +46,12 @@ namespace GI351.KitchenGame
             running[t] = runner.StartCoroutine(ShakeRoutine(t, p, pixels * Strength, duration));
         }
 
-        /// <summary>ยืดหดดึ๋ง: แบนกว้างก่อน แล้วยืดสูง แล้วกลับขนาดเดิม (ตัวเครื่องในฉาก)</summary>
-        public static void Squash(Transform t, float amount = 0.16f, float duration = 0.35f)
+        /// <summary>ยืดหดดึ๋ง: แบนกว้างก่อน แล้วยืดสูง แล้วกลับขนาดเดิม (ตัวเครื่องในฉาก)
+        /// onDone = เรียกตอนเด้งจบ (เช่น ให้แผงจัดจานใหม่ ถ้ามีจานถูกจัดวางระหว่างที่ตัวเครื่องยืดหดอยู่)</summary>
+        public static void Squash(Transform t, float amount = 0.16f, float duration = 0.35f, System.Action onDone = null)
         {
             if (!Begin(t, out Vector3 s, out _)) return;
-            running[t] = runner.StartCoroutine(SquashRoutine(t, s, amount * Strength, duration));
+            running[t] = runner.StartCoroutine(SquashRoutine(t, s, amount * Strength, duration, onDone));
         }
 
         // หยุดอันเก่าของ transform เดียวกัน แล้วคืนขนาด/ตำแหน่งเดิมก่อนเริ่มอันใหม่
@@ -111,7 +112,7 @@ namespace GI351.KitchenGame
             End(t, s, p);
         }
 
-        private static IEnumerator SquashRoutine(Transform t, Vector3 s, float amount, float duration)
+        private static IEnumerator SquashRoutine(Transform t, Vector3 s, float amount, float duration, System.Action onDone)
         {
             Vector3 p = t.localPosition;
             for (float e = 0f; e < duration && t != null; e += Time.unscaledDeltaTime)
@@ -122,6 +123,7 @@ namespace GI351.KitchenGame
                 yield return null;
             }
             End(t, s, p);
+            if (t != null) onDone?.Invoke();
         }
     }
 }

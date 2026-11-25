@@ -1031,9 +1031,10 @@ namespace GI351.KitchenGame
         {
             if (thiefCaught) return;
             thiefCaught = true;
-            activeRobbers.Remove(this);
             // ตีโจรโดนแล้ว: หยุดเสียงเตือน (ถ้ายังมีโจรตัวอื่นถือของขโมยอยู่ ปล่อยเสียงเล่นต่อ)
-            if (ActiveRobberCount == 0) UiAudioManager.Instance?.StopThiefAlert();
+            ReleaseRobber();
+            // ตีก่อนมันขโมย = ไล่ไปเฉยๆ ไม่มีเงินรางวัล (กันตีโจรทุกตัวที่โผล่มาเพื่อเอาเงินฟรี)
+            bool hadLoot = carriedDishes.Count > 0;
             thiefWaitingForPlayer = false;
             if (targetCounter != null) targetCounter.LeaveQueue(this);
 
@@ -1044,7 +1045,7 @@ namespace GI351.KitchenGame
             DropStolenDishes();
 
             // เงินรางวัลตกพื้น: ราคาอาหารที่แพงที่สุดตอนนี้ x 4 เด้งออกมาเป็นเหรียญรอบตัว (เสียงเดียวกับแคชเชียร์)
-            SpawnThiefReward();
+            if (hadLoot) SpawnThiefReward();
 
             // รีบเดินหนีด้วยความเร็วเดินปกติ (ทางเดียวกับลูกค้าที่เดินกลับ / ผ่านคอแหลม)
             isAngry = true;
@@ -1234,9 +1235,16 @@ namespace GI351.KitchenGame
             if (angryIcon != null) angryIcon.SetActive(true);
         }
 
+        /// <summary>เอาโจรตัวนี้ออกจากรายชื่อโจรที่ถือของขโมย ถ้าไม่เหลือแล้วหยุดเสียงเตือน (ตีโดน / หนีพ้น / ออกจากฉาก)</summary>
+        private void ReleaseRobber()
+        {
+            if (activeRobbers.Remove(this) && ActiveRobberCount == 0 && UiAudioManager.Instance != null)
+                UiAudioManager.Instance.StopThiefAlert();
+        }
+
         private void OnReachedExit()
         {
-            activeRobbers.Remove(this);
+            ReleaseRobber();
             if (targetCounter != null)
             {
                 targetCounter.LeaveQueue(this);
@@ -1308,7 +1316,7 @@ namespace GI351.KitchenGame
 
         private void OnDestroy()
         {
-            activeRobbers.Remove(this);
+            ReleaseRobber();
             // อาหารที่โจรขโมยหนีไปถึงทางออก เป็นลูกของตัวโจร หายไปพร้อมกัน
             FinishCoinHops();
             if (targetCounter != null)

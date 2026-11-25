@@ -324,7 +324,15 @@ namespace GI351.KitchenGame
         /// <summary>อัปสำเร็จ: ปุ่ม / เลข LV / ค่า เด้ง และตัวเครื่องในฉากยืดหดดึ๋ง</summary>
         private void JuiceUpgraded(PotUpgradePanelView.Row row)
         {
-            UiJuice.Squash(transform);
+            // แคชเชียร์: ยืดหดแค่ภาพเครื่อง ไม่ใช่ตัวหลัก (กองเหรียญบนโต๊ะจะได้ไม่บิดเบี้ยวค้าง)
+            Transform art = transform.Find("Cashier Art");
+            if (art != null) UiJuice.Squash(art);
+            else
+            {
+                // แผงอาหาร: เด้งจบแล้วจัดจานใหม่ เผื่อมีจานถูกวาง/หยิบระหว่างที่แผงยืดหดอยู่ (กันจานเบี้ยวค้าง)
+                FoodSellCounter counter = GetComponent<FoodSellCounter>();
+                UiJuice.Squash(transform, onDone: counter != null ? counter.RelayoutFood : (System.Action)null);
+            }
             if (row == null) return;
             if (row.button != null) UiJuice.Punch(row.button.transform, 0.16f);
             if (row.levelText != null) UiJuice.Punch(row.levelText.transform, 0.45f, 0.4f);

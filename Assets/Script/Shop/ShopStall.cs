@@ -293,7 +293,8 @@ namespace GI351.KitchenGame
                 UiJuice.Punch(row.buyButton.transform, 0.16f);
                 if (row.nameText != null) UiJuice.Punch(row.nameText.transform, 0.25f, 0.4f);
                 if (row.descText != null) UiJuice.Punch(row.descText.transform, 0.35f, 0.4f);
-                UiJuice.Squash(transform);
+                Transform body = transform.Find("Body");
+                UiJuice.Squash(body != null ? body : transform);
             }
             else if (row != null)
             {
