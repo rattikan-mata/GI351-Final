@@ -41,7 +41,7 @@ namespace GI351.KitchenGame
         [Range(0f, 1f)] public float cashCollectVolume = 0.37f;
         [Tooltip("เสียงคิดเงินตอนซื้อ/อัปเกรด (ตั้งให้ดังพอๆ กับเสียงอัปเกรดเดิม)")]
         [Range(0f, 1f)] public float purchaseVolume = 0.37f;
-        [Range(0f, 1f)] public float thiefAlertVolume = 0.4f;   // ลดจาก 0.66 ลง 40%
+        [Range(0f, 1f)] public float thiefAlertVolume = 0.26f;   // 0.66 -> 0.4 (-40%) -> 0.26 (-35%)
 
         [Header("BGM (เพลงพื้นหลัง เล่นวนตลอด ทั้งหน้าเมนูและในเกม)")]
         [Tooltip("เพลงพื้นหลัง (ว่าง = ไม่มีเพลง)")]
@@ -129,7 +129,30 @@ namespace GI351.KitchenGame
             else PlayUpgrade();
         }
 
-        public void PlayThiefAlert() => PlayClip(thiefAlert, 1f, false, thiefAlertVolume);
+        // เสียงเตือนโจรยาว ~5 วินาที: เล่นใน AudioSource แยก จะได้หยุดได้ทันทีตอนตีโจรโดน
+        private AudioSource alertSource;
+
+        public void PlayThiefAlert()
+        {
+            if (thiefAlert == null) return;
+            if (alertSource == null)
+            {
+                alertSource = gameObject.AddComponent<AudioSource>();
+                alertSource.playOnAwake = false;
+                alertSource.loop = false;
+                alertSource.spatialBlend = 0f;
+            }
+            alertSource.clip = thiefAlert;
+            alertSource.volume = SfxVolume * thiefAlertVolume;
+            alertSource.pitch = 1f;
+            alertSource.Play();
+        }
+
+        /// <summary>หยุดเสียงเตือนโจร (ตีโจรโดนแล้ว / ไม่มีโจรถือของขโมยเหลือ)</summary>
+        public void StopThiefAlert()
+        {
+            if (alertSource != null && alertSource.isPlaying) alertSource.Stop();
+        }
 
         public void PlayCashCollect()
         {

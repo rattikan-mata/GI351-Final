@@ -1,11 +1,11 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || GAME_CHEATS
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace GI351.KitchenGame
 {
     /// <summary>
-    /// ตัวโกงเงินไว้ทดสอบ (มีเฉพาะใน Editor และ Development Build เกมที่ build จริงจะไม่มีสคริปต์นี้)
+    /// ตัวโกงเงินไว้ทดสอบ (มีเฉพาะใน Editor, Development Build และบิ้ลด์ที่ใส่ define GAME_CHEATS ตอนบิ้ลด์ เกมที่ build ปกติจะไม่มีสคริปต์นี้)
     /// สร้างตัวเองอัตโนมัติตอนเริ่มเกม ไม่ต้องวางในฉาก
     ///   F1 = +100   F2 = +1,000   F3 = +10,000   F4 = เงินเป็น 0
     /// ปิดได้ที่ MoneyCheat.Enabled = false หรือลบไฟล์นี้ทิ้ง

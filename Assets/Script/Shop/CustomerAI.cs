@@ -1032,6 +1032,8 @@ namespace GI351.KitchenGame
             if (thiefCaught) return;
             thiefCaught = true;
             activeRobbers.Remove(this);
+            // ตีโจรโดนแล้ว: หยุดเสียงเตือน (ถ้ายังมีโจรตัวอื่นถือของขโมยอยู่ ปล่อยเสียงเล่นต่อ)
+            if (ActiveRobberCount == 0) UiAudioManager.Instance?.StopThiefAlert();
             thiefWaitingForPlayer = false;
             if (targetCounter != null) targetCounter.LeaveQueue(this);
 

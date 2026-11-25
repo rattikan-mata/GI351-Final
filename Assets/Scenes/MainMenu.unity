@@ -274,7 +274,7 @@ MonoBehaviour:
   cantAffordVolume: 0.15
   cashCollectVolume: 0.37
   purchaseVolume: 0.37
-  thiefAlertVolume: 0.4
+  thiefAlertVolume: 0.26
   bgmClip: {fileID: 8300000, guid: 753c3fcf2341cda4d9d7c9525223bf82, type: 3}
   bgmClipVolume: 0.18
   pitchVariance: 0.06
