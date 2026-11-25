@@ -27,7 +27,7 @@ namespace GI351.KitchenGame
         {
             get
             {
-                if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                if (font == null) font = GameFont.Get();
                 return font;
             }
         }

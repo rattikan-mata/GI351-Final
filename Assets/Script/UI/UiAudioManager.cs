@@ -26,6 +26,8 @@ namespace GI351.KitchenGame
         public AudioClip cantAfford;
         public AudioClip cashCollect;
         public AudioClip thiefAlert;
+        [Tooltip("เสียงคิดเงิน (เครื่องคิดเงิน) ใช้ตอนจ่ายซื้อ/อัปเกรด: หม้อ แผงอาหาร แคชเชียร์ ของในร้าน จ้างพนักงาน")]
+        public AudioClip purchase;
 
         [Header("UI Volumes (ความดังของแต่ละเสียง 0-1)")]
         [Tooltip("ตั้งจากการวัดความดังของไฟล์ ให้เสียงที่ดังบ่อยเบากว่าเสียงรางวัล/เตือน แล้วคูณกับแถบ SFX อีกที")]
@@ -37,7 +39,18 @@ namespace GI351.KitchenGame
         [Range(0f, 1f)] public float buyStaffVolume = 0.53f;
         [Range(0f, 1f)] public float cantAffordVolume = 0.15f;
         [Range(0f, 1f)] public float cashCollectVolume = 0.37f;
-        [Range(0f, 1f)] public float thiefAlertVolume = 0.66f;
+        [Tooltip("เสียงคิดเงินตอนซื้อ/อัปเกรด (ตั้งให้ดังพอๆ กับเสียงอัปเกรดเดิม)")]
+        [Range(0f, 1f)] public float purchaseVolume = 0.37f;
+        [Range(0f, 1f)] public float thiefAlertVolume = 0.4f;   // ลดจาก 0.66 ลง 40%
+
+        [Header("BGM (เพลงพื้นหลัง เล่นวนตลอด ทั้งหน้าเมนูและในเกม)")]
+        [Tooltip("เพลงพื้นหลัง (ว่าง = ไม่มีเพลง)")]
+        public AudioClip bgmClip;
+
+        [Tooltip("ความดังของเพลงเทียบกับแถบ BGM (เพลงดังกว่าเสียงเอฟเฟกต์มาก จึงลดไว้ให้อยู่ใต้เสียงเกม) ความดังจริง = ค่านี้ x แถบ BGM")]
+        [Range(0f, 1f)] public float bgmClipVolume = 0.18f;
+
+        private AudioSource musicSource;
 
         [Header("Pitch Settings")]
         [SerializeField] private float pitchVariance = 0.06f;
@@ -63,12 +76,36 @@ namespace GI351.KitchenGame
             BgmVolume = PlayerPrefs.GetFloat(BgmPrefKey, DefaultVolume);
             SfxVolume = PlayerPrefs.GetFloat(SfxPrefKey, DefaultVolume);
             sfxSource.volume = SfxVolume;
+            StartMusic();
+        }
+
+        /// <summary>เริ่มเพลงพื้นหลังแบบวนลูป (ตัวนี้อยู่ข้ามฉาก เพลงจึงเล่นต่อเนื่องตอนเปลี่ยนจากเมนูเข้าเกม)</summary>
+        private void StartMusic()
+        {
+            if (bgmClip == null) return;
+            if (musicSource == null)
+            {
+                musicSource = gameObject.AddComponent<AudioSource>();
+                musicSource.playOnAwake = false;
+                musicSource.loop = true;
+                musicSource.spatialBlend = 0f;
+                musicSource.priority = 0;   // เพลงไม่ถูกตัดตอนเสียงเอฟเฟกต์เยอะ
+            }
+            musicSource.clip = bgmClip;
+            ApplyMusicVolume();
+            if (!musicSource.isPlaying) musicSource.Play();
+        }
+
+        private void ApplyMusicVolume()
+        {
+            if (musicSource != null) musicSource.volume = BgmVolume * bgmClipVolume;
         }
 
         public static void SetBgmVolume(float value)
         {
             BgmVolume = Mathf.Clamp01(value);
             PlayerPrefs.SetFloat(BgmPrefKey, BgmVolume);
+            if (Instance != null) Instance.ApplyMusicVolume();
         }
 
         public static void SetSfxVolume(float value)
@@ -85,6 +122,13 @@ namespace GI351.KitchenGame
         public void PlayBuyOrUnlockZone() => PlayClip(buyUnlockItem, 1f, false, buyUnlockItemVolume);
         public void PlayBuyStaff() => PlayClip(buyUnlockItem, 1f, false, buyStaffVolume);
         public void PlayCantAfford() => PlayClip(cantAfford, 0.95f, false, cantAffordVolume);
+        /// <summary>เสียงคิดเงินตอนจ่ายซื้อ/อัปเกรด (ไม่มีไฟล์ = ใช้เสียงอัปเกรดเดิม)</summary>
+        public void PlayPurchase()
+        {
+            if (purchase != null) PlayClip(purchase, 1f, true, purchaseVolume);
+            else PlayUpgrade();
+        }
+
         public void PlayThiefAlert() => PlayClip(thiefAlert, 1f, false, thiefAlertVolume);
 
         public void PlayCashCollect()

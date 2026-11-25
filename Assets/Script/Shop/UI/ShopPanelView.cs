@@ -106,7 +106,7 @@ namespace GI351.KitchenGame
             view.titleText = UiBuild.CreateText(panelRect, "Title", "SHOP", 46, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft);
             UiBuild.Place(view.titleText.rectTransform, new Vector2(0f, 1f), new Vector2(36f, -50f), new Vector2(500f, 70f), new Vector2(0f, 0.5f));
 
-            view.moneyText = UiBuild.CreateText(panelRect, "Money", "$0", 40, FontStyle.Bold, new Color(1f, 0.85f, 0.2f, 1f), TextAnchor.MiddleRight);
+            view.moneyText = UiBuild.CreateText(panelRect, "Money", "0", 40, FontStyle.Bold, new Color(1f, 0.85f, 0.2f, 1f), TextAnchor.MiddleRight);
             UiBuild.Place(view.moneyText.rectTransform, new Vector2(1f, 1f), new Vector2(-36f, -50f), new Vector2(260f, 70f), new Vector2(1f, 0.5f));
 
             // แถบแท็บใต้ชื่อร้าน
@@ -211,7 +211,7 @@ namespace GI351.KitchenGame
             row.descText = UiBuild.CreateText(info, "Desc", "Description", 20, FontStyle.Normal, new Color(0.7f, 0.76f, 0.9f, 1f), TextAnchor.MiddleLeft);
 
             // ราคาอยู่กลางช่อง (เยื้องขวานิดหน่อยให้พ้นคำอธิบายยาวๆ ทางซ้าย)
-            row.priceText = UiBuild.CreateText(rowRect, "Price", "$10", 34, FontStyle.Bold, view.priceColor, TextAnchor.MiddleCenter);
+            row.priceText = UiBuild.CreateText(rowRect, "Price", "10", 34, FontStyle.Bold, view.priceColor, TextAnchor.MiddleCenter);
             UiBuild.Place(row.priceText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(40f, 0f), new Vector2(150f, 40f), new Vector2(0.5f, 0.5f));
 
             row.buyButton = UiBuild.CreateButton(rowRect, "Buy Button", "BUY", new Vector2(150f, 56f), view.buyColor);

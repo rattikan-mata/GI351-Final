@@ -74,7 +74,7 @@ namespace GI351.KitchenGame
             view.titleText = UiBuild.CreateText(panelRect, "Title", "POT", 44, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft, HorizontalWrapMode.Overflow);
             UiBuild.Place(view.titleText.rectTransform, new Vector2(0f, 1f), new Vector2(30f, -44f), new Vector2(560f, 60f), new Vector2(0f, 0.5f));
 
-            view.moneyText = UiBuild.CreateText(panelRect, "Money", "$0", 40, FontStyle.Bold, new Color(1f, 0.85f, 0.2f, 1f), TextAnchor.MiddleRight, HorizontalWrapMode.Overflow);
+            view.moneyText = UiBuild.CreateText(panelRect, "Money", "0", 40, FontStyle.Bold, new Color(1f, 0.85f, 0.2f, 1f), TextAnchor.MiddleRight, HorizontalWrapMode.Overflow);
             UiBuild.Place(view.moneyText.rectTransform, new Vector2(1f, 1f), new Vector2(-30f, -44f), new Vector2(300f, 60f), new Vector2(1f, 0.5f));
 
             view.priceRow = CreateDefaultRow(panelRect, "Price Row", "Product Price", new Vector2(0f, -100f), view);
@@ -95,10 +95,10 @@ namespace GI351.KitchenGame
             row.levelText = UiBuild.CreateText(rowRect, "Level", "LV 1", 26, FontStyle.Bold, new Color(0.6f, 0.9f, 1f, 1f), TextAnchor.MiddleLeft, HorizontalWrapMode.Overflow);
             UiBuild.Place(row.levelText.rectTransform, new Vector2(0f, 1f), new Vector2(24f, -70f), new Vector2(120f, 36f), new Vector2(0f, 0.5f));
 
-            row.valuesText = UiBuild.CreateText(rowRect, "Values", "$10  ->  $12", 30, FontStyle.Bold, new Color(1f, 0.92f, 0.3f, 1f), TextAnchor.MiddleLeft, HorizontalWrapMode.Overflow);
+            row.valuesText = UiBuild.CreateText(rowRect, "Values", "10  ->  12", 30, FontStyle.Bold, new Color(1f, 0.92f, 0.3f, 1f), TextAnchor.MiddleLeft, HorizontalWrapMode.Overflow);
             UiBuild.Place(row.valuesText.rectTransform, new Vector2(0f, 1f), new Vector2(150f, -70f), new Vector2(420f, 40f), new Vector2(0f, 0.5f));
 
-            row.button = UiBuild.CreateButton(rowRect, "Button", "$50", new Vector2(280f, 90f), view.affordColor, 38);
+            row.button = UiBuild.CreateButton(rowRect, "Button", "50", new Vector2(280f, 90f), view.affordColor, 38);
             UiBuild.Place((RectTransform)row.button.transform, new Vector2(1f, 0.5f), new Vector2(-20f, 0f), new Vector2(280f, 90f), new Vector2(1f, 0.5f));
             row.buttonImage = row.button.GetComponent<Image>();
             row.buttonText = row.button.GetComponentInChildren<Text>();

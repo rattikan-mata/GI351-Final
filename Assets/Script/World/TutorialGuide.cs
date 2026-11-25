@@ -25,6 +25,9 @@ namespace GI351.KitchenGame
         [Tooltip("จบสอนแล้ว ยังชี้ประตูโซนที่เงินพอเปิดแล้วไหม")]
         [SerializeField] private bool hintGates = true;
 
+        [Tooltip("จ้างแคชเชียร์แล้วและเงินพออัปเกรด: ชี้มือไปที่แคชเชียร์ให้มาดูแผงอัปเกรด (ลูกค้า / Big Orders) จนกว่าจะเปิดแผงครั้งแรก")]
+        [SerializeField] private bool hintCashierUpgrade = true;
+
         [Tooltip("id สินค้าที่ใช้หาร้านอัปเกรด (ร้านที่ขายของ id นี้)")]
         [SerializeField] private string upgradeShopItemId = "club";
 
@@ -82,6 +85,10 @@ namespace GI351.KitchenGame
         private CookingPot chickenPot;
         private FoodSellCounter chickenShelf;
         private CashierCounter cashier;
+        private StationUpgrade cashierUpgrade;
+        private bool cashierHintDone;
+        private bool cashierHintPanned;
+        private bool showingCashierHint;
         private ShopStall upgradeShop;
         private readonly List<AreaGate> gates = new List<AreaGate>();
         private readonly HashSet<AreaGate> pannedGates = new HashSet<AreaGate>();
@@ -115,6 +122,7 @@ namespace GI351.KitchenGame
             foreach (FoodSellCounter c in FindObjectsByType<FoodSellCounter>())
                 if (c.Accepts(ItemType.CookedChicken)) chickenShelf = c;
             cashier = FindAnyObjectByType<CashierCounter>();
+            if (cashier != null) cashierUpgrade = cashier.GetComponent<StationUpgrade>();
             foreach (ShopStall s in FindObjectsByType<ShopStall>())
             {
                 if (s.FindItem(upgradeShopItemId) == null) continue;
@@ -149,6 +157,12 @@ namespace GI351.KitchenGame
             if (show && !stepStarted)
             {
                 stepStarted = true;
+                StartPanIfOffScreen(target, panFocus);
+            }
+            if (showingCashierHint && !cashierHintPanned)
+            {
+                // ชี้แคชเชียร์ครั้งแรก: ถ้าอยู่นอกจอ ดึงกล้องไปโชว์ครั้งเดียว
+                cashierHintPanned = true;
                 StartPanIfOffScreen(target, panFocus);
             }
             if (gate != null && !pannedGates.Contains(gate))
@@ -248,6 +262,7 @@ namespace GI351.KitchenGame
         {
             target = panFocus = Vector3.zero;
             gateHint = null;
+            showingCashierHint = false;
             switch (step)
             {
                 case Step.Hunt:
@@ -278,9 +293,27 @@ namespace GI351.KitchenGame
                     return true;
             }
 
-            // จบสอนแล้ว: ชี้ประตูที่เปิดได้และเงินพอ (ประตูที่ใกล้ที่สุดก่อน)
-            if (!hintGates || MoneyManager.Instance == null) return false;
+            if (MoneyManager.Instance == null) return false;
             int money = MoneyManager.Instance.CurrentMoney;
+
+            // จบสอนแล้ว + จ้างแคชเชียร์แล้ว + เงินพออัปเกรด: ชี้ให้มาดูแผงอัปเกรดที่แคชเชียร์ (จนกว่าจะเปิดแผงครั้งแรก)
+            if (hintCashierUpgrade && !cashierHintDone && cashierUpgrade != null && cashier.PlayerRing != null && cashierUpgrade.IsAvailable)
+            {
+                if (cashierUpgrade.EverOpened) cashierHintDone = true;
+                else
+                {
+                    int cost = cashierUpgrade.CheapestNextCost;
+                    if (cost >= 0 && money >= cost)
+                    {
+                        target = panFocus = cashier.PlayerRing.position;
+                        showingCashierHint = true;
+                        return true;
+                    }
+                }
+            }
+
+            // จบสอนแล้ว: ชี้ประตูที่เปิดได้และเงินพอ (ประตูที่ใกล้ที่สุดก่อน)
+            if (!hintGates) return false;
             float best = float.MaxValue;
             foreach (AreaGate g in gates)
             {

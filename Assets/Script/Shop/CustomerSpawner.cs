@@ -18,7 +18,7 @@ namespace GI351.KitchenGame
         [Tooltip("จำนวนลูกค้าสูงสุดที่อยู่ในฉากพร้อมกัน")]
         [SerializeField] private int maxConcurrentCustomers = 3;
 
-        [Tooltip("โอกาสที่จะเสกเป็นลูกค้าโจรแซงคิว กินไม่จ่าย (เช่น 0.3 คือ 30%)")]
+        [Tooltip("โอกาสที่จะเสกเป็นโจร (เช่น 0.3 คือ 30%) โจรต่อแถวที่แผง รอผู้เล่นกลับเข้าโซนร้านแล้วขโมย 1-3 จานเดินหนีช้าๆ ตีแล้วได้เงินตกพื้นและโจรรีบหนี")]
         [Range(0f, 1f)]
         [SerializeField] private float thiefSpawnChance = 0.3f;
 
@@ -201,8 +201,8 @@ namespace GI351.KitchenGame
                 int count = 0;
                 foreach (var c in activeCustomers)
                 {
-                    // โจรที่สลบแล้วไม่นับ (กลายเป็นของให้แบกไปต้มแล้ว)
-                    if (c.IsThief && !c.IsUnconscious) count++;
+                    // โจรที่โดนตีแล้ว (ทิ้งของ โยนเงิน กำลังหนี) ไม่นับ
+                    if (c.IsThief && !c.IsCaught) count++;
                 }
                 return count;
             }

@@ -69,6 +69,7 @@ namespace GI351.KitchenGame
                 quitOrMenuButton.onClick.AddListener(() =>
                 {
                     UiAudioManager.Instance?.PlayClick();
+                    JuiceDirector.CancelHitStop();
                     Time.timeScale = 1f;
                     if (mode == MenuMode.MainMenu)
                         Application.Quit();
@@ -123,6 +124,7 @@ namespace GI351.KitchenGame
         public void SetPaused(bool pause)
         {
             isPaused = pause;
+            JuiceDirector.CancelHitStop();   // กด Esc ระหว่าง hit stop: ไม่ให้ hit stop มาคืน timeScale ทับเมนู
             Time.timeScale = pause ? 0f : 1f;
             if (panel != null) panel.SetActive(pause);
             if (!pause && settingsBox != null) settingsBox.SetActive(false);

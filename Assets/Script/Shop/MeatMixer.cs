@@ -366,7 +366,7 @@ namespace GI351.KitchenGame
             outputRing = CreateRing("OutputRing", outputOffset, outputRingColor);
             purchaseRing = CreateRing("PurchaseRing", purchaseZoneOffset, purchaseRingColor);
             purchaseText = CreateText("PriceText", purchaseZoneOffset, 44, 0.06f, Color.yellow);
-            purchaseText.text = $"${purchasePrice}";
+            CoinMeshIcon.Attach(purchaseText).SetAmount(purchasePrice);   // รูปเหรียญหน้าตัวเลข แทน "$"
             statusLabel = CreateText("StatusLabel", new Vector2(0f, 1.2f), 48, 0.08f, Color.white);
         }
 
@@ -399,7 +399,7 @@ namespace GI351.KitchenGame
             tm.alignment = TextAlignment.Center;
             tm.color = color;
 
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Font font = GameFont.Get();
             if (font != null)
             {
                 tm.font = font;

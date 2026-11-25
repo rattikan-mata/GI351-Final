@@ -103,6 +103,7 @@ namespace GI351.KitchenGame
         private void OnDisable()
         {
             if (view != null && view.panel != null) view.panel.SetActive(false);
+            StationCameraZoom.Release(this);
             isOpen = false;
         }
 
@@ -149,6 +150,7 @@ namespace GI351.KitchenGame
             if (MoneyManager.Instance.CurrentMoney < next.cost)
             {
                 UiAudioManager.Instance?.PlayCantAfford();
+                if (view != null) JuiceCantAfford(isPrice ? view.priceRow : view.speedRow);
                 return false;
             }
             if (!MoneyManager.Instance.SpendMoney(next.cost)) return false;
@@ -165,7 +167,8 @@ namespace GI351.KitchenGame
             }
 
             Debug.Log("[PotUpgrade] " + pot.PotName + " " + (isPrice ? "price" : "speed") + " -> Lv" + ((isPrice ? priceLevel : speedLevel) + 1) + " (" + next.value.ToString("0.##") + ")");
-            UiAudioManager.Instance?.PlayUpgrade();
+            UiAudioManager.Instance?.PlayPurchase();   // เสียงคิดเงิน
+            if (view != null) JuiceUpgraded(isPrice ? view.priceRow : view.speedRow);
             onUpgraded?.Invoke();
             if (isOpen) Refresh();
             return true;
@@ -181,12 +184,32 @@ namespace GI351.KitchenGame
                 CaptureBase();
                 if (!builtUI) BuildUI();
                 view.panel.SetActive(true);
+                StationCameraZoom.Focus(this, transform);   // ซูมกล้องเข้าหาเครื่องแบบ Juice King
                 Refresh();
             }
-            else if (view != null && view.panel != null)
+            else
             {
-                view.panel.SetActive(false);
+                if (view != null && view.panel != null) view.panel.SetActive(false);
+                StationCameraZoom.Release(this);
             }
+        }
+
+        // ---------------- จุ้ย ----------------
+
+        /// <summary>อัปสำเร็จ: ปุ่ม / เลข LV / ค่า เด้ง และตัวเครื่องในฉากยืดหดดึ๋ง</summary>
+        private void JuiceUpgraded(PotUpgradePanelView.Row row)
+        {
+            UiJuice.Squash(transform);
+            if (row == null) return;
+            if (row.button != null) UiJuice.Punch(row.button.transform, 0.16f);
+            if (row.levelText != null) UiJuice.Punch(row.levelText.transform, 0.45f, 0.4f);
+            if (row.valuesText != null) UiJuice.Punch(row.valuesText.transform, 0.3f, 0.4f);
+        }
+
+        /// <summary>เงินไม่พอ: ปุ่มสั่นซ้ายขวา</summary>
+        private void JuiceCantAfford(PotUpgradePanelView.Row row)
+        {
+            if (row != null && row.button != null) UiJuice.Shake(row.button.transform);
         }
 
         // ---------------- UI ----------------
@@ -212,10 +235,17 @@ namespace GI351.KitchenGame
             if (view == null) view = PotUpgradePanelView.CreateDefault(transform);
 
             view.panel.SetActive(false);
+            HideDuringCameraPan.Attach(view.gameObject);   // กล้องดึงจอ = ซ่อนแผงชั่วคราว
             UiBuild.SetText(view.priceRow.nameText, priceLabel);
             UiBuild.SetText(view.speedRow.nameText, speedLabel);
             view.priceRow.button.onClick.AddListener(() => TryUpgrade(true));
             view.speedRow.button.onClick.AddListener(() => TryUpgrade(false));
+
+            // รูปเหรียญอีแปะแทน $: เงินที่มี / ราคาสินค้า (แถวราคา) / ค่าอัปเกรดบนปุ่ม
+            CoinTextIcon.Attach(view.moneyText);
+            CoinTextIcon.Attach(view.priceRow.valuesText);
+            CoinTextIcon.Attach(view.priceRow.buttonText);
+            CoinTextIcon.Attach(view.speedRow.buttonText);
         }
 
         private void Refresh()
@@ -224,7 +254,7 @@ namespace GI351.KitchenGame
             lastMoney = money;
             if (view == null) return;
             UiBuild.SetText(view.titleText, pot.PotName.ToUpper());
-            UiBuild.SetText(view.moneyText, "$" + money);
+            UiBuild.SetText(view.moneyText, money.ToString());
 
             RefreshRow(view.priceRow, priceLevels, priceLevel, true, money);
             RefreshRow(view.speedRow, speedLevels, speedLevel, false, money);
@@ -235,23 +265,25 @@ namespace GI351.KitchenGame
             row.levelText.text = "LV " + (level + 1);
 
             float current = isPrice ? CurrentPriceValue : CurrentSpeedValue;
-            string cur = isPrice ? "$" + Mathf.RoundToInt(current) : current.ToString("0.##") + "s";
+            string cur = isPrice ? Mathf.RoundToInt(current).ToString() : current.ToString("0.##") + "s";
+            CoinTextIcon.SetVisible(row.valuesText, isPrice); // เหรียญ 1 อันหน้าราคา เฉพาะแถวราคาสินค้า
 
             if (levels.Count == 0 || level >= levels.Count)
             {
                 // ไม่มีเลเวลให้อัป หรืออัปจนเต็มแล้ว
                 row.valuesText.text = cur;
                 SetButton(row, false, view.disabledColor, levels.Count == 0 ? view.noLevelsLabel : view.maxLabel, view.buttonTextColor);
+                CoinTextIcon.SetVisible(row.buttonText, false);
                 return;
             }
 
             PotUpgradeLevel next = levels[level];
-            string nxt = isPrice ? "$" + Mathf.RoundToInt(next.value) : next.value.ToString("0.##") + "s";
-            row.valuesText.text = cur + "  ->  " + nxt;
+            row.valuesText.text = cur;   // บอกค่าตอนนี้เฉยๆ (ไม่มีลูกศร)
 
             bool afford = money >= next.cost;
-            SetButton(row, true, afford ? view.affordColor : view.disabledColor, "$" + next.cost,
+            SetButton(row, true, afford ? view.affordColor : view.disabledColor, next.cost.ToString(),
                 afford ? view.buttonTextColor : view.buttonTextTooExpensiveColor);
+            CoinTextIcon.SetVisible(row.buttonText, true);
         }
 
         private static void SetButton(PotUpgradePanelView.Row row, bool interactable, Color color, string label, Color textColor)

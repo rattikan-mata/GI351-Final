@@ -9,7 +9,6 @@ namespace GI351.KitchenGame
         WaitingAtCounter,
         WalkingToExit,
         ThiefFleeing,    // โจรวิ่งหนีพร้อมของที่ขโมยมา
-        Unconscious,     // โดนตีสลบแล้ว (สามารถยกขึ้นหลังได้)
         WalkingToCashier, // ถืออาหารเดินไปต่อแถวที่โต๊ะจ่ายเงิน
         WaitingAtCashier  // ยืนต่อแถวรอจ่ายเงิน
     }
@@ -53,11 +52,23 @@ namespace GI351.KitchenGame
         [Tooltip("สถานะลูกค้าเป็นโจรแซงคิวหรือไม่")]
         [SerializeField] private bool isThief = false;
 
-        [Tooltip("พลังชีวิตของโจร (กระบองปกติทำ 20 ดาเมจ ตี 1 ครั้งจะสลบทันที)")]
+        [Tooltip("พลังชีวิตของโจร (กระบองปกติทำ 20 ดาเมจ ตี 1 ครั้งก็ทิ้งของ โยนเงิน แล้วหนี)")]
         [SerializeField] private int thiefHealth = 20;
 
-        [Tooltip("ตัวคูณความเร็วในการวิ่งหนีของโจร")]
-        [SerializeField] private float thiefFleeSpeedMultiplier = 2.2f;
+        [Tooltip("ตัวคูณความเร็วตอนโจรถือของเดินหนี เทียบกับความเร็วเดิน (Move Speed) 0.333 = ช้ากว่าลูกค้าปกติ 3 เท่า ให้ผู้เล่นตามทัน")]
+        [SerializeField] private float thiefFleeSpeedMultiplier = 0.333f;
+
+        [Tooltip("โจรขโมยอาหารครั้งละกี่จาน สุ่มระหว่าง x ถึง y (ได้ไม่เกินที่มีบนแผงตอนนั้น)")]
+        [SerializeField] private Vector2Int thiefStealDishes = new Vector2Int(1, 3);
+
+        [Tooltip("ระยะเผื่อรอบโซนร้าน (หน่วยโลก) โซนร้าน = กรอบรวมของแผงอาหาร โต๊ะจ่ายเงิน หม้อ และร้านค้า โจรจะรอจนผู้เล่นเดินกลับเข้าโซนนี้ก่อนค่อยหยิบของหนี")]
+        [SerializeField] private float shopZonePadding = 3f;
+
+        [Tooltip("ตีโจรแล้วได้เงินตกพื้น = ราคาอาหารที่แพงที่สุดตอนนั้น (หม้อที่ปลดแล้ว) x ค่านี้")]
+        [Min(0)] [SerializeField] private int thiefRewardMultiplier = 4;
+
+        [Tooltip("จำนวนเหรียญที่เด้งออกมาตอนตีโจร สุ่มระหว่าง x ถึง y (แบ่งเงินรวมเท่าๆ กัน)")]
+        [SerializeField] private Vector2Int thiefRewardCoins = new Vector2Int(4, 6);
 
         [Header("Target & Path References")]
         [SerializeField] private FoodSellCounter targetCounter;
@@ -121,16 +132,27 @@ namespace GI351.KitchenGame
         /// <summary>จำนวนลูกค้าปกติที่รอจนหมดความอดทนแล้วเดินหนี (นับตั้งแต่เริ่มเล่น)</summary>
         public static int LostCustomers { get; private set; }
 
+        /// <summary>โจรที่ถือของที่ขโมยอยู่ (ยังไม่โดนตี ยังไม่หนีพ้น) แถบเตือนบน HUD แสดงค้างไว้ตราบที่ยังมีโจรแบบนี้</summary>
+        private static readonly System.Collections.Generic.HashSet<CustomerAI> activeRobbers = new System.Collections.Generic.HashSet<CustomerAI>();
+        public static int ActiveRobberCount
+        {
+            get { activeRobbers.RemoveWhere(r => r == null); return activeRobbers.Count; }
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
+            activeRobbers.Clear();
             LostCustomers = 0;
         }
 
-        // โจรและไอเทมที่ถูกขโมย
-        private Item stolenDish;
+        // โจร: อาหารที่ขโมยมาอยู่ใน carriedDishes (ถือเหนือหัวแบบลูกค้า) เก็บสเกลเดิมไว้คืนตอนทำหล่นพื้น (ลำดับเดียวกับ carriedDishes)
+        // โจรยืนรอผู้เล่นกลับเข้าโซนร้าน (ไม่แย่งคิวลูกค้าปกติ)
+        private bool thiefWaitingForPlayer;
+        // เหรียญที่กำลังเด้งออกจากตัวโจร (ยังปิด CoinPickup ไว้จนกว่าจะตกถึงพื้น)
+        private readonly System.Collections.Generic.List<CoinPickup> hoppingCoins = new System.Collections.Generic.List<CoinPickup>();
+        private readonly System.Collections.Generic.List<Vector3> hoppingCoinTargets = new System.Collections.Generic.List<Vector3>();
         private GameObject exclamationObject;
-        private GameObject dizzyObject;
 
         // จุดอ้อมสิ่งกีดขวางที่กำลังเดินไป (มุมของโต๊ะ/หม้อ)
         private bool hasDetour;
@@ -143,13 +165,16 @@ namespace GI351.KitchenGame
         /// <summary>เมนูที่ลูกค้าอยากกินโดยเฉพาะ (null = กินอะไรก็ได้ เช่น โจร)</summary>
         public ItemType? RequestedDish => (!isThief && wantSpecificFood) ? preferredDish : (ItemType?)null;
         public ItemType PreferredDish => preferredDish;
-        public float RemainingPatience => currentPatienceTimer;
+        // โจรที่รอผู้เล่นอยู่ ถือว่าใจเย็นที่สุด ไม่บังลูกค้าปกติในโหมดยืนมุง
+        public float RemainingPatience => thiefWaitingForPlayer ? float.MaxValue : currentPatienceTimer;
 
         /// <summary>ลูกค้าปกติที่เลือกเมนูแล้ว กำลังเดินไป/ยืนรอที่แผง ยังไม่ได้อาหาร</summary>
         public bool IsWaitingForFood => !isThief && dishPicked && carriedDishes.Count == 0 &&
             (currentState == CustomerState.WalkingToCounter || currentState == CustomerState.WaitingAtCounter);
         public bool IsThief => isThief;
-        public bool IsUnconscious => currentState == CustomerState.Unconscious;
+        /// <summary>โจรที่โดนตีแล้ว (โยนเงินทิ้งแล้วกำลังเดินหนีออกจากร้าน) ไม่นับเป็นโจรที่ยังอันตราย</summary>
+        public bool IsCaught => thiefCaught;
+        private bool thiefCaught;
 
         private void Awake()
         {
@@ -319,8 +344,6 @@ namespace GI351.KitchenGame
 
         private void Update()
         {
-            if (currentState == CustomerState.Unconscious) return;
-
             if (carryBadge != null)
             {
                 // ในแถวจ่ายเงิน โชว์ป้ายเฉพาะคนหัวแถว (คนข้างหลังยืนชิดกัน ป้ายจะบังกัน)
@@ -343,12 +366,6 @@ namespace GI351.KitchenGame
 
         private void FixedUpdate()
         {
-            if (currentState == CustomerState.Unconscious)
-            {
-                rb.linearVelocity = Vector2.zero;
-                return;
-            }
-
             switch (currentState)
             {
                 case CustomerState.WalkingToCounter:
@@ -464,6 +481,9 @@ namespace GI351.KitchenGame
         private Vector2 GetGateTarget(Vector2 from, Vector2 destination)
         {
             if (spawnerReference == null || spawnerReference.PathGate == null) return destination;
+            // ใช้คอแหลมเฉพาะตอนเดินจากจุดเกิดมาแผง และตอนเดินกลับ/วิ่งหนี  แถวจ่ายเงินอยู่บนเกาะ ไม่ต้องอ้อม
+            if (currentState != CustomerState.WalkingToCounter && currentState != CustomerState.WalkingToExit &&
+                currentState != CustomerState.ThiefFleeing) return destination;
             Vector2 gate = spawnerReference.PathGate.position;
             const float band = 0.15f;
             bool fromBelow = from.y < gate.y - band;
@@ -579,25 +599,30 @@ namespace GI351.KitchenGame
             if (targetCounter == null) return;
 
             targetCounter.LeaveQueue(this);
-            stolenDish = targetCounter.ThiefStealDish(this);
-            if (stolenDish != null)
+            thiefWaitingForPlayer = false;
+
+            // ฉก 1-3 จาน (ได้ไม่เกินที่มีบนแผง) แล้วถือเหนือหัวแบบลูกค้า: เห็นจานเดียว + ป้ายจำนวน
+            int lo = Mathf.Max(1, Mathf.Min(thiefStealDishes.x, thiefStealDishes.y));
+            int hi = Mathf.Max(lo, Mathf.Max(thiefStealDishes.x, thiefStealDishes.y));
+            int toSteal = Random.Range(lo, hi + 1);
+            for (int i = 0; i < toSteal; i++)
             {
-                // ซ่อนอาหารที่ฉกไว้บนตัวโจร
-                stolenDish.transform.SetParent(transform);
-                stolenDish.transform.localPosition = new Vector3(0f, 0.2f, -0.05f);
-                if (stolenDish.TryGetComponent<Collider2D>(out var dishCol)) dishCol.enabled = false;
+                Item dish = targetCounter.ThiefStealDish(this);
+                if (dish == null) break;   // บนแผงหมดแล้ว
+                HoldDish(dish);
             }
 
             ShowExclamationMark();
             // เสียงเตือนโจร: เล่นจากแถบเตือนบน HUD (UiAudioManager) ที่เดียว ไม่ซ้อนกับ AudioManager
             currentState = CustomerState.ThiefFleeing;
-            if (stolenDish != null)
+            if (carriedDishes.Count > 0)
             {
+                activeRobbers.Add(this);
                 HudExtrasView alert = FindAnyObjectByType<HudExtrasView>();
                 if (alert != null) alert.ShowThiefAlert();
                 else UiAudioManager.Instance?.PlayThiefAlert();
             }
-            Debug.Log("[CustomerAI] โจรฉกอาหารไปแล้ว! วิ่งหนีเร็ว!");
+            Debug.Log($"[CustomerAI] โจรฉกอาหารไป {carriedDishes.Count} จาน! เดินหนีแล้ว ตามไปตีให้ทัน!");
         }
 
         private void HandleWaiting()
@@ -674,6 +699,14 @@ namespace GI351.KitchenGame
             }
             else
             {
+                // ผู้เล่นออกไปล่าสัตว์อยู่: โจรยืนรอเฉยๆ ยังไม่หยิบของ และไม่หมดความอดทน (รอผู้เล่นกลับเข้าโซนร้านก่อน)
+                thiefWaitingForPlayer = !ShopZone.IsPlayerInside(shopZonePadding);
+                if (thiefWaitingForPlayer)
+                {
+                    currentPatienceTimer = patienceDuration;
+                    return;
+                }
+
                 // โจรรอคิวตามลำดับ พอถึงหัวแถวและมีอาหารบนโต๊ะ ให้ฉกแล้ววิ่งหนี (ไม่จ่ายเงิน)
                 if (targetCounter.CanTakeNow(this))
                 {
@@ -765,8 +798,12 @@ namespace GI351.KitchenGame
                 carryBadgeRoot = new GameObject("CarryBadge");
                 YSort.PutOnTop(carryBadgeRoot);   // ป้ายเหนือหัวอยู่บนสุดเสมอ
                 carryBadgeRoot.transform.SetParent(transform, false);
-                carryBadge = WorldCountBadge.Create(carryBadgeRoot.transform, "Badge", new Vector2(0.72f, 0.36f),
-                    new Color(1f, 0.8f, 0.28f, 1f), new Color(0.42f, 0.26f, 0.12f, 1f), new Color(0.25f, 0.15f, 0.08f, 1f), layer, 55);
+                // โจร: ป้ายแดงตัวขาว (ของที่ขโมยมา) / ลูกค้า: ป้ายเหลืองตามปกติ
+                carryBadge = isThief
+                    ? WorldCountBadge.Create(carryBadgeRoot.transform, "Badge", new Vector2(0.72f, 0.36f),
+                        new Color(0.9f, 0.2f, 0.22f, 1f), new Color(0.45f, 0.05f, 0.08f, 1f), Color.white, layer, 55)
+                    : WorldCountBadge.Create(carryBadgeRoot.transform, "Badge", new Vector2(0.72f, 0.36f),
+                        new Color(1f, 0.8f, 0.28f, 1f), new Color(0.42f, 0.26f, 0.12f, 1f), new Color(0.25f, 0.15f, 0.08f, 1f), layer, 55);
             }
             carryBadgeRoot.SetActive(true);
             WorldUi.KeepWorldScale(carryBadgeRoot.transform);
@@ -775,6 +812,12 @@ namespace GI351.KitchenGame
             Item top = carriedDishes[0];
             if (top != null && top.SpriteRenderer != null) badgeY = top.SpriteRenderer.bounds.max.y + 0.22f;
             carryBadgeRoot.transform.position = new Vector3(transform.position.x, badgeY, transform.position.z - 0.1f);
+
+            // โจรถือของ: ย้ายเครื่องหมาย ! ไปไว้ข้างซ้ายของป้าย ไม่ทับกัน (เห็นทั้งของที่ขโมยและรู้ว่าเป็นโจร)
+            if (isThief && exclamationObject != null)
+            {
+                exclamationObject.transform.position = new Vector3(transform.position.x - 0.62f, badgeY, transform.position.z - 0.1f);
+            }
 
             Item first = carriedDishes[0];
             Sprite icon = first != null && first.SpriteRenderer != null ? first.SpriteRenderer.sprite : null;
@@ -908,7 +951,7 @@ namespace GI351.KitchenGame
                 tm.fontStyle = FontStyle.Bold;
                 tm.color = orderBubbleSprite != null ? orderBubbleTextColor : DishMenu.GetColor(preferredDish);
 
-                Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                Font font = GameFont.Get();
                 if (font != null)
                 {
                     tm.font = font;
@@ -930,12 +973,12 @@ namespace GI351.KitchenGame
 
         /// <summary>
         /// ระบบรับการโจมตีจากผู้เล่น (IDamageable)
-        /// ตีโดนเฉพาะโจรขโมยอาหาร ตัวจะกระพริบแดงทันทีเมื่อโดนตี และเมื่อ HP หมดจะสลบ
+        /// ตีโดนเฉพาะโจรขโมยอาหาร ตัวจะกระพริบแดงทันทีเมื่อโดนตี และเมื่อ HP หมดจะทิ้งของ โยนเงิน แล้วรีบหนี
         /// </summary>
         public void TakeDamage(int damage)
         {
             if (!isThief) return; // ลูกค้าปกติจะไม่ได้รับดาเมจ
-            if (currentState == CustomerState.Unconscious) return;
+            if (thiefCaught) return;   // โดนตีไปแล้ว กำลังหนี ตีซ้ำไม่ได้อะไร
 
             thiefHealth -= damage;
             Debug.Log($"[CustomerAI] โจรโดนผู้เล่นตี! HP เหลือ: {thiefHealth}");
@@ -945,7 +988,7 @@ namespace GI351.KitchenGame
 
             if (thiefHealth <= 0)
             {
-                KnockOut();
+                DropLootAndRunAway();
             }
         }
 
@@ -982,53 +1025,151 @@ namespace GI351.KitchenGame
         }
 
         /// <summary>
-        /// โจรถูกตีจนสลบ: หยุดการเคลื่อนที่ นอนราบกับพื้น และกลายเป็นไอเทมที่ยกขึ้นหลังได้
+        /// โจรโดนตี: ทิ้งอาหารที่ขโมยมา + โยนเงินตกพื้น แล้วรีบเดินหนีออกจากร้าน (ไม่สลบ ไม่ต้องแบกไปไหน)
         /// </summary>
-        public void KnockOut()
+        public void DropLootAndRunAway()
         {
-            currentState = CustomerState.Unconscious;
+            if (thiefCaught) return;
+            thiefCaught = true;
+            activeRobbers.Remove(this);
+            thiefWaitingForPlayer = false;
             if (targetCounter != null) targetCounter.LeaveQueue(this);
-            rb.linearVelocity = Vector2.zero;
-            rb.bodyType = RigidbodyType2D.Kinematic;
 
             HideExclamationMark();
-            ShowDizzyIndicator();
             AudioManager.Play(SoundId.ThiefKnockout, null, transform.position);
 
-            // พลิกตัวนอนราบลงกับพื้น
-            transform.rotation = Quaternion.Euler(0f, 0f, 90f);
+            // อาหารที่ขโมยมาทั้งหมด ตกกระจายลงพื้นรอบตัวโจร ขนาดเท่าตอนถือบนหัว ให้ผู้เล่นเก็บกลับไปวางขายได้
+            DropStolenDishes();
 
-            // ถ้ามีอาหารที่ขโมยมา ให้ตกหล่นลงพื้นข้างตัวโจร
-            if (stolenDish != null)
+            // เงินรางวัลตกพื้น: ราคาอาหารที่แพงที่สุดตอนนี้ x 4 เด้งออกมาเป็นเหรียญรอบตัว (เสียงเดียวกับแคชเชียร์)
+            SpawnThiefReward();
+
+            // รีบเดินหนีด้วยความเร็วเดินปกติ (ทางเดียวกับลูกค้าที่เดินกลับ / ผ่านคอแหลม)
+            isAngry = true;
+            currentState = CustomerState.WalkingToExit;
+            Debug.Log("[CustomerAI] โจรโดนตี! ทิ้งของ โยนเงิน แล้วรีบหนีไป");
+        }
+
+        /// <summary>
+        /// ทำอาหารที่โจรขโมยมาหล่นกระจายลงพื้นรอบตัว: เอาออกจากตัวโจร (ขนาดเท่าตอนถือบนหัว) เปิดรูป/Collider ให้เก็บได้
+        /// </summary>
+        private void DropStolenDishes()
+        {
+            int n = carriedDishes.Count;
+            for (int i = 0; i < n; i++)
             {
-                stolenDish.transform.SetParent(null);
-                stolenDish.transform.position = transform.position + Vector3.right * 0.6f;
-                stolenDish.gameObject.SetActive(true);
-                if (stolenDish.TryGetComponent<Collider2D>(out var dishCol)) dishCol.enabled = true;
-                if (stolenDish.TryGetComponent<Item>(out var dishItem)) dishItem.SetCarriedState(false);
-                stolenDish = null;
+                Item dish = carriedDishes[i];
+                if (dish == null) continue;
+
+                dish.transform.SetParent(null, true);
+                float ang = (i / (float)Mathf.Max(1, n)) * Mathf.PI * 2f + Random.Range(-0.4f, 0.4f);
+                float r = Random.Range(0.45f, 0.75f);
+                dish.transform.position = transform.position + new Vector3(Mathf.Cos(ang) * r, Mathf.Sin(ang) * r, 0f);
+                dish.transform.rotation = Quaternion.identity;
+                dish.gameObject.SetActive(true);
+                if (dish.SpriteRenderer != null) dish.SpriteRenderer.enabled = true;   // จานที่ซ่อนไว้ (ถือหลายจาน) ให้เห็นทุกจาน
+                dish.SetCarriedState(false);
+                if (dish.TryGetComponent<Collider2D>(out var dishCol)) dishCol.enabled = true;
+            }
+            carriedDishes.Clear();
+            if (carryBadgeRoot != null) carryBadgeRoot.SetActive(false);
+        }
+
+        /// <summary>ราคาขายต่อจานที่แพงที่สุดตอนนี้ (เฉพาะหม้อที่ปลดล็อกแล้ว) ไม่มีหม้อ = 10</summary>
+        private static int HighestDishPrice()
+        {
+            int best = 0;
+            foreach (CookingPot pot in CookingPot.AllPots)
+            {
+                if (pot != null && pot.IsUnlocked) best = Mathf.Max(best, pot.CurrentDishPrice);
+            }
+            return best > 0 ? best : 10;
+        }
+
+        /// <summary>
+        /// เงินรางวัลตอนตีโจร: ราคาอาหารที่แพงที่สุด x thiefRewardMultiplier แบ่งเป็นเหรียญ (Prefab เดียวกับแคชเชียร์)
+        /// เด้งออกจากตัวโจรไปตกรอบๆ แล้วผู้เล่นเดินเก็บ/ดูดเข้าตัวเหมือนเหรียญทั่วไป
+        /// </summary>
+        private void SpawnThiefReward()
+        {
+            int total = HighestDishPrice() * thiefRewardMultiplier;
+            if (total <= 0) return;
+
+            AudioManager.Play(SoundId.CustomerPay, null, transform.position);
+
+            CashierCounter cc = cashier != null ? cashier : FindAnyObjectByType<CashierCounter>();
+            GameObject coinPrefab = cc != null ? cc.CoinPrefab : null;
+            if (coinPrefab == null)
+            {
+                // ไม่มี Prefab เหรียญ: ให้เงินเข้ากระเป๋าตรงๆ
+                if (MoneyManager.Instance != null) MoneyManager.Instance.AddMoney(total);
+                return;
             }
 
-            // ติดตั้ง Item component ให้ตัวโจรกลายเป็นไอเทมประเภท UnconsciousThief เพื่อให้ PlayerCarry ยกขึ้นหลังได้
-            Item itemComp = GetComponent<Item>();
-            if (itemComp == null)
-            {
-                itemComp = gameObject.AddComponent<Item>();
-            }
-            itemComp.SetItemType(ItemType.UnconsciousThief);
-            itemComp.SetItemName("Unconscious Thief");
-            itemComp.SetSellPrice(0); // เอาไปต้มทำอาหารพิเศษ
+            int lo = Mathf.Max(1, Mathf.Min(thiefRewardCoins.x, thiefRewardCoins.y));
+            int hi = Mathf.Max(lo, Mathf.Max(thiefRewardCoins.x, thiefRewardCoins.y));
+            int count = Mathf.Clamp(Random.Range(lo, hi + 1), 1, total);
+            int share = total / count;
+            int remainder = total % count;
 
-            // เปิด Trigger Collider เพื่อให้เดินชนแล้วเก็บขึ้นหลังได้
-            var col = GetComponent<CircleCollider2D>();
-            if (col != null)
+            Vector3 from = transform.position + new Vector3(0f, 0.3f, 0f);
+            for (int i = 0; i < count; i++)
             {
-                col.enabled = true;
-                col.isTrigger = true;
-                col.radius = 0.5f;
+                GameObject coinObj = Instantiate(coinPrefab, from, Quaternion.identity);
+                int value = share + (i < remainder ? 1 : 0);   // รวมทุกเหรียญได้ total พอดี
+                if (!coinObj.TryGetComponent<CoinPickup>(out var pickup))
+                {
+                    if (MoneyManager.Instance != null) MoneyManager.Instance.AddMoney(value);
+                    Destroy(coinObj);
+                    continue;
+                }
+                pickup.Value = value;
+                pickup.enabled = false;   // ปิดแม่เหล็ก/นับเวลาหายไว้ก่อน จนกว่าจะเด้งถึงพื้น
+
+                float ang = (i / (float)count) * Mathf.PI * 2f + Random.Range(-0.35f, 0.35f);
+                float r = Random.Range(0.4f, 1f);
+                hoppingCoins.Add(pickup);
+                hoppingCoinTargets.Add(transform.position + new Vector3(Mathf.Cos(ang) * r, Mathf.Sin(ang) * r, 0f));
             }
 
-            Debug.Log("[CustomerAI] โจรโดนตีสลบแล้ว! สามารถยกขึ้นหลังไปยัดใส่หม้อต้มได้!");
+            if (hoppingCoins.Count > 0) StartCoroutine(CoinHopRoutine(from));
+        }
+
+        /// <summary>เหรียญเด้งเป็นวงโค้งจากตัวโจรไปตกจุดของตัวเอง</summary>
+        private IEnumerator CoinHopRoutine(Vector3 from)
+        {
+            const float duration = 0.45f;
+            const float height = 0.7f;
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / duration);
+                for (int i = 0; i < hoppingCoins.Count; i++)
+                {
+                    CoinPickup coin = hoppingCoins[i];
+                    if (coin == null) continue;   // ผู้เล่นเก็บไปกลางอากาศแล้ว
+                    Vector3 p = Vector3.Lerp(from, hoppingCoinTargets[i], k);
+                    p.y += Mathf.Sin(k * Mathf.PI) * height;
+                    coin.transform.position = p;
+                }
+                yield return null;
+            }
+            FinishCoinHops();
+        }
+
+        /// <summary>วางเหรียญที่ยังเด้งไม่เสร็จลงจุดตก แล้วเปิด CoinPickup (เรียกตอนเด้งจบ หรือโจรถูกปิด/ทำลายกลางทาง)</summary>
+        private void FinishCoinHops()
+        {
+            for (int i = 0; i < hoppingCoins.Count; i++)
+            {
+                CoinPickup coin = hoppingCoins[i];
+                if (coin == null) continue;
+                coin.transform.position = hoppingCoinTargets[i];
+                coin.enabled = true;
+            }
+            hoppingCoins.Clear();
+            hoppingCoinTargets.Clear();
         }
 
         private void ShowExclamationMark()
@@ -1058,7 +1199,7 @@ namespace GI351.KitchenGame
                 tm.fontStyle = FontStyle.Bold;
 
                 // ต้องกำหนดฟอนต์/วัสดุ และ sorting order เอง ไม่งั้นตัวหนังสือจะมองไม่เห็นหรือถูกสไปรต์บัง
-                Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                Font font = GameFont.Get();
                 if (font != null)
                 {
                     tm.font = font;
@@ -1081,26 +1222,6 @@ namespace GI351.KitchenGame
             }
         }
 
-        private void ShowDizzyIndicator()
-        {
-            if (dizzyObject == null)
-            {
-                dizzyObject = new GameObject("DizzyIndicator");
-                YSort.PutOnTop(dizzyObject);   // ป้ายเหนือหัวอยู่บนสุดเสมอ
-                dizzyObject.transform.SetParent(transform);
-                dizzyObject.transform.localPosition = new Vector3(0f, spriteRenderer != null ? (spriteRenderer.bounds.max.y - transform.position.y) / Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.y)) - 0.3f : 0.8f, -0.1f);
-                var tm = dizzyObject.AddComponent<TextMesh>();
-                tm.text = "💫";
-                tm.fontSize = 52;
-                tm.characterSize = 0.06f;
-                tm.anchor = TextAnchor.MiddleCenter;
-                tm.alignment = TextAlignment.Center;
-                tm.color = new Color(1f, 0.9f, 0.2f, 1f);
-                tm.fontStyle = FontStyle.Bold;
-            }
-            dizzyObject.SetActive(true);
-        }
-
         private void ShowHappy()
         {
             if (happyIcon != null) happyIcon.SetActive(true);
@@ -1113,6 +1234,7 @@ namespace GI351.KitchenGame
 
         private void OnReachedExit()
         {
+            activeRobbers.Remove(this);
             if (targetCounter != null)
             {
                 targetCounter.LeaveQueue(this);
@@ -1126,6 +1248,7 @@ namespace GI351.KitchenGame
 
         private void OnDisable()
         {
+            FinishCoinHops();
             if (targetCounter != null)
             {
                 targetCounter.LeaveQueue(this);
@@ -1183,6 +1306,9 @@ namespace GI351.KitchenGame
 
         private void OnDestroy()
         {
+            activeRobbers.Remove(this);
+            // อาหารที่โจรขโมยหนีไปถึงทางออก เป็นลูกของตัวโจร หายไปพร้อมกัน
+            FinishCoinHops();
             if (targetCounter != null)
             {
                 targetCounter.LeaveQueue(this);
@@ -1191,6 +1317,127 @@ namespace GI351.KitchenGame
             {
                 cashier.LeaveQueue(this);
             }
+        }
+    }
+}
+
+namespace GI351.KitchenGame
+{
+    /// <summary>
+    /// โซนร้าน (เกาะแรกที่มีแผงอาหาร โต๊ะจ่ายเงิน หม้อ และร้านค้า) ใช้เช็คว่าผู้เล่นอยู่ที่ร้านหรือออกไปล่าสัตว์
+    /// กรอบคำนวณครั้งเดียวต่อฉาก (คำนวณใหม่เมื่อเปลี่ยนฉาก) จุดที่อยู่ในโซนล่าสัตว์ (HuntArea) ไม่นับเป็นโซนร้าน
+    /// </summary>
+    public static class ShopZone
+    {
+        private static bool computed;
+        private static bool hasBounds;
+        private static Bounds cachedBounds;
+        private static UnityEngine.SceneManagement.Scene cachedScene;
+        private static PlayerMovement player;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            computed = false;
+            hasBounds = false;
+            cachedScene = default;
+            player = null;
+        }
+
+        /// <summary>ผู้เล่นอยู่ในโซนร้านหรือไม่ (ไม่มีผู้เล่น/ไม่มีของร้านในฉาก = ถือว่าอยู่ ไม่ให้โจรค้างรอตลอดไป)</summary>
+        public static bool IsPlayerInside(float padding)
+        {
+            if (player == null) player = Object.FindAnyObjectByType<PlayerMovement>();
+            if (player == null) return true;
+            return Contains(YSort.FeetOf(player.transform), padding);   // ใช้ตำแหน่งเท้าผู้เล่น (YSortActor) ไม่มี = ตำแหน่งตัว
+        }
+
+        /// <summary>จุดนี้อยู่ในโซนร้าน (ขยายขอบออกไป padding หน่วยโลก) หรือไม่</summary>
+        public static bool Contains(Vector2 point, float padding)
+        {
+            if (!TryGetBounds(out Bounds b)) return true;
+            Vector3 min = b.min;
+            Vector3 max = b.max;
+            if (point.x < min.x - padding || point.x > max.x + padding || point.y < min.y - padding || point.y > max.y + padding) return false;
+
+            // ขอบที่ขยายออกไปล้นเข้าโซนล่าสัตว์ ไม่นับว่าอยู่ร้าน
+            foreach (HuntArea area in HuntArea.All)
+            {
+                if (area != null && area.Contains(point)) return false;
+            }
+            return true;
+        }
+
+        private static bool TryGetBounds(out Bounds bounds)
+        {
+            UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (!computed || scene != cachedScene)
+            {
+                cachedScene = scene;
+                computed = true;
+                hasBounds = false;
+                Encapsulate(Object.FindObjectsByType<FoodSellCounter>(FindObjectsInactive.Include));
+                Encapsulate(Object.FindObjectsByType<CashierCounter>(FindObjectsInactive.Include));
+                Encapsulate(Object.FindObjectsByType<CookingPot>(FindObjectsInactive.Include));
+                Encapsulate(Object.FindObjectsByType<ShopStall>(FindObjectsInactive.Include));
+            }
+            bounds = cachedBounds;
+            return hasBounds;
+        }
+
+        private static void Encapsulate(Component[] parts)
+        {
+            if (parts == null) return;
+            foreach (Component c in parts)
+            {
+                if (c == null) continue;
+                // ร้านค้า/หม้อที่ตั้งอยู่ในโซนล่าสัตว์ ไม่ใช่ส่วนของร้าน
+                if (InsideHuntArea(c.transform.position)) continue;
+
+                bool any = false;
+                if (c.gameObject.activeInHierarchy)
+                {
+                    // ใช้ Collider ที่เป็นของแข็งก่อน (ไม่นับวงแหวน Trigger ที่กว้าง) ถ้าไม่มีค่อยใช้รูป
+                    foreach (Collider2D col in c.GetComponentsInChildren<Collider2D>())
+                    {
+                        if (col == null || !col.enabled || col.isTrigger) continue;
+                        Add(col.bounds);
+                        any = true;
+                    }
+                    if (!any)
+                    {
+                        foreach (SpriteRenderer sr in c.GetComponentsInChildren<SpriteRenderer>())
+                        {
+                            if (sr == null || !sr.enabled || sr.sprite == null) continue;
+                            Add(sr.bounds);
+                            any = true;
+                        }
+                    }
+                }
+                if (!any) Add(new Bounds(c.transform.position, Vector3.zero));
+            }
+        }
+
+        private static void Add(Bounds b)
+        {
+            if (!hasBounds)
+            {
+                cachedBounds = b;
+                hasBounds = true;
+            }
+            else
+            {
+                cachedBounds.Encapsulate(b);
+            }
+        }
+
+        private static bool InsideHuntArea(Vector2 point)
+        {
+            foreach (HuntArea area in HuntArea.All)
+            {
+                if (area != null && area.Contains(point)) return true;
+            }
+            return false;
         }
     }
 }

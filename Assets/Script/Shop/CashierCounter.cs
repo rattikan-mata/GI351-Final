@@ -128,6 +128,9 @@ namespace GI351.KitchenGame
 
         private readonly List<CustomerAI> queue = new List<CustomerAI>();
         private readonly List<PileCoin> pile = new List<PileCoin>();
+
+        // กลุ่มเรียงชั้นของกองเงิน: ทั้งกองวาดเป็นก้อนเดียวที่ลำดับเดียวกับโต๊ะ (ตัวละครยืนหน้าโต๊ะวาดทับเหรียญทุกเหรียญ)
+        private UnityEngine.Rendering.SortingGroup pileGroup;
         private SpriteRenderer playerRingRenderer;
         private Transform playerTransform;
         private bool playerInRing;
@@ -143,6 +146,9 @@ namespace GI351.KitchenGame
         private int payReportFrame = -1;
 
         public Transform CustomerPayPoint => customerPayPoint != null ? customerPayPoint : transform;
+
+        /// <summary>Prefab เหรียญของโต๊ะนี้ (ว่างได้) ใช้สร้างเหรียญที่หล่นจากที่อื่น</summary>
+        public GameObject CoinPrefab => coinPrefab;
 
         /// <summary>วงขาวที่ผู้เล่น/พนักงานแคชเชียร์ยืน</summary>
         public Transform PlayerRing => playerRing;
@@ -195,7 +201,7 @@ namespace GI351.KitchenGame
             for (int i = 0; i < pile.Count; i++)
             {
                 if (!pile[i].landed) continue;
-                pile[i].coin.AttractTo(target);
+                SendCoinTo(pile[i].coin, target);
                 pile.RemoveAt(i);
                 return true;
             }
@@ -355,6 +361,8 @@ namespace GI351.KitchenGame
                         pickup.Value = price;
                         // เหรียญอยู่ในกองบนโต๊ะ (ไม่หายตามเวลา) รอผู้เล่นเข้าวงถึงจะลอยเข้าตัว
                         pickup.WaitForCollectZone();
+                        // อยู่ในกลุ่มกองเงิน เรียงชั้นพร้อมโต๊ะ (ตำแหน่งในโลกคงเดิม ขยับด้วยตำแหน่งโลกทุกเฟรมอยู่แล้ว)
+                        coinObj.transform.SetParent(UpdatePileGroup(), true);
                         pile.Add(new PileCoin { coin = pickup, start = from, startTime = Time.time + i * coinStagger });
                     }
                 }
@@ -387,8 +395,7 @@ namespace GI351.KitchenGame
             pile.RemoveAll(c => c.coin == null);
             if (pile.Count == 0) return;
 
-            SpriteRenderer tableRenderer = GetComponent<SpriteRenderer>();
-            int baseOrder = (tableRenderer != null ? tableRenderer.sortingOrder : 0) + 2;
+            UpdatePileGroup();
 
             for (int i = pile.Count - 1; i >= 0; i--)
             {
@@ -398,7 +405,8 @@ namespace GI351.KitchenGame
 
                 if (c.coin.TryGetComponent(out SpriteRenderer sr))
                 {
-                    sr.sortingOrder = baseOrder + FlatPile.SortingOffset(Mathf.Min(i, maxPileSlots - 1), pileColumns, maxPileSlots);
+                    // ลำดับภายในกลุ่มกองเงิน: แถวหน้าทับแถวหลัง
+                    sr.sortingOrder = FlatPile.SortingOffset(Mathf.Min(i, maxPileSlots - 1), pileColumns, maxPileSlots);
                     sr.enabled = Time.time >= c.startTime;
                 }
 
@@ -424,10 +432,50 @@ namespace GI351.KitchenGame
                 // ผู้เล่นยืนในวง: เหรียญที่ลงกองแล้วครู่หนึ่งลอยเข้าตัว
                 if (playerInRing && playerTransform != null && Time.time - c.landedTime >= collectDelay)
                 {
-                    c.coin.AttractTo(playerTransform);
+                    SendCoinTo(c.coin, playerTransform);
                     pile.RemoveAt(i);
                 }
             }
+        }
+
+        /// <summary>
+        /// กลุ่มเรียงชั้นของกองเงิน (สร้างตอนใช้ครั้งแรก): ชั้นและลำดับเดียวกับโต๊ะ วางที่ขอบล่างของโต๊ะ
+        /// ต่ำกว่าและใกล้กล้องกว่าโต๊ะนิดเดียว ลำดับเท่ากันจึงวาดหลังโต๊ะ (อยู่บนโต๊ะ)
+        /// </summary>
+        private Transform UpdatePileGroup()
+        {
+            if (pileGroup == null)
+            {
+                var go = new GameObject("Coin Pile");
+                go.transform.SetParent(transform, false);
+                pileGroup = go.AddComponent<UnityEngine.Rendering.SortingGroup>();
+            }
+
+            SpriteRenderer tableRenderer = GetComponent<SpriteRenderer>();
+            if (tableRenderer != null)
+            {
+                pileGroup.sortingLayerID = tableRenderer.sortingLayerID;
+                pileGroup.sortingOrder = tableRenderer.sortingOrder;
+                pileGroup.transform.position = new Vector3(transform.position.x, tableRenderer.bounds.min.y - 0.01f, transform.position.z - 0.05f);
+            }
+            else
+            {
+                pileGroup.sortingOrder = 0;
+                pileGroup.transform.position = transform.position + new Vector3(0f, 0f, -0.05f);
+            }
+            return pileGroup.transform;
+        }
+
+        /// <summary>เหรียญออกจากกองลอยไปหา target: ออกจากกลุ่มกองเงิน และวาดบนสุดระหว่างลอย</summary>
+        private static void SendCoinTo(CoinPickup coin, Transform target)
+        {
+            coin.transform.SetParent(null, true);
+            if (coin.TryGetComponent(out SpriteRenderer sr))
+            {
+                sr.sortingOrder = YSort.Overlay;
+                sr.enabled = true;
+            }
+            coin.AttractTo(target);
         }
 
         // ========================== หลอดความคืบหน้าการคิดเงิน ==========================

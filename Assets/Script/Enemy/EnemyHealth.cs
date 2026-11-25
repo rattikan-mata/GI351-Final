@@ -54,6 +54,9 @@ namespace GI351.KitchenGame
         public int MaxHealth => maxHealth;
         public int CurrentHealth => currentHealth;
         public bool IsDead => isDead;
+
+        /// <summary>สัตว์ตัวไหนก็ได้ตาย (ใช้นับสถิติใน PlaytestLog)</summary>
+        public static event System.Action<EnemyHealth> AnyDied;
         public bool IsKnockedBack => knockbackTimer > 0f;
 
         private void Awake()
@@ -262,6 +265,7 @@ namespace GI351.KitchenGame
 
             // onDied ยิงตอนตายเหมือนเดิม (หลอด HP หายทันทีจาก EnemyHpBar)
             onDied?.Invoke();
+            AnyDied?.Invoke(this);
 
             if (enemyJuice != null)
             {

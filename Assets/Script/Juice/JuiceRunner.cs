@@ -37,6 +37,12 @@ namespace GI351.KitchenGame
             releaseAt = now + duration;
         }
 
+        /// <summary>เมนู pause มาคุม timeScale แทน: เลิกถือ hit stop โดยไม่คืน timeScale</summary>
+        internal void Cancel()
+        {
+            holding = false;
+        }
+
         private void Update()
         {
             if (holding && Time.unscaledTime >= releaseAt) Release();

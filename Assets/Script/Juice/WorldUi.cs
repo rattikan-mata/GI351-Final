@@ -173,6 +173,7 @@ namespace GI351.KitchenGame
             b.text.fontSize = 64;
             b.text.characterSize = size.y * 0.11f;
             b.text.color = textColor;
+            GameFont.Apply(b.text);
             var mr = textGo.GetComponent<MeshRenderer>();
             mr.sortingLayerID = layer;
             mr.sortingOrder = order + 3;

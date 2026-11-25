@@ -265,6 +265,7 @@ MonoBehaviour:
   cantAfford: {fileID: 8300000, guid: 1d2738b95296c2a4f9cb9d6d3cfa6c95, type: 3}
   cashCollect: {fileID: 8300000, guid: 88b1df3fbd8bbf44ebdef68ac808ae70, type: 3}
   thiefAlert: {fileID: 8300000, guid: 26eb52f0fb773ce45b8b1f6934c93717, type: 3}
+  purchase: {fileID: 8300000, guid: c42ebdb908edc6b499eaed237ea6cc82, type: 3}
   buttonClickVolume: 0.43
   panelToggleVolume: 0.15
   upgradeSuccessVolume: 0.76
@@ -272,7 +273,10 @@ MonoBehaviour:
   buyStaffVolume: 0.53
   cantAffordVolume: 0.15
   cashCollectVolume: 0.37
-  thiefAlertVolume: 0.66
+  purchaseVolume: 0.37
+  thiefAlertVolume: 0.4
+  bgmClip: {fileID: 8300000, guid: 753c3fcf2341cda4d9d7c9525223bf82, type: 3}
+  bgmClipVolume: 0.18
   pitchVariance: 0.06
 --- !u!82 &725021847
 AudioSource:

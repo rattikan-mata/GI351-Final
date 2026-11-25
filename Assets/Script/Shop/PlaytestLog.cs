@@ -48,7 +48,20 @@ namespace GI351.KitchenGame
         private float nextSample;
         private float nextHookScan;
         private int lastMoney = -1;
-        private bool moneyHooked;
+        private MoneyManager hookedMoney;
+
+        // สถิติแบบถูก: นับตอนเกิดเหตุการณ์เท่านั้น ไม่มีงานต่อเฟรม
+        private readonly SortedDictionary<string, int> kills = new SortedDictionary<string, int>();
+
+        private void OnAnimalDied(EnemyHealth animal)
+        {
+            string key = animal != null ? animal.name.Replace("(Clone)", "").Trim() : "?";
+            kills.TryGetValue(key, out int n);
+            kills[key] = n + 1;
+        }
+
+        private void OnEnable() { EnemyHealth.AnyDied += OnAnimalDied; }
+        private void OnDisable() { EnemyHealth.AnyDied -= OnAnimalDied; }
 
         private int earned, spent, paid, totalEarned, totalSpent, totalPaid;
         private int lostAtMinuteStart;
@@ -101,11 +114,13 @@ namespace GI351.KitchenGame
 
         private void HookSources()
         {
-            if (!moneyHooked && MoneyManager.Instance != null)
+            // เข้าเกมรอบใหม่ (Main Menu -> Start) MoneyManager เป็นตัวใหม่ ต้องผูกใหม่
+            MoneyManager mm = MoneyManager.Instance;
+            if (mm != null && mm != hookedMoney)
             {
-                moneyHooked = true;
-                lastMoney = MoneyManager.Instance.CurrentMoney;
-                MoneyManager.Instance.onMoneyChanged.AddListener(OnMoneyChanged);
+                hookedMoney = mm;
+                lastMoney = mm.CurrentMoney;
+                mm.onMoneyChanged.AddListener(OnMoneyChanged);
             }
 
             if (Time.time < nextHookScan) return;
@@ -243,6 +258,10 @@ namespace GI351.KitchenGame
                           "   Earned: $" + totalEarned + "   Spent: $" + totalSpent +
                           "   Customers paid: " + totalPaid + "   Customers lost: " + CustomerAI.LostCustomers +
                           "   First sale: " + (firstSaleTime >= 0f ? FormatTime(firstSaleTime) : "-"));
+            var killText = new StringBuilder();
+            foreach (var kv in kills) killText.Append(kv.Key).Append(' ').Append(kv.Value).Append("  ");
+            sb.AppendLine("Animals killed: " + (killText.Length > 0 ? killText.ToString() : "-") +
+                          "  Customers arrived: " + CustomerSpawner.SpawnedTotal);
             sb.AppendLine("(money cheats F1-F3 count as earned)");
             sb.AppendLine();
             sb.AppendLine("PER MINUTE");

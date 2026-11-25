@@ -284,6 +284,23 @@ namespace GI351.KitchenGame
             return null;
         }
 
+        /// <summary>กดปุ่มซื้อ/อัปเกรดในแถว: ซื้อแล้วจุ้ย (สำเร็จ = ปุ่ม/ชื่อเด้ง + ร้านยืดหด, เงินไม่พอ = ปุ่มสั่น)</summary>
+        private void OnRowBuyClicked(ShopRowView row, int index)
+        {
+            if (TryBuy(index))
+            {
+                if (row == null) return;
+                UiJuice.Punch(row.buyButton.transform, 0.16f);
+                if (row.nameText != null) UiJuice.Punch(row.nameText.transform, 0.25f, 0.4f);
+                if (row.descText != null) UiJuice.Punch(row.descText.transform, 0.35f, 0.4f);
+                UiJuice.Squash(transform);
+            }
+            else if (row != null)
+            {
+                UiJuice.Shake(row.buyButton.transform);
+            }
+        }
+
         /// <summary>ซื้อสินค้า index (เช็คสต็อก + เงิน) คืน true ถ้าสำเร็จ</summary>
         public bool TryBuy(int index)
         {
@@ -316,14 +333,13 @@ namespace GI351.KitchenGame
             if (leveled)
             {
                 it.Level = it.Level + 1;
-                UiAudioManager.Instance?.PlayUpgrade();
+                UiAudioManager.Instance?.PlayPurchase();   // เสียงคิดเงิน
                 Debug.Log("[ShopStall] Upgraded " + it.itemName + " to Lv" + it.Level + " ($" + cost + ")");
             }
             else
             {
-                // ซื้อลูกจ้าง (ร้าน Staff) ใช้เสียงเบากว่าซื้อของทั่วไป
-                if (GetComponentInParent<StaffHirer>() != null || GetComponentInChildren<StaffHirer>() != null) UiAudioManager.Instance?.PlayBuyStaff();
-                else UiAudioManager.Instance?.PlayBuyOrUnlockZone();
+                // ซื้อของ / จ้างลูกจ้าง (ร้าน Staff) ใช้เสียงคิดเงินเหมือนกัน
+                UiAudioManager.Instance?.PlayPurchase();   // เสียงคิดเงิน (ซื้อของ / จ้างพนักงาน)
                 Debug.Log("[ShopStall] Bought " + it.itemName + " ($" + it.price + ")");
             }
             it.onPurchased?.Invoke();
@@ -409,9 +425,11 @@ namespace GI351.KitchenGame
             if (view == null) view = ShopPanelView.CreateDefault(transform, HasTabs);
 
             view.panel.SetActive(false);
+            HideDuringCameraPan.Attach(view.gameObject);   // กล้องดึงจอ = ซ่อนแผงชั่วคราว
             if (view.templates != null) view.templates.SetActive(false);
             view.rowTemplate.gameObject.SetActive(false);
             UiBuild.SetText(view.titleText, shopTitle);
+            CoinTextIcon.Attach(view.moneyText); // รูปเหรียญอีแปะหน้าตัวเลขเงิน (แทน $)
             if (view.exitButton != null)
             {
                 view.exitButton.onClick.AddListener(() =>
@@ -468,7 +486,7 @@ namespace GI351.KitchenGame
                 if (!IsItemInTab(it, currentTab)) continue;
 
                 ShopRowView row = SpawnRow(view, it, i);
-                row.buyButton.onClick.AddListener(() => TryBuy(index));
+                row.buyButton.onClick.AddListener(() => OnRowBuyClicked(row, index));
                 rowItemIndex.Add(index);
                 rows.Add(row);
             }
@@ -501,7 +519,7 @@ namespace GI351.KitchenGame
             int money = CurrentMoney;
             lastMoney = money;
             if (view == null) return;
-            UiBuild.SetText(view.moneyText, "$" + money);
+            UiBuild.SetText(view.moneyText, money.ToString());
 
             for (int i = 0; i < rows.Count && i < rowItemIndex.Count; i++)
             {
@@ -550,7 +568,8 @@ namespace GI351.KitchenGame
                 row.descText.text = it.description ?? "";
                 row.descText.gameObject.SetActive(hasDesc);
             }
-            row.priceText.text = "$" + it.price;
+            row.priceText.text = it.price.ToString();
+            CoinTextIcon.Attach(row.priceText); // รูปเหรียญอีแปะหน้าราคา (แทน $)
             return row;
         }
 
@@ -561,7 +580,8 @@ namespace GI351.KitchenGame
             {
                 // ยังไม่เปิดขาย: ปุ่มเทา กดไม่ได้
                 SetButton(v, false, view.disabledColor, string.IsNullOrEmpty(it.lockedText) ? "SOON" : it.lockedText);
-                v.priceText.text = "$" + it.price;
+                v.priceText.text = it.price.ToString();
+                CoinTextIcon.SetVisible(v.priceText, true);
                 v.priceText.color = view.priceLockedColor;
                 return;
             }
@@ -578,7 +598,8 @@ namespace GI351.KitchenGame
             SetButton(v, !soldOut,
                 soldOut ? view.disabledColor : (afford ? view.buyColor : view.cantAffordColor),
                 soldOut ? soldOutLabel : view.buyLabel);
-            v.priceText.text = it.stock > 1 && !soldOut ? "$" + it.price + "  x" + (it.stock - it.sold) : "$" + it.price;
+            v.priceText.text = it.stock > 1 && !soldOut ? it.price + "  x" + (it.stock - it.sold) : it.price.ToString();
+            CoinTextIcon.SetVisible(v.priceText, true);
             v.priceText.color = afford || soldOut ? view.priceColor : view.priceTooExpensiveColor;
         }
 
@@ -589,18 +610,23 @@ namespace GI351.KitchenGame
             UiBuild.SetText(v.buyText, label);
         }
 
-        /// <summary>แถวสินค้าแบบอัปเลเวล: "ชื่อ Lv2 → Lv3" / "Damage 30 → 40" / ราคา / ปุ่ม UPGRADE (MAX = ปุ่มเทา กดไม่ได้)</summary>
+        /// <summary>
+        /// แถวสินค้าแบบอัปเลเวล (หน้าร้าน Upgrade):
+        ///   บรรทัดบน (ตัวใหญ่) = ความสามารถที่จะได้ เช่น "Damage → 35"  (เต็มแล้ว = ค่าปัจจุบัน "Damage 150")
+        ///   บรรทัดล่าง (ตัวเล็ก) = ชื่อของ + เลเวลตอนนี้ เช่น "Club  Lv.1"  (เต็มแล้ว = "Club  Lv.MAX")
+        ///   ราคา / ปุ่ม UPGRADE (MAX = ปุ่มเทา กดไม่ได้)
+        /// </summary>
         private static void ApplyLeveledRowState(ShopPanelView view, ShopRowView v, ShopItemData it, int money)
         {
-            string label = string.IsNullOrEmpty(it.valueLabel) ? "" : it.valueLabel + " ";
             Font font = v.nameText.font;
-            string arrow = font != null && font.HasCharacter('→') ? "→" : ">";
+            string arrow = font != null && font.HasCharacter('→') ? "→" : "->";
 
             if (it.IsMaxLevel)
             {
-                v.nameText.text = it.itemName + "  Lv" + it.Level + " " + view.maxLabel;
-                UiBuild.SetText(v.descText, label + FormatValue(it.CurrentValue));
+                v.nameText.text = FormatStat(it.valueLabel, it.CurrentValue, null);
+                UiBuild.SetText(v.descText, it.itemName + "  Lv." + view.maxLabel);
                 v.priceText.text = "";
+                CoinTextIcon.SetVisible(v.priceText, false);
                 SetButton(v, false, view.maxColor, view.maxLabel);
                 return;
             }
@@ -608,20 +634,39 @@ namespace GI351.KitchenGame
             if (it.IsAtLevelCap)
             {
                 // เลเวลถัดไปเตรียมไว้แล้วแต่ยังไม่เปิดขาย
-                v.nameText.text = it.itemName + "  Lv" + it.Level;
-                UiBuild.SetText(v.descText, label + FormatValue(it.CurrentValue));
+                v.nameText.text = FormatStat(it.valueLabel, it.CurrentValue, null);
+                UiBuild.SetText(v.descText, it.itemName + "  Lv." + it.Level);
                 v.priceText.text = "";
+                CoinTextIcon.SetVisible(v.priceText, false);
                 SetButton(v, false, view.disabledColor, string.IsNullOrEmpty(it.lockedText) ? "SOON" : it.lockedText);
                 return;
             }
 
             int cost = it.NextPrice;
             bool afford = money >= cost;
-            v.nameText.text = it.itemName + "  Lv" + it.Level + " " + arrow + " Lv" + (it.Level + 1);
-            UiBuild.SetText(v.descText, label + FormatValue(it.CurrentValue) + " " + arrow + " " + FormatValue(it.NextValue));
-            v.priceText.text = "$" + cost;
+            v.nameText.text = FormatStat(it.valueLabel, it.NextValue, arrow);
+            UiBuild.SetText(v.descText, it.itemName + "  Lv." + it.Level);
+            v.priceText.text = cost.ToString();
+            CoinTextIcon.SetVisible(v.priceText, true);
             v.priceText.color = afford ? view.priceColor : view.priceTooExpensiveColor;
             SetButton(v, true, afford ? view.buyColor : view.disabledColor, view.upgradeLabel);
+        }
+
+        /// <summary>
+        /// "Damage → 35" (มีลูกศร) / "Damage 35" (ไม่มีลูกศร)  ชื่อค่าที่ลงท้ายด้วย " x" (เช่น "Atk Speed x") = ตัวคูณ แสดง "Atk Speed → x1.1"
+        /// ไม่มีชื่อค่า = แสดงแค่ตัวเลข
+        /// </summary>
+        private static string FormatStat(string valueLabel, float value, string arrow)
+        {
+            string label = (valueLabel ?? "").Trim();
+            string number = FormatValue(value);
+            if (label.EndsWith(" x") || label == "x")
+            {
+                label = label.Substring(0, label.Length - 1).TrimEnd();
+                number = "x" + number;
+            }
+            string join = string.IsNullOrEmpty(arrow) ? " " : " " + arrow + " ";
+            return string.IsNullOrEmpty(label) ? (string.IsNullOrEmpty(arrow) ? number : arrow + " " + number) : label + join + number;
         }
 
         private static string FormatValue(float value)

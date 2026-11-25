@@ -41,6 +41,12 @@ namespace GI351.KitchenGame
         /// <summary>กำลังหยุดเกมจาก hit stop อยู่หรือไม่</summary>
         public static bool IsHitStopActive => runner != null && runner.IsHolding;
 
+        /// <summary>ยกเลิก hit stop ที่ค้างอยู่ (ไม่คืน timeScale) ใช้ตอนเมนู pause จะตั้ง timeScale เอง</summary>
+        public static void CancelHitStop()
+        {
+            if (runner != null) runner.Cancel();
+        }
+
         /// <summary>หยุดเกม seconds วินาทีตามเวลาจริง (ซ้อนกันใช้ค่าที่นานกว่า ไม่บวกสะสม)</summary>
         public static void HitStop(float seconds)
         {

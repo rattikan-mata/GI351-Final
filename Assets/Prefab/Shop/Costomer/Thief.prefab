@@ -148,7 +148,11 @@ MonoBehaviour:
   avoidanceMargin: 0.15
   isThief: 1
   thiefHealth: 20
-  thiefFleeSpeedMultiplier: 1.3
+  thiefFleeSpeedMultiplier: 0.333
+  thiefStealDishes: {x: 1, y: 3}
+  shopZonePadding: 3
+  thiefRewardMultiplier: 4
+  thiefRewardCoins: {x: 4, y: 6}
   targetCounter: {fileID: 8507393914842812104, guid: 7c826388d620c024e8e792ab45d5684e, type: 3}
   exitPoint: {fileID: 0}
   cashier: {fileID: 0}

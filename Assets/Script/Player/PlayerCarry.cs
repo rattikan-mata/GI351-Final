@@ -191,6 +191,7 @@ namespace GI351.KitchenGame
 
         private void CheckDropInput()
         {
+            if (Time.timeScale <= 0f && !JuiceDirector.IsHitStopActive) return;
             bool dropPressed = false;
 
 #if ENABLE_INPUT_SYSTEM

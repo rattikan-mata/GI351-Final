@@ -1,5 +1,102 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1076890884629172783
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8737351361961772960}
+  - component: {fileID: 7990974908310351438}
+  m_Layer: 0
+  m_Name: Inventory Panel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &8737351361961772960
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1076890884629172783}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2312377049155305125}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -32, y: -133}
+  m_SizeDelta: {x: 290, y: 390}
+  m_Pivot: {x: 1, y: 1}
+--- !u!114 &7990974908310351438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1076890884629172783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05b57bee20beb5d4c88f1440782a26bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.InventoryPanelView
+  frameSprite: {fileID: 21300000, guid: 2ffe569f28eeaf141ba7829589db2b9c, type: 3}
+  panelSize: {x: 290, y: 390}
+  headerHeightRatio: 0.18
+  applyPlacement: 1
+  anchor: {x: 1, y: 1}
+  pivot: {x: 1, y: 1}
+  anchoredPosition: {x: -32, y: -133}
+  bodyPadding: {x: 16, y: 10, z: 16, w: 6}
+  footerHeight: 26
+  columns: 1
+  minVisibleTypes: 4
+  iconSize: 64
+  rowSpacing: 6
+  columnSpacing: 8
+  showItemNames: 1
+  font: {fileID: 0}
+  countFontSize: 26
+  nameFontSize: 20
+  footerFontSize: 20
+  emptyFontSize: 22
+  textColor: {r: 0.08, g: 0.07, b: 0.06, a: 1}
+  useOutline: 0
+  showFooter: 0
+  outlineColor: {r: 0.2, g: 0.12, b: 0.06, a: 0.7}
+  outlineDistance: {x: 1, y: -1}
+  fullColor: {r: 0.78, g: 0.2, b: 0.14, a: 1}
+  emptyText: Empty
+  displayNames:
+  - type: 0
+    name: Chicken
+  - type: 1
+    name: Pork
+  - type: 7
+    name: Buffalo
+  - type: 2
+    name: Chick-baww
+  - type: 3
+    name: Pig-baww
+  - type: 8
+    name: Buff-baww
+  - type: 6
+    name: Mix-baww
+  - type: 5
+    name: Golden-baww
+  - type: 4
+    name: Thief
+  toggleKey: 23
+  startVisible: 1
+  pollInterval: 0.25
 --- !u!1 &1472825949549437045
 GameObject:
   m_ObjectHideFlags: 0
@@ -67,7 +164,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_Font: {fileID: 12800000, guid: 3f3e2ad08ae8db44ab5f18eff543c0db, type: 3}
     m_FontSize: 44
     m_FontStyle: 1
     m_BestFit: 0
@@ -162,7 +259,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_Font: {fileID: 12800000, guid: 3f3e2ad08ae8db44ab5f18eff543c0db, type: 3}
     m_FontSize: 50
     m_FontStyle: 1
     m_BestFit: 0
@@ -221,6 +318,7 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 8737351361961772960}
   - {fileID: 7682686254555960557}
   - {fileID: 8648861507866800677}
   - {fileID: 7942450624483161398}
@@ -292,7 +390,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GI351.KitchenGame.MoneyUI
   tmpMoneyText: {fileID: 0}
   legacyMoneyText: {fileID: 1930698043788577986}
-  prefix: $
+  prefix: 
   suffix: 
   gainPopupText: {fileID: 707668945987415393}
   gainPopupDuration: 1.2

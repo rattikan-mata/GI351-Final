@@ -14,8 +14,8 @@ namespace GI351.KitchenGame
         [SerializeField] private Text legacyMoneyText;
 
         [Header("Display Format")]
-        [Tooltip("คำนำหน้าข้อความ เช่น $ หรือ เหรียญ: ")]
-        [SerializeField] private string prefix = "Money: $";
+        [Tooltip("คำนำหน้าข้อความ (ปล่อยว่าง: ป้ายเงินมีรูปเหรียญอีแปะอยู่หน้าตัวเลขแล้ว)")]
+        [SerializeField] private string prefix = "";
 
         [Tooltip("คำลงท้ายข้อความ เช่น G หรือ Baht")]
         [SerializeField] private string suffix = "";
@@ -44,6 +44,7 @@ namespace GI351.KitchenGame
 
         private void Start()
         {
+            HideDuringCameraPan.Attach(gameObject);   // กล้องดึงจอ = ซ่อน HUD (เงิน + Inventory) ชั่วคราว
             if (gainPopupText != null)
             {
                 popupBasePos = gainPopupText.rectTransform.anchoredPosition;

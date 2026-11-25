@@ -55,8 +55,9 @@ namespace GI351.KitchenGame
 
         [SerializeField] private SpriteRenderer ringRenderer;
 
-        [Tooltip("ข้อความราคาที่เหลือ ($150) กลางวง")]
+        [Tooltip("ข้อความราคาที่เหลือ (รูปเหรียญ + 150) กลางวง")]
         [SerializeField] private TextMesh priceText;
+        private CoinMeshIcon priceIcon;   // รูปเหรียญหน้าตัวเลขราคา
 
         [SerializeField] private Color ringColor = new Color(1f, 0.85f, 0.2f, 0.95f);
         [SerializeField] private Color ringPayingColor = new Color(0.4f, 1f, 0.6f, 0.95f);
@@ -343,6 +344,7 @@ namespace GI351.KitchenGame
                 ringRenderer.sortingOrder = order + 1;   // ขอบวงอยู่บนหลอด
             }
             canvas.sortingOrder = order;
+            GameFont.Apply(priceText);   // ฟอนต์หลักของเกม (Fredoka)
             if (priceText != null)
             {
                 var mr = priceText.GetComponent<MeshRenderer>();
@@ -473,7 +475,10 @@ namespace GI351.KitchenGame
 
         private void RefreshVisuals()
         {
-            if (priceText != null) priceText.text = comingSoon ? comingSoonText : "$" + Remaining;
+            if (priceText == null) return;
+            if (priceIcon == null) priceIcon = CoinMeshIcon.Attach(priceText);
+            if (comingSoon) priceIcon.SetPlainText(comingSoonText);
+            else priceIcon.SetAmount(Remaining);
         }
 
         private void UpdateRing(int money)

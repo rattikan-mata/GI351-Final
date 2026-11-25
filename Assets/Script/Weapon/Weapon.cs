@@ -405,6 +405,8 @@ namespace GI351.KitchenGame
         {
             // เมาส์อยู่บน UI (กำลังกดปุ่มร้าน/อัปเกรด) ห้ามฟันกระบอง
             if (UiBuild.IsPointerOverUi) return;
+            // เกมหยุด (เมนู pause) ห้ามฟัน แต่ตอน hit stop ยังกดรัวได้
+            if (Time.timeScale <= 0f && !JuiceDirector.IsHitStopActive) return;
             bool attackPressed = false;
 
 #if ENABLE_INPUT_SYSTEM

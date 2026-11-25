@@ -212,6 +212,8 @@ namespace GI351.KitchenGame
         /// <summary>ชั้นเปิดขายแล้วหรือยัง (ไม่ได้ผูกหม้อ = เปิดตลอด)</summary>
         public bool IsOpen => unlockWithPot == null || unlockWithPot.IsUnlocked;
         public CookingPot UnlockWithPot => unlockWithPot;
+        /// <summary>ผู้เล่นยืนอยู่ในวงวางอาหารของแผงนี้ไหม (ใช้เปิดแผงอัปเกรด StationUpgrade)</summary>
+        public bool IsPlayerInRange => isPlayerInRange;
 
         public IReadOnlyList<ItemType> AcceptedDishes => acceptedDishes;
 

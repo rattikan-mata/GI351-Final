@@ -94,7 +94,7 @@ namespace GI351.KitchenGame
 
         private void Build()
         {
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Font font = GameFont.Get();
 
             var rootObj = new GameObject("Carry Counter");
             root = rootObj.transform;

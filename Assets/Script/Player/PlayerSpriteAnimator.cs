@@ -4,6 +4,7 @@ namespace GI351.KitchenGame
 {
     /// <summary>
     /// สลับภาพตัวละครผู้เล่นตามทิศที่เดิน: เดินหน้า / เดินหลัง / เดินข้าง และท่ายืน (กะพริบตาเป็นระยะ)
+    /// ท่ายืนหันหน้า: ค้างเฟรม 0 (ลืมตา) ทุก blinkEvery วินาที เล่นกะพริบ 0 -> 1 (ตาปรือ) -> 2 (หลับตา) แล้วกลับเฟรม 0
     /// ภาพเดินข้างต้องวาดหันขวา (การหันซ้าย PlayerMovement / PlayerAim พลิก flipX ให้เอง)
     /// หยุดเดินแล้ว: ถ้าเดินขึ้นอยู่ จะยืนหันหลัง / เดินข้างอยู่ จะยืนหันข้าง / นอกนั้นยืนหันหน้า
     /// </summary>
@@ -13,7 +14,7 @@ namespace GI351.KitchenGame
         [SerializeField] private Rigidbody2D body;
 
         [Header("Frames (ภาพแต่ละท่า)")]
-        [Tooltip("ท่ายืน: เฟรม 0-1 สลับไปมา เฟรมสุดท้าย = หลับตา (กะพริบ)")]
+        [Tooltip("ท่ายืนหันหน้า: เฟรม 0 = ลืมตา (ค้างไว้), 1 = ตาปรือ, 2 = หลับตา (เล่น 0 -> 1 -> 2 ตอนกะพริบ) ถ้ามีไม่ถึง 3 เฟรมจะโชว์แค่เฟรม 0")]
         [SerializeField] private Sprite[] idle;
 
         [Tooltip("เดินลง (หันหน้า): เฟรม 0 = ยืนตรง, 1-2 = ก้าวเท้า")]
@@ -29,14 +30,11 @@ namespace GI351.KitchenGame
         [Tooltip("เดินกี่เฟรมต่อวินาที")]
         [SerializeField] private float walkFps = 9f;
 
-        [Tooltip("ท่ายืนสลับภาพกี่เฟรมต่อวินาที")]
-        [SerializeField] private float idleFps = 2f;
-
         [Tooltip("กะพริบตาทุกกี่วินาที (สุ่มในช่วงนี้)")]
         [SerializeField] private Vector2 blinkEvery = new Vector2(2.5f, 4.5f);
 
-        [Tooltip("หลับตานานกี่วินาที")]
-        [SerializeField] private float blinkTime = 0.14f;
+        [Tooltip("ตอนกะพริบ โชว์เฟรมตาปรือ / หลับตา เฟรมละกี่วินาที")]
+        [SerializeField] private float blinkFrameTime = 0.07f;
 
         [Tooltip("ความเร็วขั้นต่ำที่นับว่ากำลังเดิน")]
         [SerializeField] private float moveThreshold = 0.15f;
@@ -62,9 +60,8 @@ namespace GI351.KitchenGame
             attackFacing = false;
         }
         private float walkTimer;
-        private float idleTimer;
         private float nextBlink;
-        private float blinkUntil;
+        private float blinkStart = -999f;
 
         // ลำดับเฟรมเดิน: ก้าวซ้าย -> ยืน -> ก้าวขวา -> ยืน
         private static readonly int[] WalkCycle = { 1, 0, 2, 0 };
@@ -104,19 +101,18 @@ namespace GI351.KitchenGame
             // หันหน้า: ท่ายืน + กะพริบตา (ระหว่างตีลงใช้ท่ายืนเฉยๆ ไม่กะพริบ)
             if (attackFacing) { Set(Pick(walkFront, 0)); return; }
             if (idle == null || idle.Length == 0) { Set(Pick(walkFront, 0)); return; }
-            if (Time.time >= nextBlink)
+            if (idle.Length < 3) { Set(idle[0]); return; }
+
+            // ค้างเฟรม 0 (ลืมตา) ถึงเวลากะพริบแล้วเล่นเฟรม 1 -> 2 เฟรมละ blinkFrameTime แล้วกลับเฟรม 0
+            float now = Time.time;
+            float frameTime = Mathf.Max(0.01f, blinkFrameTime);
+            if (now >= nextBlink)
             {
-                blinkUntil = Time.time + blinkTime;
-                nextBlink = Time.time + Random.Range(blinkEvery.x, blinkEvery.y);
+                blinkStart = now;
+                nextBlink = now + frameTime * (idle.Length - 1) + Random.Range(blinkEvery.x, blinkEvery.y);
             }
-            if (Time.time < blinkUntil && idle.Length >= 3)
-            {
-                Set(idle[idle.Length - 1]);
-                return;
-            }
-            idleTimer += Time.deltaTime * idleFps;
-            int loop = Mathf.Max(1, idle.Length >= 3 ? idle.Length - 1 : idle.Length);
-            Set(idle[(int)idleTimer % loop]);
+            float step = (now - blinkStart) / frameTime;
+            Set(idle[step < idle.Length - 1 ? (int)step + 1 : 0]);
         }
 
         private static Sprite Pick(Sprite[] set, int i)
