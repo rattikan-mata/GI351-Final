@@ -1033,8 +1033,6 @@ namespace GI351.KitchenGame
             thiefCaught = true;
             // ตีโจรโดนแล้ว: หยุดเสียงเตือน (ถ้ายังมีโจรตัวอื่นถือของขโมยอยู่ ปล่อยเสียงเล่นต่อ)
             ReleaseRobber();
-            // ตีก่อนมันขโมย = ไล่ไปเฉยๆ ไม่มีเงินรางวัล (กันตีโจรทุกตัวที่โผล่มาเพื่อเอาเงินฟรี)
-            bool hadLoot = carriedDishes.Count > 0;
             thiefWaitingForPlayer = false;
             if (targetCounter != null) targetCounter.LeaveQueue(this);
 
@@ -1045,7 +1043,8 @@ namespace GI351.KitchenGame
             DropStolenDishes();
 
             // เงินรางวัลตกพื้น: ราคาอาหารที่แพงที่สุดตอนนี้ x 4 เด้งออกมาเป็นเหรียญรอบตัว (เสียงเดียวกับแคชเชียร์)
-            if (hadLoot) SpawnThiefReward();
+            // ตีโดนเมื่อไหร่ก็ได้เงิน (ทั้งก่อนและหลังขโมย)
+            SpawnThiefReward();
 
             // รีบเดินหนีด้วยความเร็วเดินปกติ (ทางเดียวกับลูกค้าที่เดินกลับ / ผ่านคอแหลม)
             isAngry = true;
